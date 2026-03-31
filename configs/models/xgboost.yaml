@@ -1,0 +1,57 @@
+# ─── XGBoost Model Configuration ───
+# Gradient-boosted trees for Ganymede gas production forecasting.
+# Not a BaseModel subclass — uses sklearn-style fit/predict via MultiOutputRegressor.
+
+model:
+  name: "xgboost"
+  architecture:
+    n_estimators: 500
+    max_depth: 6
+    learning_rate: 0.1
+    subsample: 0.8
+    colsample_bytree: 0.8
+    min_child_weight: 5
+    reg_alpha: 0.1
+    reg_lambda: 1.0
+    tree_method: "hist"
+    n_jobs: -1
+
+  training:
+    early_stopping_rounds: 50
+
+  optuna_search_space:
+    n_estimators:
+      type: "int"
+      low: 100
+      high: 1000
+    max_depth:
+      type: "int"
+      low: 3
+      high: 10
+    learning_rate:
+      type: "float"
+      low: 0.01
+      high: 0.3
+      log: true
+    subsample:
+      type: "float"
+      low: 0.5
+      high: 1.0
+    colsample_bytree:
+      type: "float"
+      low: 0.5
+      high: 1.0
+    min_child_weight:
+      type: "int"
+      low: 1
+      high: 10
+    reg_alpha:
+      type: "float"
+      low: 0.0001
+      high: 10.0
+      log: true
+    reg_lambda:
+      type: "float"
+      low: 0.0001
+      high: 10.0
+      log: true
