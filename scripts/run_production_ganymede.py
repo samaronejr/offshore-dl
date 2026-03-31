@@ -1,0 +1,822 @@
+"""Production sweep: 6 models × 4 horizons × 2 modes on Ganymede.
+
+Orchestrates all production runs for the Ganymede gas-production
+forecasting benchmark. Trained models (LSTM, DeepONet, PatchTST) use
+``run_and_save()``; zero-shot FMs (Chronos, TimesFM, TiRex) use direct
+instantiation with manual CV evaluation.
+
+Usage::
+
+    # Full production sweep (GPU)
+    python scripts/run_production_ganymede.py
+
+    # Smoke test (CPU, 1 epoch, single model)
+    python scripts/run_production_ganymede.py --max-epochs 1 --device cpu --models lstm
+
+    # Dry run — print plan without executing
+    python scripts/run_production_ganymede.py --dry-run
+
+    # Docker invocation
+    docker_run.sh python scripts/run_production_ganymede.py --device cuda
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import logging
+import shutil
+import sys
+import time
+import traceback
+from pathlib import Path
+
+# Allow invocation from project root or via docker_run.sh
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+
+import numpy as np
+import torch
+from omegaconf import OmegaConf
+
+from sklearn.multioutput import MultiOutputRegressor
+from xgboost import XGBRegressor
+
+from offshore_dl.data.datasets import GanymedeDataset
+from offshore_dl.evaluation.cv import ExpandingWindowCV, HoldoutSplitter
+from offshore_dl.evaluation.metrics import MetricRegistry
+from offshore_dl.utils.reproducibility import set_global_seed
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
+)
+logger = logging.getLogger(__name__)
+
+# ═══════════════════════════════════════════════════════════════════
+# Sweep dimensions
+# ═══════════════════════════════════════════════════════════════════
+
+HORIZONS = [7, 14, 30, 90]
+MODES = ["multi_well", "per_well"]
+TRAINED_MODELS = ["lstm", "deeponet", "patchtst"]
+FM_MODELS = ["chronos", "timesfm", "tirex"]
+TREE_MODELS = ["xgboost"]
+ALL_MODELS = TRAINED_MODELS + FM_MODELS + TREE_MODELS
+
+# Wells from configs/data/ganymede.yaml
+WELLS = [
+    "49/22-Z01Z",
+    "49/22-Z02Z",
+    "49/22-Z04",
+    "49/22-Z05Z",
+    "49/22-Z06",
+    "49/22-Z07",
+    "49/22-Z08",
+]
+
+FM_WRAPPER_MAP = {
+    "chronos": ("offshore_dl.models.chronos_wrapper", "ChronosWrapper"),
+    "timesfm": ("offshore_dl.models.timesfm_wrapper", "TimesFMWrapper"),
+    "tirex": ("offshore_dl.models.tirex_wrapper", "TiRexWrapper"),
+}
+
+RESULTS_DIR = Path("results")
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Helpers
+# ═══════════════════════════════════════════════════════════════════
+
+
+def _safe_well(name: str) -> str:
+    return name.replace("/", "_")
+
+
+def _make_serializable(obj):
+    """Convert non-serializable types for JSON output."""
+    if isinstance(obj, dict):
+        return {k: _make_serializable(v) for k, v in obj.items() if k != "study"}
+    elif isinstance(obj, (list, tuple)):
+        return [_make_serializable(v) for v in obj]
+    elif isinstance(obj, (np.integer,)):
+        return int(obj)
+    elif isinstance(obj, (np.floating, float)):
+        return float(obj)
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    elif isinstance(obj, torch.Tensor):
+        return obj.tolist()
+    return obj
+
+
+def _aggregate(fold_results: list[dict]) -> dict:
+    """Aggregate per-fold metrics into mean/std summaries."""
+    agg: dict[str, float] = {}
+    if not fold_results:
+        return agg
+    for key in fold_results[0]["metrics"]:
+        values = [
+            fr["metrics"][key]
+            for fr in fold_results
+            if np.isfinite(fr["metrics"].get(key, float("nan")))
+        ]
+        if values:
+            agg[f"{key}_mean"] = float(np.mean(values))
+            agg[f"{key}_std"] = float(np.std(values))
+    return agg
+
+
+def _zero_shot_evaluate(model, dataset, val_idx, batch_size=32, max_samples=None):
+    """Run zero-shot FM inference on a validation set."""
+    if max_samples and len(val_idx) > max_samples:
+        val_idx = val_idx[:max_samples]
+
+    all_preds = []
+    all_targets = []
+
+    for i in range(0, len(val_idx), batch_size):
+        batch_idx = val_idx[i : i + batch_size]
+        batch_x = torch.stack([dataset[j][0] for j in batch_idx])
+        batch_y = torch.stack([dataset[j][1] for j in batch_idx])
+        batch = (batch_x, batch_y, [{}] * len(batch_idx))
+
+        preds = model.predict(batch)
+        all_preds.append(preds.cpu())
+        all_targets.append(batch_y.cpu())
+
+    predictions = torch.cat(all_preds).numpy()
+    targets = torch.cat(all_targets).numpy()
+
+    return MetricRegistry.compute("forecasting", predictions, targets)
+
+
+def _load_fm_class(model_name: str):
+    """Dynamically import an FM wrapper class."""
+    module_path, class_name = FM_WRAPPER_MAP[model_name]
+    import importlib
+    mod = importlib.import_module(module_path)
+    return getattr(mod, class_name)
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Trained-model sweep (uses run_and_save)
+# ═══════════════════════════════════════════════════════════════════
+
+
+def _run_trained_model(
+    model_name: str,
+    horizon: int,
+    mode: str,
+    well: str | None,
+    max_epochs: int | None,
+    device: str,
+    use_mlflow: bool = False,
+) -> dict:
+    """Run a trained model with nested CV: temporal holdout + inner CV.
+
+    Protocol:
+      1. Temporal holdout: last 20% of samples → test set
+      2. Inner 3-fold ExpandingWindowCV within the 80% training pool
+      3. Retrain on full training pool
+      4. Evaluate on held-out test set
+    """
+    # Lazy import — pulls in transformers/torch heavy dependencies only when
+    # a trained model is actually requested (not needed for tree/FM paths).
+    from offshore_dl.run_experiment import build_experiment  # noqa: F811
+
+    ds_kwargs: dict = {"horizon": horizon, "mode": mode, "filter_shutdowns": True}
+    if well:
+        ds_kwargs["well_name"] = well
+
+    runner, cfg = build_experiment(
+        model_name=model_name,
+        dataset_name="ganymede",
+        max_epochs=max_epochs,
+        device=device,
+        dataset_kwargs=ds_kwargs,
+    )
+
+    # Temporal holdout: last 20% as test
+    n = len(runner.dataset)
+    holdout = HoldoutSplitter(test_ratio=0.2, mode="temporal")
+    train_pool, test_indices = holdout.split(n)
+
+    results = runner.run_nested(
+        train_pool=train_pool,
+        test_indices=test_indices,
+        use_mlflow=use_mlflow,
+    )
+
+    # Save results
+    if well:
+        safe_name = _safe_well(well)
+        out_path = RESULTS_DIR / model_name / f"ganymede_h{horizon}_{mode}_{safe_name}.json"
+    else:
+        out_path = RESULTS_DIR / model_name / f"ganymede_h{horizon}_{mode}.json"
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(_make_serializable(results), indent=2))
+    logger.info("  Saved %s", out_path)
+
+    # Print summary
+    tm = results.get("test_metrics", {})
+    metric_str = ", ".join(
+        f"{k}={v:.4f}" for k, v in sorted(tm.items())
+        if isinstance(v, (int, float))
+    )
+    print(f"\n  {model_name.upper()} on GANYMEDE h{horizon} {mode}"
+          f"{(' ' + well) if well else ''}")
+    print(f"  TEST: {metric_str}")
+    print(f"  Results saved: {out_path}\n")
+
+    return results
+
+
+# ═══════════════════════════════════════════════════════════════════
+# FM zero-shot sweep (direct instantiation)
+# ═══════════════════════════════════════════════════════════════════
+
+
+def _run_fm_multi_well(
+    model_name: str,
+    horizon: int,
+    max_samples: int | None = None,
+) -> dict:
+    """Run zero-shot FM on Ganymede multi_well with temporal holdout.
+
+    FMs don't train, so the protocol is simpler:
+      1. Temporal holdout: last 20% → test set
+      2. Evaluate FM on test set only
+      3. Also run inner CV on train pool for variance estimates
+    """
+    set_global_seed(42)
+    dataset = GanymedeDataset("configs/data/ganymede.yaml", horizon=horizon, mode="multi_well", filter_shutdowns=True)
+    n_vars = dataset.n_vars
+
+    fm_class = _load_fm_class(model_name)
+    model = fm_class(task="forecasting", n_vars=n_vars, horizon=horizon, window_size=90)
+
+    # Temporal holdout: last 20%
+    n = len(dataset)
+    holdout = HoldoutSplitter(test_ratio=0.2, mode="temporal")
+    train_pool, test_indices = holdout.split(n)
+
+    # ── Evaluate on held-out test set (primary metric) ──
+    test_metrics = _zero_shot_evaluate(model, dataset, test_indices, max_samples=max_samples)
+
+    # ── Inner CV on train pool (for variance estimates) ──
+    cv = ExpandingWindowCV(n_splits=3, min_train_ratio=0.5)
+    inner_splits = cv.get_splits(len(train_pool))
+    cv_fold_results = []
+    for fold_idx, (local_train, local_val) in enumerate(inner_splits):
+        global_val = train_pool[local_val]
+        logger.info("  ── %s h%d multi_well inner fold %d/%d", model_name, horizon, fold_idx + 1, len(inner_splits))
+        metrics = _zero_shot_evaluate(model, dataset, global_val, max_samples=max_samples)
+        cv_fold_results.append({"fold_idx": fold_idx, "metrics": metrics})
+
+    cv_agg = _aggregate(cv_fold_results)
+
+    result = {
+        "test_metrics": test_metrics,
+        "cv_aggregate": cv_agg,
+        "cv_fold_results": cv_fold_results,
+        "n_train": len(train_pool),
+        "n_test": len(test_indices),
+        "n_cv_folds": len(inner_splits),
+    }
+
+    # Save
+    out_path = RESULTS_DIR / model_name / f"ganymede_h{horizon}_multi_well.json"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(_make_serializable(result), indent=2))
+    logger.info("  Saved %s", out_path)
+
+    return result
+
+
+def _run_fm_per_well(
+    model_name: str,
+    horizon: int,
+    max_samples: int | None = None,
+) -> list[dict]:
+    """Run zero-shot FM on each Ganymede well for one horizon.
+
+    Batches by model: creates FM once per horizon, iterates wells.
+    """
+    fm_class = _load_fm_class(model_name)
+    per_well_results = []
+
+    for well in WELLS:
+        set_global_seed(42)
+        safe = _safe_well(well)
+        dataset = GanymedeDataset(
+            "configs/data/ganymede.yaml",
+            horizon=horizon,
+            mode="per_well",
+            well_name=well,
+            filter_shutdowns=True,
+        )
+
+        if len(dataset) == 0:
+            logger.warning("  ── %s h%d per_well %s: empty dataset, skipping", model_name, horizon, well)
+            per_well_results.append({
+                "well": well, "status": "skipped", "reason": "empty dataset",
+            })
+            continue
+
+        n_vars = dataset.n_vars  # varies per well (e.g. 48 vs 63)
+        model = fm_class(task="forecasting", n_vars=n_vars, horizon=horizon, window_size=90)
+
+        # Temporal holdout: last 20%
+        n = len(dataset)
+        holdout = HoldoutSplitter(test_ratio=0.2, mode="temporal")
+        train_pool, test_idx = holdout.split(n)
+
+        # Evaluate on held-out test
+        test_metrics = _zero_shot_evaluate(model, dataset, test_idx, max_samples=max_samples)
+
+        # Inner CV for variance
+        cv = ExpandingWindowCV(n_splits=3, min_train_ratio=0.5)
+        inner_splits = cv.get_splits(len(train_pool))
+        cv_fold_results = []
+        for fold_idx, (local_train, local_val) in enumerate(inner_splits):
+            global_val = train_pool[local_val]
+            logger.info("  ── %s h%d per_well %s inner fold %d/%d", model_name, horizon, well, fold_idx + 1, len(inner_splits))
+            metrics = _zero_shot_evaluate(model, dataset, global_val, max_samples=max_samples)
+            cv_fold_results.append({"fold_idx": fold_idx, "metrics": metrics})
+
+        cv_agg = _aggregate(cv_fold_results)
+        result = {
+            "test_metrics": test_metrics,
+            "cv_aggregate": cv_agg,
+            "cv_fold_results": cv_fold_results,
+            "n_train": len(train_pool),
+            "n_test": len(test_idx),
+            "n_cv_folds": len(inner_splits),
+            "well": well,
+        }
+
+        out_path = RESULTS_DIR / model_name / f"ganymede_h{horizon}_per_well_{safe}.json"
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(json.dumps(_make_serializable(result), indent=2))
+        logger.info("  Saved %s", out_path)
+
+        per_well_results.append({"well": well, "status": "ok", "test_metrics": test_metrics, "cv_aggregate": cv_agg})
+
+    return per_well_results
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Tree-model sweep (sklearn-style fit/predict)
+# ═══════════════════════════════════════════════════════════════════
+
+
+def _run_xgboost_multi_well(
+    model_name: str,
+    horizon: int,
+    cfg: dict | None = None,
+) -> dict:
+    """Run XGBoost on Ganymede multi_well with temporal holdout + inner CV.
+
+    Protocol:
+      1. Flatten input tensors (90, n_vars) → (90*n_vars,) for tabular input
+      2. Temporal holdout: last 20% → test set
+      3. Inner 3-fold ExpandingWindowCV on the 80% training pool
+      4. For each fold: fit MultiOutputRegressor(XGBRegressor), evaluate
+      5. Retrain on full training pool, evaluate on held-out test
+    """
+    set_global_seed(42)
+
+    # Load config
+    model_cfg = OmegaConf.load("configs/models/xgboost.yaml")
+    arch = OmegaConf.to_container(model_cfg.model.architecture, resolve=True)
+
+    # Load dataset
+    dataset = GanymedeDataset(
+        "configs/data/ganymede.yaml",
+        horizon=horizon,
+        mode="multi_well",
+        filter_shutdowns=True,
+    )
+    n = len(dataset)
+    logger.info("  XGBoost multi_well h%d: %d samples, n_vars=%d", horizon, n, dataset.n_vars)
+
+    # Extract numpy arrays: flatten (90, n_vars) → (90*n_vars,)
+    X_all = np.empty((n, 90 * dataset.n_vars), dtype=np.float32)
+    Y_all = np.empty((n, horizon), dtype=np.float32)
+    for i in range(n):
+        x, y, _ = dataset[i]
+        X_all[i] = x.numpy().reshape(-1)
+        Y_all[i] = y.numpy()
+
+    # Temporal holdout: last 20%
+    holdout = HoldoutSplitter(test_ratio=0.2, mode="temporal")
+    train_pool, test_indices = holdout.split(n)
+
+    X_train_pool, Y_train_pool = X_all[train_pool], Y_all[train_pool]
+    X_test, Y_test = X_all[test_indices], Y_all[test_indices]
+
+    # Inner 3-fold ExpandingWindowCV
+    cv = ExpandingWindowCV(n_splits=3, min_train_ratio=0.5)
+    inner_splits = cv.get_splits(len(train_pool))
+    cv_fold_results = []
+
+    for fold_idx, (local_train, local_val) in enumerate(inner_splits):
+        logger.info("  ── xgboost h%d multi_well inner fold %d/%d", horizon, fold_idx + 1, len(inner_splits))
+        X_tr, Y_tr = X_train_pool[local_train], Y_train_pool[local_train]
+        X_va, Y_va = X_train_pool[local_val], Y_train_pool[local_val]
+
+        model = MultiOutputRegressor(XGBRegressor(**arch, random_state=42))
+        model.fit(X_tr, Y_tr)
+        preds = model.predict(X_va)
+
+        metrics = MetricRegistry.compute("forecasting", preds, Y_va)
+        cv_fold_results.append({"fold_idx": fold_idx, "metrics": metrics})
+        logger.info("    fold %d: MAE=%.4f, R²_prod=%.4f", fold_idx, metrics["mae"], metrics["r2_prod"])
+
+    cv_agg = _aggregate(cv_fold_results)
+
+    # Retrain on full training pool, evaluate on held-out test
+    logger.info("  ── xgboost h%d multi_well: retrain on full train pool (%d samples)", horizon, len(train_pool))
+    final_model = MultiOutputRegressor(XGBRegressor(**arch, random_state=42))
+    final_model.fit(X_train_pool, Y_train_pool)
+    test_preds = final_model.predict(X_test)
+    test_metrics = MetricRegistry.compute("forecasting", test_preds, Y_test)
+
+    result = {
+        "test_metrics": test_metrics,
+        "cv_aggregate": cv_agg,
+        "cv_fold_results": cv_fold_results,
+        "n_train": len(train_pool),
+        "n_test": len(test_indices),
+        "n_cv_folds": len(inner_splits),
+    }
+
+    # Save
+    out_path = RESULTS_DIR / model_name / f"ganymede_h{horizon}_multi_well.json"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(_make_serializable(result), indent=2))
+    logger.info("  Saved %s", out_path)
+
+    # Print summary
+    metric_str = ", ".join(
+        f"{k}={v:.4f}" for k, v in sorted(test_metrics.items())
+        if isinstance(v, (int, float))
+    )
+    print(f"\n  XGBOOST on GANYMEDE h{horizon} multi_well")
+    print(f"  TEST: {metric_str}")
+    print(f"  Results saved: {out_path}\n")
+
+    return result
+
+
+def _run_xgboost_per_well(
+    model_name: str,
+    horizon: int,
+    well: str,
+    cfg: dict | None = None,
+) -> dict:
+    """Run XGBoost on a single Ganymede well with temporal holdout + inner CV.
+
+    Same protocol as multi_well but for a single well.
+    Handles empty datasets gracefully (skip + log).
+    """
+    set_global_seed(42)
+    safe = _safe_well(well)
+
+    # Load config
+    model_cfg = OmegaConf.load("configs/models/xgboost.yaml")
+    arch = OmegaConf.to_container(model_cfg.model.architecture, resolve=True)
+
+    # Load per-well dataset
+    dataset = GanymedeDataset(
+        "configs/data/ganymede.yaml",
+        horizon=horizon,
+        mode="per_well",
+        well_name=well,
+        filter_shutdowns=True,
+    )
+    n = len(dataset)
+
+    if n == 0:
+        logger.warning("  ── xgboost h%d per_well %s: empty dataset, skipping", horizon, well)
+        return {"well": well, "status": "skipped", "reason": "empty dataset"}
+
+    logger.info("  XGBoost per_well h%d %s: %d samples, n_vars=%d", horizon, well, n, dataset.n_vars)
+
+    # Extract numpy arrays
+    X_all = np.empty((n, 90 * dataset.n_vars), dtype=np.float32)
+    Y_all = np.empty((n, horizon), dtype=np.float32)
+    for i in range(n):
+        x, y, _ = dataset[i]
+        X_all[i] = x.numpy().reshape(-1)
+        Y_all[i] = y.numpy()
+
+    # Temporal holdout: last 20%
+    holdout = HoldoutSplitter(test_ratio=0.2, mode="temporal")
+    train_pool, test_indices = holdout.split(n)
+
+    X_train_pool, Y_train_pool = X_all[train_pool], Y_all[train_pool]
+    X_test, Y_test = X_all[test_indices], Y_all[test_indices]
+
+    # Inner 3-fold ExpandingWindowCV
+    cv = ExpandingWindowCV(n_splits=3, min_train_ratio=0.5)
+    inner_splits = cv.get_splits(len(train_pool))
+    cv_fold_results = []
+
+    for fold_idx, (local_train, local_val) in enumerate(inner_splits):
+        logger.info("  ── xgboost h%d per_well %s inner fold %d/%d", horizon, well, fold_idx + 1, len(inner_splits))
+        X_tr, Y_tr = X_train_pool[local_train], Y_train_pool[local_train]
+        X_va, Y_va = X_train_pool[local_val], Y_train_pool[local_val]
+
+        model = MultiOutputRegressor(XGBRegressor(**arch, random_state=42))
+        model.fit(X_tr, Y_tr)
+        preds = model.predict(X_va)
+
+        metrics = MetricRegistry.compute("forecasting", preds, Y_va)
+        cv_fold_results.append({"fold_idx": fold_idx, "metrics": metrics})
+
+    cv_agg = _aggregate(cv_fold_results)
+
+    # Retrain on full training pool, evaluate on test
+    final_model = MultiOutputRegressor(XGBRegressor(**arch, random_state=42))
+    final_model.fit(X_train_pool, Y_train_pool)
+    test_preds = final_model.predict(X_test)
+    test_metrics = MetricRegistry.compute("forecasting", test_preds, Y_test)
+
+    result = {
+        "test_metrics": test_metrics,
+        "cv_aggregate": cv_agg,
+        "cv_fold_results": cv_fold_results,
+        "n_train": len(train_pool),
+        "n_test": len(test_indices),
+        "n_cv_folds": len(inner_splits),
+        "well": well,
+    }
+
+    out_path = RESULTS_DIR / model_name / f"ganymede_h{horizon}_per_well_{safe}.json"
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(json.dumps(_make_serializable(result), indent=2))
+    logger.info("  Saved %s", out_path)
+
+    return result
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Legacy compatibility
+# ═══════════════════════════════════════════════════════════════════
+
+
+def _copy_h30_legacy(model_name: str) -> None:
+    """Copy h30 multi_well result → legacy ganymede.json for compare.py compat."""
+    src = RESULTS_DIR / model_name / "ganymede_h30_multi_well.json"
+    dst = RESULTS_DIR / model_name / "ganymede.json"
+    if src.exists():
+        shutil.copy2(src, dst)
+        logger.info("  Legacy copy: %s → %s", src, dst)
+    else:
+        logger.warning("  Legacy copy skipped: %s not found", src)
+
+
+# ═══════════════════════════════════════════════════════════════════
+# Main orchestrator
+# ═══════════════════════════════════════════════════════════════════
+
+
+def _build_plan(models: list[str]) -> list[dict]:
+    """Build the ordered list of runs for the sweep."""
+    plan: list[dict] = []
+    for model in models:
+        is_fm = model in FM_MODELS
+        is_tree = model in TREE_MODELS
+        for horizon in HORIZONS:
+            # multi_well
+            plan.append({
+                "model": model,
+                "horizon": horizon,
+                "mode": "multi_well",
+                "well": None,
+                "is_fm": is_fm,
+                "is_tree": is_tree,
+            })
+            # per_well: individual wells
+            for well in WELLS:
+                plan.append({
+                    "model": model,
+                    "horizon": horizon,
+                    "mode": "per_well",
+                    "well": well,
+                    "is_fm": is_fm,
+                    "is_tree": is_tree,
+                })
+    return plan
+
+
+def _print_plan(plan: list[dict]) -> None:
+    """Print sweep plan without executing."""
+    print(f"\n{'═'*70}")
+    print(f"  GANYMEDE PRODUCTION SWEEP PLAN — {len(plan)} runs")
+    print(f"{'═'*70}")
+    for i, run in enumerate(plan, 1):
+        well_str = f" well={run['well']}" if run["well"] else ""
+        if run["is_fm"]:
+            tag = " [zero-shot]"
+        elif run.get("is_tree"):
+            tag = " [tree]"
+        else:
+            tag = " [trained]"
+        print(f"  {i:3d}. {run['model']:10s} h={run['horizon']:2d} {run['mode']:12s}{well_str}{tag}")
+    print(f"{'═'*70}")
+    print(f"  Total runs: {len(plan)}")
+    n_trained = sum(1 for r in plan if not r["is_fm"] and not r.get("is_tree"))
+    n_fm = sum(1 for r in plan if r["is_fm"])
+    n_tree = sum(1 for r in plan if r.get("is_tree"))
+    print(f"  Trained: {n_trained}, Zero-shot FM: {n_fm}, Tree: {n_tree}")
+    print(f"{'═'*70}\n")
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(
+        description="Production sweep: Ganymede gas-production forecasting",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
+    parser.add_argument("--device", type=str, default="cuda", help="Compute device")
+    parser.add_argument("--max-epochs", type=int, default=None, help="Override max training epochs (None = use config)")
+    parser.add_argument("--models", nargs="+", default=ALL_MODELS, choices=ALL_MODELS, help="Models to run")
+    parser.add_argument("--dry-run", action="store_true", help="Print plan without executing")
+    parser.add_argument("--max-samples", type=int, default=None, help="Cap val samples per FM fold (for smoke tests)")
+    parser.add_argument("--use-mlflow", action="store_true", help="Enable MLflow tracking")
+
+    args = parser.parse_args()
+
+    plan = _build_plan(args.models)
+
+    if args.dry_run:
+        _print_plan(plan)
+        return
+
+    logger.info("═" * 70)
+    logger.info("GANYMEDE PRODUCTION SWEEP — %d runs", len(plan))
+    logger.info("  device=%s  max_epochs=%s  models=%s", args.device, args.max_epochs, args.models)
+    logger.info("═" * 70)
+
+    sweep_start = time.time()
+    all_status: dict[str, list[dict]] = {}  # model → list of run statuses
+
+    # Group plan by model for efficient FM batching
+    current_model = None
+    for run_spec in plan:
+        model = run_spec["model"]
+        horizon = run_spec["horizon"]
+        mode = run_spec["mode"]
+        well = run_spec["well"]
+        is_fm = run_spec["is_fm"]
+        is_tree = run_spec.get("is_tree", False)
+
+        if model not in all_status:
+            all_status[model] = []
+
+        run_label = f"{model} h{horizon} {mode}"
+        if well:
+            run_label += f" {well}"
+
+        logger.info("─" * 60)
+        logger.info("RUN: %s", run_label)
+        logger.info("─" * 60)
+
+        start = time.time()
+        try:
+            if is_fm:
+                if mode == "multi_well":
+                    result = _run_fm_multi_well(model, horizon, max_samples=args.max_samples)
+                    agg = result.get("aggregate", {})
+                else:
+                    # per_well individual run
+                    set_global_seed(42)
+                    safe = _safe_well(well)
+                    dataset = GanymedeDataset(
+                        "configs/data/ganymede.yaml",
+                        horizon=horizon,
+                        mode="per_well",
+                        well_name=well,
+                        filter_shutdowns=True,
+                    )
+                    if len(dataset) == 0:
+                        elapsed = time.time() - start
+                        all_status[model].append({
+                            "run": run_label, "status": "skipped",
+                            "reason": "empty dataset", "elapsed": round(elapsed, 1),
+                        })
+                        logger.warning("  Skipped: empty dataset")
+                        continue
+
+                    n_vars = dataset.n_vars
+                    fm_class = _load_fm_class(model)
+                    fm_model = fm_class(task="forecasting", n_vars=n_vars, horizon=horizon, window_size=90)
+
+                    # Temporal holdout
+                    n_ds = len(dataset)
+                    holdout = HoldoutSplitter(test_ratio=0.2, mode="temporal")
+                    pw_train_pool, pw_test_idx = holdout.split(n_ds)
+
+                    # Evaluate on held-out test
+                    test_metrics = _zero_shot_evaluate(fm_model, dataset, pw_test_idx, max_samples=args.max_samples)
+
+                    # Inner CV for variance
+                    cv = ExpandingWindowCV(n_splits=3, min_train_ratio=0.5)
+                    inner_splits = cv.get_splits(len(pw_train_pool))
+                    fold_results = []
+                    for fold_idx, (local_train, local_val) in enumerate(inner_splits):
+                        global_val = pw_train_pool[local_val]
+                        metrics = _zero_shot_evaluate(fm_model, dataset, global_val, max_samples=args.max_samples)
+                        fold_results.append({"fold_idx": fold_idx, "metrics": metrics})
+
+                    cv_agg = _aggregate(fold_results)
+                    result = {
+                        "test_metrics": test_metrics,
+                        "cv_aggregate": cv_agg,
+                        "cv_fold_results": fold_results,
+                        "n_train": len(pw_train_pool),
+                        "n_test": len(pw_test_idx),
+                        "n_cv_folds": len(inner_splits),
+                        "well": well,
+                    }
+
+                    out_path = RESULTS_DIR / model / f"ganymede_h{horizon}_per_well_{safe}.json"
+                    out_path.parent.mkdir(parents=True, exist_ok=True)
+                    out_path.write_text(json.dumps(_make_serializable(result), indent=2))
+                    logger.info("  Saved %s", out_path)
+            elif is_tree:
+                # Tree model (XGBoost) — sklearn-style fit/predict
+                if mode == "multi_well":
+                    result = _run_xgboost_multi_well(model, horizon)
+                else:
+                    result = _run_xgboost_per_well(model, horizon, well)
+                    if result.get("status") == "skipped":
+                        elapsed = time.time() - start
+                        all_status[model].append({
+                            "run": run_label, "status": "skipped",
+                            "reason": result.get("reason", "empty dataset"),
+                            "elapsed": round(elapsed, 1),
+                        })
+                        logger.warning("  Skipped: %s", result.get("reason", "empty dataset"))
+                        continue
+            else:
+                # Trained model — uses nested CV
+                result = _run_trained_model(model, horizon, mode, well, args.max_epochs, args.device, use_mlflow=args.use_mlflow)
+
+            # Extract primary metrics (test_metrics for nested, fall back to aggregate)
+            tm = result.get("test_metrics", result.get("aggregate", {}))
+            elapsed = time.time() - start
+            metric_str = ", ".join(
+                f"{k}={v:.4f}" for k, v in sorted(tm.items())
+                if isinstance(v, (int, float))
+            )
+            all_status[model].append({
+                "run": run_label, "status": "ok",
+                "elapsed": round(elapsed, 1),
+                "test_metrics": tm,
+            })
+            logger.info("✓ %s: %s (%.1fs)", run_label, metric_str, elapsed)
+
+            # Legacy copy after h30 multi_well
+            if horizon == 30 and mode == "multi_well":
+                _copy_h30_legacy(model)
+
+        except Exception as e:
+            elapsed = time.time() - start
+            all_status[model].append({
+                "run": run_label, "status": "error",
+                "elapsed": round(elapsed, 1), "error": str(e),
+            })
+            logger.error("✗ %s failed: %s (%.1fs)", run_label, e, elapsed)
+            traceback.print_exc()
+
+    # ── Per-model summary files ──────────────────────────────────
+    for model, statuses in all_status.items():
+        summary_path = RESULTS_DIR / model / "summary_production_ganymede.json"
+        summary_path.parent.mkdir(parents=True, exist_ok=True)
+        summary_path.write_text(json.dumps(_make_serializable(statuses), indent=2))
+        logger.info("Summary saved: %s", summary_path)
+
+    # ── Final report ─────────────────────────────────────────────
+    total_elapsed = time.time() - sweep_start
+    n_ok = sum(1 for sts in all_status.values() for s in sts if s["status"] == "ok")
+    n_err = sum(1 for sts in all_status.values() for s in sts if s["status"] == "error")
+    n_skip = sum(1 for sts in all_status.values() for s in sts if s["status"] == "skipped")
+
+    print(f"\n{'═'*70}")
+    print(f"  GANYMEDE PRODUCTION SWEEP COMPLETE")
+    print(f"{'═'*70}")
+    print(f"  Total time: {total_elapsed:.0f}s ({total_elapsed/60:.1f} min)")
+    print(f"  OK: {n_ok}  Errors: {n_err}  Skipped: {n_skip}")
+    for model, statuses in all_status.items():
+        ok = sum(1 for s in statuses if s["status"] == "ok")
+        err = sum(1 for s in statuses if s["status"] == "error")
+        skip = sum(1 for s in statuses if s["status"] == "skipped")
+        print(f"    {model:12s} — ok={ok}, err={err}, skip={skip}")
+    print(f"{'═'*70}\n")
+
+
+if __name__ == "__main__":
+    main()
