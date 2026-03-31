@@ -9,7 +9,7 @@
 
 ## 1. Context
 
-After completing the M002 milestone (6 models × 3 datasets benchmark), a comprehensive
+After completing the M002 milestone (6 models × 3 datasets benchmark), an
 audit was performed identifying 30 issues: 4 critical, 14 high, 12 medium. All fixes
 were applied and verified. This document tracks the full post-merge workflow: audit
 integration, re-runs with corrected code, and final paper update.

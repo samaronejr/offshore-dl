@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-A comprehensive four-phase audit of the offshore-dl benchmarking framework uncovered
+A four-phase audit of the offshore-dl benchmarking framework uncovered
 30 issues across theoretical methodology, results integrity, implementation correctness,
 and documentation freshness.  The single most damaging root cause was a **key name
 mismatch in `compare.py`** (`fold_results` vs `cv_fold_results`) that rendered all five

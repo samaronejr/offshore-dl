@@ -35,6 +35,11 @@ tmp/
 
 # ── Project-specific ──
 IMPLEMENTATION_PLAN.md
+docs/ganymede_investigation_plan.md
+results/tirex/3w_embeddings.dat
+results/tirex/.3w_embeddings.dat.*
+results/tirex/3w_groups.npy
+results/tirex/3w_labels.npy
 data/raw/
 data/processed/
 data/splits/

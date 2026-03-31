@@ -1,20 +1,20 @@
 #!/bin/bash
-#SBATCH --job-name=offshore-ganymede
+#SBATCH --job-name=offshore-3w
 #SBATCH --partition=gpu
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --gres=gpu:1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=40G
-#SBATCH --time=04:00:00
-#SBATCH --output=logs/nacad_%j.out
-#SBATCH --error=logs/nacad_%j.err
+#SBATCH --time=24:00:00
+#SBATCH --output=logs/hpc_%j.out
+#SBATCH --error=logs/hpc_%j.err
 
 # ==============================================================================
-# nacad_job.slurm — Ganymede production sweep on NACAD
+# hpc_job_3w.slurm — 3W full dataset production training on HPC cluster
 #
 # Submit from the project root:
-#   sbatch scripts/nacad_job.slurm
+#   sbatch scripts/hpc_job_3w.slurm
 #
 # IMPORTANT NOTES:
 #
@@ -41,6 +41,12 @@
 # 4. SIF image: Set SIF_IMAGE env var or place the .sif file at the project root:
 #      singularity pull --name offshore-dl_train.sif docker://ghcr.io/USER/offshore-dl:train
 #
+# 5. 3W dataset size: The full 3W dataset contains 208k+ sliding windows. Training
+#    all models may take 12-24 hours. If you hit OOM errors, consider:
+#    - Reducing batch size via config overrides
+#    - Requesting a node with more GPU memory (e.g., A100 80GB)
+#    - Running a subset of models in separate jobs
+#
 # ==============================================================================
 
 set -euo pipefail
@@ -64,7 +70,7 @@ echo "================================================================="
 
 # --- Run experiment ----------------------------------------------------------
 bash "${PROJECT_ROOT}/scripts/singularity_run.sh" \
-    python scripts/run_production_ganymede.py --device cuda
+    python scripts/run_production_3w.py --device cuda
 
 # --- Done --------------------------------------------------------------------
 echo "================================================================="
