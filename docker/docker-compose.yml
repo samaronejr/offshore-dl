@@ -1,0 +1,45 @@
+services:
+  train:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: train
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    shm_size: '16g'
+    volumes:
+      - ../data:/app/data
+      - ../results:/app/results
+      - ../reports:/app/reports
+      - ../mlruns:/app/mlruns
+      - ../configs:/app/configs
+      - ${HF_CACHE_DIR:-~/.cache/huggingface}:/app/.cache/huggingface
+    environment:
+      - MLFLOW_TRACKING_URI=http://host.docker.internal:5000
+      - OPTUNA_STORAGE=sqlite:///optuna.db
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - mlflow
+
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:latest
+    ports:
+      - "5000:5000"
+    command: >
+      mlflow server
+      --backend-store-uri sqlite:///mlflow.db
+      --default-artifact-root /mlruns
+      --host 0.0.0.0
+      --allowed-hosts "mlflow,host.docker.internal,localhost,*"
+    volumes:
+      - ../mlruns:/mlruns
+      - mlflow-db:/app
+
+volumes:
+  mlflow-db:
