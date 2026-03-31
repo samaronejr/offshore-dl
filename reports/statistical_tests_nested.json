@@ -1,0 +1,1720 @@
+{
+  "description": "Statistical significance tests on inner CV fold-level results (nested evaluation)",
+  "tests": [
+    "Friedman chi-square (multi-model)",
+    "Nemenyi post-hoc (if Friedman significant)",
+    "Wilcoxon signed-rank (pairwise)"
+  ],
+  "alpha": 0.05,
+  "3w": {
+    "n_models": 5,
+    "metrics": {
+      "accuracy": {
+        "friedman": {
+          "statistic": 17.120000000000005,
+          "p_value": 0.0018318804472027671,
+          "significant": true,
+          "n_models": 5,
+          "n_folds": 5,
+          "models": [
+            "deeponet",
+            "lstm",
+            "mlp",
+            "patchtst",
+            "tirex"
+          ]
+        },
+        "average_ranks": {
+          "deeponet": 2.2,
+          "lstm": 2.4,
+          "mlp": 5.0,
+          "patchtst": 1.4,
+          "tirex": 4.0
+        },
+        "wilcoxon_pairwise": [
+          {
+            "model_a": "deeponet",
+            "model_b": "lstm",
+            "statistic": 3.0,
+            "p_value": 0.3125,
+            "significant": false
+          },
+          {
+            "model_a": "deeponet",
+            "model_b": "mlp",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
+          {
+            "model_a": "deeponet",
+            "model_b": "patchtst",
+            "statistic": 5.0,
+            "p_value": 0.625,
+            "significant": false
+          },
+          {
+            "model_a": "deeponet",
+            "model_b": "tirex",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
+          {
+            "model_a": "lstm",
+            "model_b": "mlp",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
+          {
+            "model_a": "lstm",
+            "model_b": "patchtst",
+            "statistic": 5.0,
+            "p_value": 0.625,
+            "significant": false
+          },
+          {
+            "model_a": "lstm",
+            "model_b": "tirex",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
+          {
+            "model_a": "mlp",
+            "model_b": "patchtst",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
+          {
+            "model_a": "mlp",
+            "model_b": "tirex",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
+          {
+            "model_a": "patchtst",
+            "model_b": "tirex",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          }
+        ],
+        "nemenyi_cd": 2.728,
+        "nemenyi_significant_pairs": [
+          {
+            "model_a": "deeponet",
+            "model_b": "mlp",
+            "rank_diff": 2.8
+          },
+          {
+            "model_a": "mlp",
+            "model_b": "patchtst",
+            "rank_diff": 3.6
+          }
+        ]
+      },
+      "f1_macro": {
+        "friedman": {
+          "statistic": 17.439999999999998,
+          "p_value": 0.0015871514957599775,
+          "significant": true,
+          "n_models": 5,
+          "n_folds": 5,
+          "models": [
+            "deeponet",
+            "lstm",
+            "mlp",
+            "patchtst",
+            "tirex"
+          ]
+        },
+        "average_ranks": {
+          "deeponet": 2.0,
+          "lstm": 2.6,
+          "mlp": 5.0,
+          "patchtst": 1.4,
+          "tirex": 4.0
+        },
+        "wilcoxon_pairwise": [
+          {
+            "model_a": "deeponet",
+            "model_b": "lstm",
+            "statistic": 2.0,
+            "p_value": 0.1875,
+            "significant": false
+          },
+          {
+            "model_a": "deeponet",
+            "model_b": "mlp",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
+          {
+            "model_a": "deeponet",
+            "model_b": "patchtst",
+            "statistic": 2.0,
+            "p_value": 0.1875,
+            "significant": false
+          },
+          {
+            "model_a": "deeponet",
+            "model_b": "tirex",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
+          {
+            "model_a": "lstm",
+            "model_b": "mlp",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
+          {
+            "model_a": "lstm",
+            "model_b": "patchtst",
+            "statistic": 1.0,
+            "p_value": 0.125,
+            "significant": false
+          },
+          {
+            "model_a": "lstm",
+            "model_b": "tirex",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
+          {
+            "model_a": "mlp",
+            "model_b": "patchtst",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
+          {
+            "model_a": "mlp",
+            "model_b": "tirex",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
+          {
+            "model_a": "patchtst",
+            "model_b": "tirex",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          }
+        ],
+        "nemenyi_cd": 2.728,
+        "nemenyi_significant_pairs": [
+          {
+            "model_a": "deeponet",
+            "model_b": "mlp",
+            "rank_diff": 3.0
+          },
+          {
+            "model_a": "mlp",
+            "model_b": "patchtst",
+            "rank_diff": 3.6
+          }
+        ]
+      },
+      "auc_pr": {
+        "friedman": {
+          "statistic": 17.120000000000005,
+          "p_value": 0.0018318804472027671,
+          "significant": true,
+          "n_models": 5,
+          "n_folds": 5,
+          "models": [
+            "deeponet",
+            "lstm",
+            "mlp",
+            "patchtst",
+            "tirex"
+          ]
+        },
+        "average_ranks": {
+          "deeponet": 3.2,
+          "lstm": 3.4,
+          "mlp": 5.0,
+          "patchtst": 2.4,
+          "tirex": 1.0
+        },
+        "wilcoxon_pairwise": [
+          {
+            "model_a": "deeponet",
+            "model_b": "lstm",
+            "statistic": 3.0,
+            "p_value": 0.3125,
+            "significant": false
+          },
+          {
+            "model_a": "deeponet",
+            "model_b": "mlp",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
+          {
+            "model_a": "deeponet",
+            "model_b": "patchtst",
+            "statistic": 3.0,
+            "p_value": 0.3125,
+            "significant": false
+          },
+          {
+            "model_a": "deeponet",
+            "model_b": "tirex",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
+          {
+            "model_a": "lstm",
+            "model_b": "mlp",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
+          {
+            "model_a": "lstm",
+            "model_b": "patchtst",
+            "statistic": 1.0,
+            "p_value": 0.125,
+            "significant": false
+          },
+          {
+            "model_a": "lstm",
+            "model_b": "tirex",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
+          {
+            "model_a": "mlp",
+            "model_b": "patchtst",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
+          {
+            "model_a": "mlp",
+            "model_b": "tirex",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
+          {
+            "model_a": "patchtst",
+            "model_b": "tirex",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          }
+        ],
+        "nemenyi_cd": 2.728,
+        "nemenyi_significant_pairs": [
+          {
+            "model_a": "mlp",
+            "model_b": "tirex",
+            "rank_diff": 4.0
+          }
+        ]
+      }
+    }
+  },
+  "ganymede": {
+    "h7": {
+      "n_models": 6,
+      "metrics": {
+        "mae": {
+          "friedman": {
+            "statistic": 14.047619047619037,
+            "p_value": 0.015309746283002865,
+            "significant": true,
+            "n_models": 6,
+            "n_folds": 3,
+            "models": [
+              "chronos",
+              "deeponet",
+              "lstm",
+              "patchtst",
+              "timesfm",
+              "tirex"
+            ]
+          },
+          "average_ranks": {
+            "chronos": 2.3333333333333335,
+            "deeponet": 6.0,
+            "lstm": 3.6666666666666665,
+            "patchtst": 5.0,
+            "timesfm": 3.0,
+            "tirex": 1.0
+          },
+          "wilcoxon_pairwise": [
+            {
+              "model_a": "chronos",
+              "model_b": "deeponet",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "lstm",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "patchtst",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "timesfm",
+              "statistic": 1.0,
+              "p_value": 0.5,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "tirex",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "lstm",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "patchtst",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "timesfm",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "tirex",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "lstm",
+              "model_b": "patchtst",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "lstm",
+              "model_b": "timesfm",
+              "statistic": 1.0,
+              "p_value": 0.5,
+              "significant": false
+            },
+            {
+              "model_a": "lstm",
+              "model_b": "tirex",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "patchtst",
+              "model_b": "timesfm",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "patchtst",
+              "model_b": "tirex",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "timesfm",
+              "model_b": "tirex",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            }
+          ],
+          "nemenyi_cd": 4.353446910208048,
+          "nemenyi_significant_pairs": [
+            {
+              "model_a": "deeponet",
+              "model_b": "tirex",
+              "rank_diff": 5.0
+            }
+          ]
+        },
+        "r2_prod": {
+          "friedman": {
+            "statistic": 6.80952380952381,
+            "p_value": 0.23519605163635354,
+            "significant": false,
+            "n_models": 6,
+            "n_folds": 3,
+            "models": [
+              "chronos",
+              "deeponet",
+              "lstm",
+              "patchtst",
+              "timesfm",
+              "tirex"
+            ]
+          },
+          "average_ranks": {
+            "chronos": 5.0,
+            "deeponet": 5.0,
+            "lstm": 2.6666666666666665,
+            "patchtst": 2.3333333333333335,
+            "timesfm": 3.6666666666666665,
+            "tirex": 2.3333333333333335
+          },
+          "wilcoxon_pairwise": [
+            {
+              "model_a": "chronos",
+              "model_b": "deeponet",
+              "statistic": 3.0,
+              "p_value": 1.0,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "lstm",
+              "statistic": 1.0,
+              "p_value": 0.5,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "patchtst",
+              "statistic": 3.0,
+              "p_value": 1.0,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "timesfm",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "tirex",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "lstm",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "patchtst",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "timesfm",
+              "statistic": 1.0,
+              "p_value": 0.5,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "tirex",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "lstm",
+              "model_b": "patchtst",
+              "statistic": 3.0,
+              "p_value": 1.0,
+              "significant": false
+            },
+            {
+              "model_a": "lstm",
+              "model_b": "timesfm",
+              "statistic": 3.0,
+              "p_value": 1.0,
+              "significant": false
+            },
+            {
+              "model_a": "lstm",
+              "model_b": "tirex",
+              "statistic": 3.0,
+              "p_value": 1.0,
+              "significant": false
+            },
+            {
+              "model_a": "patchtst",
+              "model_b": "timesfm",
+              "statistic": 3.0,
+              "p_value": 1.0,
+              "significant": false
+            },
+            {
+              "model_a": "patchtst",
+              "model_b": "tirex",
+              "statistic": 3.0,
+              "p_value": 1.0,
+              "significant": false
+            },
+            {
+              "model_a": "timesfm",
+              "model_b": "tirex",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            }
+          ]
+        }
+      }
+    },
+    "h14": {
+      "n_models": 6,
+      "metrics": {
+        "mae": {
+          "friedman": {
+            "statistic": 11.952380952380949,
+            "p_value": 0.03544612949501381,
+            "significant": true,
+            "n_models": 6,
+            "n_folds": 3,
+            "models": [
+              "chronos",
+              "deeponet",
+              "lstm",
+              "patchtst",
+              "timesfm",
+              "tirex"
+            ]
+          },
+          "average_ranks": {
+            "chronos": 2.6666666666666665,
+            "deeponet": 6.0,
+            "lstm": 3.6666666666666665,
+            "patchtst": 3.3333333333333335,
+            "timesfm": 4.333333333333333,
+            "tirex": 1.0
+          },
+          "wilcoxon_pairwise": [
+            {
+              "model_a": "chronos",
+              "model_b": "deeponet",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "lstm",
+              "statistic": 1.0,
+              "p_value": 0.5,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "patchtst",
+              "statistic": 1.0,
+              "p_value": 0.5,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "timesfm",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "tirex",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "lstm",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "patchtst",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "timesfm",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "tirex",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "lstm",
+              "model_b": "patchtst",
+              "statistic": 3.0,
+              "p_value": 1.0,
+              "significant": false
+            },
+            {
+              "model_a": "lstm",
+              "model_b": "timesfm",
+              "statistic": 3.0,
+              "p_value": 1.0,
+              "significant": false
+            },
+            {
+              "model_a": "lstm",
+              "model_b": "tirex",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "patchtst",
+              "model_b": "timesfm",
+              "statistic": 3.0,
+              "p_value": 1.0,
+              "significant": false
+            },
+            {
+              "model_a": "patchtst",
+              "model_b": "tirex",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "timesfm",
+              "model_b": "tirex",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            }
+          ],
+          "nemenyi_cd": 4.353446910208048,
+          "nemenyi_significant_pairs": [
+            {
+              "model_a": "deeponet",
+              "model_b": "tirex",
+              "rank_diff": 5.0
+            }
+          ]
+        },
+        "r2_prod": {
+          "friedman": {
+            "statistic": 6.238095238095241,
+            "p_value": 0.28373580351894595,
+            "significant": false,
+            "n_models": 6,
+            "n_folds": 3,
+            "models": [
+              "chronos",
+              "deeponet",
+              "lstm",
+              "patchtst",
+              "timesfm",
+              "tirex"
+            ]
+          },
+          "average_ranks": {
+            "chronos": 4.666666666666667,
+            "deeponet": 5.0,
+            "lstm": 2.6666666666666665,
+            "patchtst": 2.3333333333333335,
+            "timesfm": 4.0,
+            "tirex": 2.3333333333333335
+          },
+          "wilcoxon_pairwise": [
+            {
+              "model_a": "chronos",
+              "model_b": "deeponet",
+              "statistic": 3.0,
+              "p_value": 1.0,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "lstm",
+              "statistic": 3.0,
+              "p_value": 1.0,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "patchtst",
+              "statistic": 3.0,
+              "p_value": 1.0,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "timesfm",
+              "statistic": 1.0,
+              "p_value": 0.5,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "tirex",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "lstm",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "patchtst",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "timesfm",
+              "statistic": 1.0,
+              "p_value": 0.5,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "tirex",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "lstm",
+              "model_b": "patchtst",
+              "statistic": 3.0,
+              "p_value": 1.0,
+              "significant": false
+            },
+            {
+              "model_a": "lstm",
+              "model_b": "timesfm",
+              "statistic": 3.0,
+              "p_value": 1.0,
+              "significant": false
+            },
+            {
+              "model_a": "lstm",
+              "model_b": "tirex",
+              "statistic": 3.0,
+              "p_value": 1.0,
+              "significant": false
+            },
+            {
+              "model_a": "patchtst",
+              "model_b": "timesfm",
+              "statistic": 3.0,
+              "p_value": 1.0,
+              "significant": false
+            },
+            {
+              "model_a": "patchtst",
+              "model_b": "tirex",
+              "statistic": 3.0,
+              "p_value": 1.0,
+              "significant": false
+            },
+            {
+              "model_a": "timesfm",
+              "model_b": "tirex",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            }
+          ]
+        }
+      }
+    },
+    "h30": {
+      "n_models": 6,
+      "metrics": {
+        "mae": {
+          "friedman": {
+            "statistic": 12.714285714285708,
+            "p_value": 0.026208517678249093,
+            "significant": true,
+            "n_models": 6,
+            "n_folds": 3,
+            "models": [
+              "chronos",
+              "deeponet",
+              "lstm",
+              "patchtst",
+              "timesfm",
+              "tirex"
+            ]
+          },
+          "average_ranks": {
+            "chronos": 2.3333333333333335,
+            "deeponet": 6.0,
+            "lstm": 4.333333333333333,
+            "patchtst": 3.3333333333333335,
+            "timesfm": 4.0,
+            "tirex": 1.0
+          },
+          "wilcoxon_pairwise": [
+            {
+              "model_a": "chronos",
+              "model_b": "deeponet",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "lstm",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "patchtst",
+              "statistic": 1.0,
+              "p_value": 0.5,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "timesfm",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "tirex",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "lstm",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "patchtst",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "timesfm",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "tirex",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "lstm",
+              "model_b": "patchtst",
+              "statistic": 3.0,
+              "p_value": 1.0,
+              "significant": false
+            },
+            {
+              "model_a": "lstm",
+              "model_b": "timesfm",
+              "statistic": 1.0,
+              "p_value": 0.5,
+              "significant": false
+            },
+            {
+              "model_a": "lstm",
+              "model_b": "tirex",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "patchtst",
+              "model_b": "timesfm",
+              "statistic": 3.0,
+              "p_value": 1.0,
+              "significant": false
+            },
+            {
+              "model_a": "patchtst",
+              "model_b": "tirex",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "timesfm",
+              "model_b": "tirex",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            }
+          ],
+          "nemenyi_cd": 4.353446910208048,
+          "nemenyi_significant_pairs": [
+            {
+              "model_a": "deeponet",
+              "model_b": "tirex",
+              "rank_diff": 5.0
+            }
+          ]
+        },
+        "r2_prod": {
+          "friedman": {
+            "statistic": 6.238095238095241,
+            "p_value": 0.28373580351894595,
+            "significant": false,
+            "n_models": 6,
+            "n_folds": 3,
+            "models": [
+              "chronos",
+              "deeponet",
+              "lstm",
+              "patchtst",
+              "timesfm",
+              "tirex"
+            ]
+          },
+          "average_ranks": {
+            "chronos": 4.666666666666667,
+            "deeponet": 4.666666666666667,
+            "lstm": 3.0,
+            "patchtst": 2.3333333333333335,
+            "timesfm": 4.333333333333333,
+            "tirex": 2.0
+          },
+          "wilcoxon_pairwise": [
+            {
+              "model_a": "chronos",
+              "model_b": "deeponet",
+              "statistic": 3.0,
+              "p_value": 1.0,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "lstm",
+              "statistic": 3.0,
+              "p_value": 1.0,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "patchtst",
+              "statistic": 3.0,
+              "p_value": 1.0,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "timesfm",
+              "statistic": 1.0,
+              "p_value": 0.5,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "tirex",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "lstm",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "patchtst",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "timesfm",
+              "statistic": 3.0,
+              "p_value": 1.0,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "tirex",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "lstm",
+              "model_b": "patchtst",
+              "statistic": 3.0,
+              "p_value": 1.0,
+              "significant": false
+            },
+            {
+              "model_a": "lstm",
+              "model_b": "timesfm",
+              "statistic": 3.0,
+              "p_value": 1.0,
+              "significant": false
+            },
+            {
+              "model_a": "lstm",
+              "model_b": "tirex",
+              "statistic": 2.0,
+              "p_value": 0.75,
+              "significant": false
+            },
+            {
+              "model_a": "patchtst",
+              "model_b": "timesfm",
+              "statistic": 3.0,
+              "p_value": 1.0,
+              "significant": false
+            },
+            {
+              "model_a": "patchtst",
+              "model_b": "tirex",
+              "statistic": 3.0,
+              "p_value": 1.0,
+              "significant": false
+            },
+            {
+              "model_a": "timesfm",
+              "model_b": "tirex",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            }
+          ]
+        }
+      }
+    },
+    "h90": {
+      "n_models": 6,
+      "metrics": {
+        "mae": {
+          "friedman": {
+            "statistic": 8.904761904761898,
+            "p_value": 0.11292371609299061,
+            "significant": false,
+            "n_models": 6,
+            "n_folds": 3,
+            "models": [
+              "chronos",
+              "deeponet",
+              "lstm",
+              "patchtst",
+              "timesfm",
+              "tirex"
+            ]
+          },
+          "average_ranks": {
+            "chronos": 2.6666666666666665,
+            "deeponet": 5.666666666666667,
+            "lstm": 4.0,
+            "patchtst": 3.6666666666666665,
+            "timesfm": 3.6666666666666665,
+            "tirex": 1.3333333333333333
+          },
+          "wilcoxon_pairwise": [
+            {
+              "model_a": "chronos",
+              "model_b": "deeponet",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "lstm",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "patchtst",
+              "statistic": 2.0,
+              "p_value": 0.75,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "timesfm",
+              "statistic": 2.0,
+              "p_value": 0.75,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "tirex",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "lstm",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "patchtst",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "timesfm",
+              "statistic": 1.0,
+              "p_value": 0.5,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "tirex",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "lstm",
+              "model_b": "patchtst",
+              "statistic": 3.0,
+              "p_value": 1.0,
+              "significant": false
+            },
+            {
+              "model_a": "lstm",
+              "model_b": "timesfm",
+              "statistic": 3.0,
+              "p_value": 1.0,
+              "significant": false
+            },
+            {
+              "model_a": "lstm",
+              "model_b": "tirex",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "patchtst",
+              "model_b": "timesfm",
+              "statistic": 3.0,
+              "p_value": 1.0,
+              "significant": false
+            },
+            {
+              "model_a": "patchtst",
+              "model_b": "tirex",
+              "statistic": 1.0,
+              "p_value": 0.5,
+              "significant": false
+            },
+            {
+              "model_a": "timesfm",
+              "model_b": "tirex",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            }
+          ]
+        },
+        "r2_prod": {
+          "friedman": {
+            "statistic": 6.61904761904762,
+            "p_value": 0.2505481941283952,
+            "significant": false,
+            "n_models": 6,
+            "n_folds": 3,
+            "models": [
+              "chronos",
+              "deeponet",
+              "lstm",
+              "patchtst",
+              "timesfm",
+              "tirex"
+            ]
+          },
+          "average_ranks": {
+            "chronos": 4.666666666666667,
+            "deeponet": 5.0,
+            "lstm": 3.3333333333333335,
+            "patchtst": 2.6666666666666665,
+            "timesfm": 3.6666666666666665,
+            "tirex": 1.6666666666666667
+          },
+          "wilcoxon_pairwise": [
+            {
+              "model_a": "chronos",
+              "model_b": "deeponet",
+              "statistic": 3.0,
+              "p_value": 1.0,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "lstm",
+              "statistic": 3.0,
+              "p_value": 1.0,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "patchtst",
+              "statistic": 3.0,
+              "p_value": 1.0,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "timesfm",
+              "statistic": 1.0,
+              "p_value": 0.5,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "tirex",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "lstm",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "patchtst",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "timesfm",
+              "statistic": 2.0,
+              "p_value": 0.75,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "tirex",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "lstm",
+              "model_b": "patchtst",
+              "statistic": 3.0,
+              "p_value": 1.0,
+              "significant": false
+            },
+            {
+              "model_a": "lstm",
+              "model_b": "timesfm",
+              "statistic": 2.0,
+              "p_value": 0.75,
+              "significant": false
+            },
+            {
+              "model_a": "lstm",
+              "model_b": "tirex",
+              "statistic": 1.0,
+              "p_value": 0.5,
+              "significant": false
+            },
+            {
+              "model_a": "patchtst",
+              "model_b": "timesfm",
+              "statistic": 3.0,
+              "p_value": 1.0,
+              "significant": false
+            },
+            {
+              "model_a": "patchtst",
+              "model_b": "tirex",
+              "statistic": 2.0,
+              "p_value": 0.75,
+              "significant": false
+            },
+            {
+              "model_a": "timesfm",
+              "model_b": "tirex",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            }
+          ]
+        }
+      }
+    }
+  },
+  "cdf": {
+    "n_models": 6,
+    "metrics": {
+      "error_mean": {
+        "friedman": {
+          "statistic": 15.0,
+          "p_value": 0.010362337915786429,
+          "significant": true,
+          "n_models": 6,
+          "n_folds": 3,
+          "models": [
+            "chronos",
+            "deeponet",
+            "lstm",
+            "patchtst",
+            "timesfm",
+            "tirex"
+          ]
+        },
+        "average_ranks": {
+          "chronos": 6.0,
+          "deeponet": 3.0,
+          "lstm": 1.0,
+          "patchtst": 2.0,
+          "timesfm": 5.0,
+          "tirex": 4.0
+        },
+        "wilcoxon_pairwise": [
+          {
+            "model_a": "chronos",
+            "model_b": "deeponet",
+            "statistic": 0.0,
+            "p_value": 0.25,
+            "significant": false
+          },
+          {
+            "model_a": "chronos",
+            "model_b": "lstm",
+            "statistic": 0.0,
+            "p_value": 0.25,
+            "significant": false
+          },
+          {
+            "model_a": "chronos",
+            "model_b": "patchtst",
+            "statistic": 0.0,
+            "p_value": 0.25,
+            "significant": false
+          },
+          {
+            "model_a": "chronos",
+            "model_b": "timesfm",
+            "statistic": 0.0,
+            "p_value": 0.25,
+            "significant": false
+          },
+          {
+            "model_a": "chronos",
+            "model_b": "tirex",
+            "statistic": 0.0,
+            "p_value": 0.25,
+            "significant": false
+          },
+          {
+            "model_a": "deeponet",
+            "model_b": "lstm",
+            "statistic": 0.0,
+            "p_value": 0.25,
+            "significant": false
+          },
+          {
+            "model_a": "deeponet",
+            "model_b": "patchtst",
+            "statistic": 0.0,
+            "p_value": 0.25,
+            "significant": false
+          },
+          {
+            "model_a": "deeponet",
+            "model_b": "timesfm",
+            "statistic": 0.0,
+            "p_value": 0.25,
+            "significant": false
+          },
+          {
+            "model_a": "deeponet",
+            "model_b": "tirex",
+            "statistic": 0.0,
+            "p_value": 0.25,
+            "significant": false
+          },
+          {
+            "model_a": "lstm",
+            "model_b": "patchtst",
+            "statistic": 0.0,
+            "p_value": 0.25,
+            "significant": false
+          },
+          {
+            "model_a": "lstm",
+            "model_b": "timesfm",
+            "statistic": 0.0,
+            "p_value": 0.25,
+            "significant": false
+          },
+          {
+            "model_a": "lstm",
+            "model_b": "tirex",
+            "statistic": 0.0,
+            "p_value": 0.25,
+            "significant": false
+          },
+          {
+            "model_a": "patchtst",
+            "model_b": "timesfm",
+            "statistic": 0.0,
+            "p_value": 0.25,
+            "significant": false
+          },
+          {
+            "model_a": "patchtst",
+            "model_b": "tirex",
+            "statistic": 0.0,
+            "p_value": 0.25,
+            "significant": false
+          },
+          {
+            "model_a": "timesfm",
+            "model_b": "tirex",
+            "statistic": 0.0,
+            "p_value": 0.25,
+            "significant": false
+          }
+        ],
+        "nemenyi_cd": 4.353446910208048,
+        "nemenyi_significant_pairs": [
+          {
+            "model_a": "chronos",
+            "model_b": "lstm",
+            "rank_diff": 5.0
+          }
+        ]
+      },
+      "error_p50": {
+        "friedman": {
+          "statistic": 15.0,
+          "p_value": 0.010362337915786429,
+          "significant": true,
+          "n_models": 6,
+          "n_folds": 3,
+          "models": [
+            "chronos",
+            "deeponet",
+            "lstm",
+            "patchtst",
+            "timesfm",
+            "tirex"
+          ]
+        },
+        "average_ranks": {
+          "chronos": 6.0,
+          "deeponet": 3.0,
+          "lstm": 1.0,
+          "patchtst": 2.0,
+          "timesfm": 5.0,
+          "tirex": 4.0
+        },
+        "wilcoxon_pairwise": [
+          {
+            "model_a": "chronos",
+            "model_b": "deeponet",
+            "statistic": 0.0,
+            "p_value": 0.25,
+            "significant": false
+          },
+          {
+            "model_a": "chronos",
+            "model_b": "lstm",
+            "statistic": 0.0,
+            "p_value": 0.25,
+            "significant": false
+          },
+          {
+            "model_a": "chronos",
+            "model_b": "patchtst",
+            "statistic": 0.0,
+            "p_value": 0.25,
+            "significant": false
+          },
+          {
+            "model_a": "chronos",
+            "model_b": "timesfm",
+            "statistic": 0.0,
+            "p_value": 0.25,
+            "significant": false
+          },
+          {
+            "model_a": "chronos",
+            "model_b": "tirex",
+            "statistic": 0.0,
+            "p_value": 0.25,
+            "significant": false
+          },
+          {
+            "model_a": "deeponet",
+            "model_b": "lstm",
+            "statistic": 0.0,
+            "p_value": 0.25,
+            "significant": false
+          },
+          {
+            "model_a": "deeponet",
+            "model_b": "patchtst",
+            "statistic": 0.0,
+            "p_value": 0.25,
+            "significant": false
+          },
+          {
+            "model_a": "deeponet",
+            "model_b": "timesfm",
+            "statistic": 0.0,
+            "p_value": 0.25,
+            "significant": false
+          },
+          {
+            "model_a": "deeponet",
+            "model_b": "tirex",
+            "statistic": 0.0,
+            "p_value": 0.25,
+            "significant": false
+          },
+          {
+            "model_a": "lstm",
+            "model_b": "patchtst",
+            "statistic": 0.0,
+            "p_value": 0.25,
+            "significant": false
+          },
+          {
+            "model_a": "lstm",
+            "model_b": "timesfm",
+            "statistic": 0.0,
+            "p_value": 0.25,
+            "significant": false
+          },
+          {
+            "model_a": "lstm",
+            "model_b": "tirex",
+            "statistic": 0.0,
+            "p_value": 0.25,
+            "significant": false
+          },
+          {
+            "model_a": "patchtst",
+            "model_b": "timesfm",
+            "statistic": 0.0,
+            "p_value": 0.25,
+            "significant": false
+          },
+          {
+            "model_a": "patchtst",
+            "model_b": "tirex",
+            "statistic": 0.0,
+            "p_value": 0.25,
+            "significant": false
+          },
+          {
+            "model_a": "timesfm",
+            "model_b": "tirex",
+            "statistic": 0.0,
+            "p_value": 0.25,
+            "significant": false
+          }
+        ],
+        "nemenyi_cd": 4.353446910208048,
+        "nemenyi_significant_pairs": [
+          {
+            "model_a": "chronos",
+            "model_b": "lstm",
+            "rank_diff": 5.0
+          }
+        ]
+      }
+    }
+  }
+}

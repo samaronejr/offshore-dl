@@ -1,0 +1,480 @@
+% ============================================================
+%  ALL RESULTS — Offshore Deep Learning Benchmark
+%  Models: LSTM, DeepONet, PatchTST, MLP, TiRex, Chronos, TimesFM, XGBoost
+%  Datasets: 3W (classification), Ganymede (forecasting), CDF (anomaly detection)
+%  Generated: 2026-03-31
+% ============================================================
+%
+% Compile:  tectonic all_results.tex   OR   pdflatex all_results.tex
+%
+% Individual tables can be \input{} into ieee_paper.tex.
+
+\documentclass[11pt]{article}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{amsmath, amssymb}
+\usepackage[margin=0.8in]{geometry}
+\usepackage{caption}
+\usepackage{xcolor}
+\usepackage{pdflscape}
+\usepackage{longtable}
+\usepackage{array}
+
+\newcommand{\best}[1]{\textbf{#1}}
+\newcommand{\fm}{\textsuperscript{FM}}
+\newcommand{\tree}{\textsuperscript{Tree}}
+\newcommand{\hpo}{\textsuperscript{$\dagger$}}
+\newcommand{\rp}{R^2_\text{prod}}
+
+\title{Complete Experimental Results\\[4pt]
+\large Offshore Production Monitoring Benchmark}
+\author{}
+\date{March 2026}
+
+\begin{document}
+\maketitle
+\tableofcontents
+\newpage
+
+%% ************************************************************
+%%  PART I — 3W FAULT CLASSIFICATION
+%% ************************************************************
+\section{3W Fault Classification}
+
+Dataset: Petrobras 3W v2.0.0 — 208,973 sliding windows (720 timesteps $\times$ 27 sensors),
+compressed to $(14 \times 27)$ statistical feature matrices, 10 classes.
+Outer split: 80/20 temporal holdout ($n_\text{test} = 41{,}515$).
+Inner CV: 5-fold stratified.
+
+%% --------------------------------------------------
+%%  Table 1: 3W main results
+%% --------------------------------------------------
+\begin{table}[ht]
+\centering
+\caption{3W fault classification — held-out test and inner 5-fold CV.
+Best test values per column in \textbf{bold}.
+FM = foundation model (zero-shot). $^\dagger$After 30-trial Optuna HPO.}
+\label{tab:3w_main}
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}l cccc c@{}}
+\toprule
+ & \multicolumn{4}{c}{\textbf{Held-out Test}} & \textbf{CV Accuracy} \\
+\cmidrule(lr){2-5} \cmidrule(lr){6-6}
+\textbf{Model} & \textbf{Acc.} & $\boldsymbol{F_1}$\textbf{m} & $\boldsymbol{F_1}$\textbf{w} & \textbf{AUC-PR} & mean $\pm$ std \\
+\midrule
+DeepONet         & \best{.968} & \best{.964} & \best{.969} & .934 & .956$\pm$.013 \\
+LSTM             & .967 & .962 & .967 & .931 & .951$\pm$.014 \\
+PatchTST\hpo     & .965 & .962 & .965 & .931 & .955$\pm$.018 \\
+MLP              & .065 & .012 & .008 & .100 & .174$\pm$.000 \\
+\midrule
+TiRex\fm         & .912 & .895 & .911 & \best{.938} & .899$\pm$.021 \\
+\midrule
+\textit{Majority baseline} & \textit{.174} & \textit{.101} & --- & --- & --- \\
+\bottomrule
+\multicolumn{6}{@{}l}{\scriptsize $^\dagger$30-trial Optuna HPO. All others use manually tuned hyperparameters.}
+\end{tabular}
+\end{table}
+
+%% --------------------------------------------------
+%%  Table 2: 3W HPO results
+%% --------------------------------------------------
+\begin{table}[ht]
+\centering
+\caption{Optuna HPO results on 3W (30 trials per model, 5-fold inner CV).
+\emph{Best CV $F_1$m} is the objective optimized by Optuna.
+\emph{Retrain} metrics are from a model retrained on the full training pool with best hyperparameters and evaluated on the held-out test set.}
+\label{tab:3w_hpo}
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}l c l cc@{}}
+\toprule
+\textbf{Model} & \textbf{Best CV} $\boldsymbol{F_1}$\textbf{m} & \textbf{Best Hyperparameters} & \textbf{Retrain Acc.} & \textbf{Retrain} $\boldsymbol{F_1}$\textbf{m} \\
+\midrule
+PatchTST & .949 & $d{=}128$, heads${=}16$, layers${=}4$, lr${=}6.8\mathrm{e}{-5}$, drop${=}.24$ & .965 & .962 \\
+DeepONet & .941 & rank${=}64$, lr${=}1.3\mathrm{e}{-3}$, drop${=}.08$, width${=}64$ & .968 & .964 \\
+LSTM     & .936 & hidden${=}512$, layers${=}3$, drop${=}.23$, lr${=}2.4\mathrm{e}{-4}$ & .966 & .961 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+%% ************************************************************
+%%  PART II — GANYMEDE PRODUCTION FORECASTING
+%% ************************************************************
+\newpage
+\section{Ganymede Gas Production Forecasting}
+
+Dataset: 7 wells on the Norwegian Continental Shelf, 31,359 samples, 63 features.
+Input windows: 90 timesteps. Horizons: $h \in \{7, 14, 30, 90\}$ days.
+Outer split: temporal 80/20. Inner CV: 3-fold expanding window.
+Units: MMSCF (million standard cubic feet).
+
+%% --------------------------------------------------
+%%  Table 3: Ganymede multi-well — all models
+%% --------------------------------------------------
+\begin{table}[ht]
+\centering
+\caption{Ganymede forecasting — held-out test (multi-well, MMSCF).
+Best values per column in \textbf{bold}.
+FM = foundation model (zero-shot). Tree = gradient boosted trees.}
+\label{tab:ganymede_main}
+\small
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{@{}ll rrrr @{}}
+\toprule
+\textbf{Model} & \textbf{Metric} & $\boldsymbol{h{=}7}$ & $\boldsymbol{h{=}14}$ & $\boldsymbol{h{=}30}$ & $\boldsymbol{h{=}90}$ \\
+\midrule
+\multirow{2}{*}{TimesFM\fm}
+ & $\rp$ & \best{.826} & .763 & .656 & .413 \\
+ & MAE   & .740 & .868 & .949 & 1.02 \\
+\midrule
+\multirow{2}{*}{TiRex\fm}
+ & $\rp$ & .822 & \best{.775} & \best{.699} & \best{.565} \\
+ & MAE   & \best{.658} & \best{.749} & \best{.804} & \best{.831} \\
+\midrule
+\multirow{2}{*}{Chronos\fm}
+ & $\rp$ & .734 & .668 & .584 & .361 \\
+ & MAE   & .739 & .835 & .886 & .995 \\
+\midrule
+\multirow{2}{*}{PatchTST}
+ & $\rp$ & .574 & .463 & .177 & $-$.718 \\
+ & MAE   & 1.77 & 1.98 & 2.13 & 2.51 \\
+\midrule
+\multirow{2}{*}{LSTM}
+ & $\rp$ & .327 & .177 & .213 & $-$.464 \\
+ & MAE   & 1.77 & 1.95 & 1.83 & 2.25 \\
+\midrule
+\multirow{2}{*}{XGBoost\tree}
+ & $\rp$ & $-$.031 & $-$.465 & $-$.415 & $-$1.25 \\
+ & MAE   & 1.93 & 2.45 & 2.47 & 2.77 \\
+\midrule
+\multirow{2}{*}{DeepONet}
+ & $\rp$ & $-$5.72 & $-$6.49 & $-$26.8 & $-$14.9 \\
+ & MAE   & 4.84 & 4.99 & 5.81 & 5.70 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%% --------------------------------------------------
+%%  Table 4: Ganymede full metric breakdown — all models
+%% --------------------------------------------------
+\begin{table}[ht]
+\centering
+\caption{Ganymede held-out test — full metrics per model per horizon.}
+\label{tab:ganymede_full}
+\scriptsize
+\setlength{\tabcolsep}{2pt}
+\begin{tabular}{@{}ll rrrr rrrr @{}}
+\toprule
+ &  & \multicolumn{4}{c}{\textbf{MAE}} & \multicolumn{4}{c}{$\boldsymbol{\rp}$} \\
+\cmidrule(lr){3-6} \cmidrule(lr){7-10}
+\textbf{Model} & \textbf{Type} & $h{=}7$ & $h{=}14$ & $h{=}30$ & $h{=}90$ & $h{=}7$ & $h{=}14$ & $h{=}30$ & $h{=}90$ \\
+\midrule
+TimesFM  & FM   & 0.740 & 0.868 & 0.949 & 1.021 &  0.826 &  0.763 &  0.656 &  0.413 \\
+TiRex    & FM   & 0.658 & 0.749 & 0.804 & 0.831 &  0.822 &  0.775 &  0.699 &  0.565 \\
+Chronos  & FM   & 0.739 & 0.835 & 0.886 & 0.995 &  0.734 &  0.668 &  0.584 &  0.361 \\
+PatchTST & NN   & 1.771 & 1.980 & 2.134 & 2.510 &  0.574 &  0.463 &  0.177 & $-$0.718 \\
+LSTM     & NN   & 1.768 & 1.948 & 1.833 & 2.254 &  0.327 &  0.177 &  0.213 & $-$0.464 \\
+XGBoost  & Tree & 1.928 & 2.447 & 2.468 & 2.768 & $-$0.031 & $-$0.465 & $-$0.415 & $-$1.252 \\
+DeepONet & NN   & 4.836 & 4.987 & 5.812 & 5.700 & $-$5.716 & $-$6.495 & $-$26.79 & $-$14.93 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%% --------------------------------------------------
+%%  Table 5: Ganymede CV aggregates — all models
+%% --------------------------------------------------
+\begin{table}[ht]
+\centering
+\caption{Ganymede 3-fold expanding window CV (multi-well, mean $\pm$ std). Top: $\rp$, bottom: MAE.}
+\label{tab:ganymede_cv}
+\scriptsize
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{@{}ll rrrr @{}}
+\toprule
+\textbf{Model} & \textbf{Metric} & $\boldsymbol{h{=}7}$ & $\boldsymbol{h{=}14}$ & $\boldsymbol{h{=}30}$ & $\boldsymbol{h{=}90}$ \\
+\midrule
+TimesFM\fm  & $\rp$ & $.69 \pm .07$ & $.60 \pm .10$ & $.48 \pm .17$ & $.35 \pm .28$ \\
+TiRex\fm    & $\rp$ & $.74 \pm .07$ & $.67 \pm .13$ & $.60 \pm .17$ & $.49 \pm .22$ \\
+Chronos\fm  & $\rp$ & $.63 \pm .05$ & $.54 \pm .12$ & $.43 \pm .19$ & $.31 \pm .24$ \\
+PatchTST    & $\rp$ & $.56 \pm .40$ & $.39 \pm .60$ & $.14 \pm .91$ & $-.23 \pm 1.34$ \\
+LSTM        & $\rp$ & $.69 \pm .17$ & $.54 \pm .34$ & $.41 \pm .47$ & $.20 \pm .57$ \\
+XGBoost\tree & $\rp$ & $.69 \pm .24$ & $.60 \pm .36$ & $-.23 \pm 1.52$ & $-.15 \pm 1.34$ \\
+DeepONet    & $\rp$ & $-.03 \pm 1.07$ & $-.17 \pm 1.16$ & $-10.9 \pm 16.4$ & $-27.9 \pm 40.2$ \\
+\midrule
+TimesFM\fm  & MAE & $3.54 \pm 1.97$ & $3.96 \pm 2.19$ & $4.28 \pm 2.38$ & $4.68 \pm 3.45$ \\
+TiRex\fm    & MAE & $3.11 \pm 1.75$ & $3.34 \pm 1.84$ & $3.57 \pm 1.97$ & $3.99 \pm 2.83$ \\
+Chronos\fm  & MAE & $3.42 \pm 1.93$ & $3.65 \pm 2.02$ & $3.93 \pm 2.18$ & $4.35 \pm 2.97$ \\
+PatchTST    & MAE & $4.16 \pm 1.41$ & $4.24 \pm 1.33$ & $4.56 \pm 1.48$ & $4.70 \pm 1.88$ \\
+LSTM        & MAE & $3.78 \pm 1.88$ & $4.08 \pm 1.69$ & $4.59 \pm 1.96$ & $4.81 \pm 2.68$ \\
+XGBoost\tree & MAE & $3.10 \pm 1.20$ & $3.26 \pm 1.23$ & $3.81 \pm 0.73$ & $3.80 \pm 1.50$ \\
+DeepONet    & MAE & $5.26 \pm 1.56$ & $5.36 \pm 2.06$ & $6.74 \pm 0.36$ & $7.50 \pm 1.86$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+%% --------------------------------------------------
+%%  Table 6: Ganymede RMSE + MASE — all models
+%% --------------------------------------------------
+\begin{table}[ht]
+\centering
+\caption{Ganymede held-out test — RMSE and MASE per model per horizon (multi-well).}
+\label{tab:ganymede_rmse_mase}
+\scriptsize
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{@{}ll rrrr @{}}
+\toprule
+\textbf{Model} & \textbf{Metric} & $\boldsymbol{h{=}7}$ & $\boldsymbol{h{=}14}$ & $\boldsymbol{h{=}30}$ & $\boldsymbol{h{=}90}$ \\
+\midrule
+TimesFM\fm  & RMSE & 1.389 & 1.591 & 1.737 & 1.888 \\
+TiRex\fm    & RMSE & 1.398 & 1.525 & 1.602 & 1.635 \\
+Chronos\fm  & RMSE & 1.623 & 1.764 & 1.820 & 1.932 \\
+PatchTST    & RMSE & 2.192 & 2.441 & 2.717 & 3.307 \\
+LSTM        & RMSE & 2.616 & 2.876 & 2.546 & 3.090 \\
+XGBoost\tree & RMSE & 3.196 & 3.792 & 3.650 & 4.058 \\
+DeepONet    & RMSE & 7.910 & 8.196 & 13.360 & 9.686 \\
+\midrule
+TimesFM\fm  & MASE & 1.681 & 1.012 & 1.117 & 1.415 \\
+TiRex\fm    & MASE & 1.496 & 0.873 & 0.946 & 1.152 \\
+Chronos\fm  & MASE & 1.679 & 0.974 & 1.043 & 1.379 \\
+PatchTST    & MASE & 4.025 & 2.308 & 2.511 & 3.479 \\
+LSTM        & MASE & 4.018 & 2.271 & 2.158 & 3.123 \\
+XGBoost\tree & MASE & 4.381 & 2.853 & 2.905 & 3.836 \\
+DeepONet    & MASE & 10.99 & 5.814 & 6.842 & 7.899 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+%% --------------------------------------------------
+%%  Table 7: Ganymede per-well R²_prod — all models, h=7
+%% --------------------------------------------------
+\newpage
+\subsection{Per-Well Results}
+
+\begin{table}[ht]
+\centering
+\caption{Ganymede $\rp$ per well — $h{=}7$ (held-out test). Best per well in \textbf{bold}.}
+\label{tab:perwell_r2p_h7}
+\scriptsize
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{@{}l rrrrrrr @{}}
+\toprule
+\textbf{Model} & \textbf{Z01Z} & \textbf{Z02Z} & \textbf{Z04} & \textbf{Z05Z} & \textbf{Z06} & \textbf{Z07} & \textbf{Z08} \\
+\midrule
+TimesFM\fm  & $-$0.788 & $-$0.342 & \best{0.153} & 0.001 & \best{0.279} & \best{0.208} & $-$0.517 \\
+TiRex\fm    & \best{$-$0.749} & \best{$-$0.248} & 0.129 & \best{0.179} & 0.205 & 0.117 & \best{$-$0.830} \\
+Chronos\fm  & $-$0.832 & $-$0.467 & $-$0.122 & $-$0.050 & 0.114 & $-$0.154 & $-$1.767 \\
+PatchTST    & $-$2266 & $-$0.213 & $-$0.345 & $-$151.5 & $-$7.139 & $-$1.339 & $-$0.825 \\
+LSTM        & $-$173.8 & $-$0.563 & $-$5.823 & $-$0.659 & $-$1.337 & 0.012 & $-$3.831 \\
+XGBoost\tree & $-$31.34 & $-$0.163 & $-$0.244 & $-$4.709 & $-$5.170 & 0.292 & $-$1.101 \\
+DeepONet    & $-$110.6 & $-$1.307 & $-$34.59 & $-$112.8 & $-$60.39 & $-$0.447 & $-$100.2 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%% --------------------------------------------------
+%%  Table 8: Ganymede per-well R²_prod — all models, h=14
+%% --------------------------------------------------
+\begin{table}[ht]
+\centering
+\caption{Ganymede $\rp$ per well — $h{=}14$ (held-out test). Best per well in \textbf{bold}.}
+\label{tab:perwell_r2p_h14}
+\scriptsize
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{@{}l rrrrrrr @{}}
+\toprule
+\textbf{Model} & \textbf{Z01Z} & \textbf{Z02Z} & \textbf{Z04} & \textbf{Z05Z} & \textbf{Z06} & \textbf{Z07} & \textbf{Z08} \\
+\midrule
+TimesFM\fm  & \best{$-$1.101} & $-$0.822 & \best{$-$0.022} & $-$0.579 & $-$0.702 & $-$0.050 & \best{$-$0.423} \\
+TiRex\fm    & $-$1.030 & \best{$-$0.714} & $-$0.075 & \best{$-$0.213} & $-$0.771 & $-$0.155 & $-$0.722 \\
+Chronos\fm  & $-$1.162 & $-$0.877 & $-$0.360 & $-$0.469 & \best{$-$0.885} & $-$0.498 & $-$1.582 \\
+PatchTST    & $-$3963 & $-$0.579 & $-$0.478 & $-$187.1 & $-$57.43 & $-$1.964 & $-$1.288 \\
+LSTM        & $-$6.691 & $-$0.394 & $-$1.007 & $-$1.107 & $-$5.142 & \best{0.300} & $-$0.996 \\
+XGBoost\tree & $-$28.00 & $-$0.453 & $-$0.383 & $-$4.528 & $-$46.53 & 0.134 & $-$1.008 \\
+DeepONet    & $-$500.6 & $-$4.950 & $-$11.62 & $-$87.01 & $-$346.9 & $-$1.203 & $-$88.77 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%% --------------------------------------------------
+%%  Table 9: Ganymede per-well R²_prod — all models, h=30
+%% --------------------------------------------------
+\begin{table}[ht]
+\centering
+\caption{Ganymede $\rp$ per well — $h{=}30$ (held-out test). Best per well in \textbf{bold}.}
+\label{tab:perwell_r2p_h30}
+\scriptsize
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{@{}l rrrrrrr @{}}
+\toprule
+\textbf{Model} & \textbf{Z01Z} & \textbf{Z02Z} & \textbf{Z04} & \textbf{Z05Z} & \textbf{Z06} & \textbf{Z07} & \textbf{Z08} \\
+\midrule
+TimesFM\fm  & \best{$-$1.149} & \best{$-$1.288} & \best{$-$0.356} & $-$1.323 & \best{$-$0.595} & \best{$-$0.260} & \best{$-$1.212} \\
+TiRex\fm    & $-$1.104 & $-$1.188 & $-$0.477 & \best{$-$0.693} & $-$0.686 & $-$0.408 & $-$1.357 \\
+Chronos\fm  & $-$1.213 & $-$1.398 & $-$0.898 & $-$0.834 & $-$0.855 & $-$0.764 & $-$1.490 \\
+PatchTST    & $-$4761 & $-$0.826 & $-$1.013 & $-$244.1 & $-$111.1 & $-$3.556 & $-$1.795 \\
+LSTM        & $-$9.739 & $-$1.154 & $-$0.549 & $-$4.927 & $-$3.401 & $-$0.250 & $-$17.17 \\
+XGBoost\tree & $-$48.34 & $-$1.077 & $-$0.481 & $-$4.154 & $-$71.78 & 0.044 & $-$6.832 \\
+DeepONet    & $-$487.3 & $-$8.848 & $-$19.63 & $-$55.93 & $-$101.2 & $-$1.308 & $-$710.3 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%% --------------------------------------------------
+%%  Table 10: Ganymede per-well R²_prod — all models, h=90
+%% --------------------------------------------------
+\begin{table}[ht]
+\centering
+\caption{Ganymede $\rp$ per well — $h{=}90$ (held-out test). Best per well in \textbf{bold}.}
+\label{tab:perwell_r2p_h90}
+\scriptsize
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{@{}l rrrrrrr @{}}
+\toprule
+\textbf{Model} & \textbf{Z01Z} & \textbf{Z02Z} & \textbf{Z04} & \textbf{Z05Z} & \textbf{Z06} & \textbf{Z07} & \textbf{Z08} \\
+\midrule
+TimesFM\fm  & \best{$-$1.059} & $-$1.629 & \best{$-$0.693} & $-$2.690 & \best{0.088} & $-$0.451 & $-$1.385 \\
+TiRex\fm    & $-$1.064 & \best{$-$1.640} & $-$0.716 & \best{$-$2.020} & $-$0.032 & $-$0.463 & \best{$-$1.384} \\
+Chronos\fm  & $-$1.115 & $-$1.548 & $-$1.450 & $-$2.211 & $-$8.270 & $-$0.987 & $-$0.885 \\
+PatchTST    & $-$4372 & $-$0.983 & $-$1.137 & $-$267.5 & $-$991.2 & $-$5.227 & $-$2.315 \\
+LSTM        & $-$58.83 & $-$1.384 & $-$1.801 & $-$0.919 & $-$66.27 & $-$0.372 & $-$1.422 \\
+XGBoost\tree & $-$50.11 & $-$6.449 & $-$0.814 & $-$1.928 & $-$511.9 & \best{$-$0.185} & $-$1.083 \\
+DeepONet    & $-$202.1 & $-$6.284 & $-$17.52 & $-$26.02 & $-$694.3 & $-$0.603 & $-$1.861 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+%% --------------------------------------------------
+%%  Table 11: Ganymede per-well MAE — all models, h=7
+%% --------------------------------------------------
+\newpage
+\begin{table}[ht]
+\centering
+\caption{Ganymede MAE per well — $h{=}7$ (held-out test, MMSCF). Best per well in \textbf{bold}.}
+\label{tab:perwell_mae_h7}
+\scriptsize
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{@{}l rrrrrrr @{}}
+\toprule
+\textbf{Model} & \textbf{Z01Z} & \textbf{Z02Z} & \textbf{Z04} & \textbf{Z05Z} & \textbf{Z06} & \textbf{Z07} & \textbf{Z08} \\
+\midrule
+TimesFM\fm  & 0.025 & 1.846 & 0.531 & 0.264 & 0.353 & 1.485 & 0.707 \\
+TiRex\fm    & 0.024 & 1.647 & 0.483 & 0.236 & 0.295 & 1.381 & 0.738 \\
+Chronos\fm  & 0.024 & 1.701 & 0.516 & 0.253 & 0.299 & 1.457 & 0.838 \\
+PatchTST    & 4.435 & 2.201 & 0.878 & 4.336 & 4.311 & 2.302 & 1.786 \\
+LSTM        & 0.982 & 2.309 & 1.521 & 0.390 & 1.695 & 1.974 & 2.835 \\
+XGBoost\tree & 0.372 & 2.122 & 0.767 & 0.713 & 3.099 & 1.734 & 1.915 \\
+DeepONet    & 0.787 & 3.305 & 2.893 & 2.848 & 7.069 & 2.176 & 9.681 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+%% ************************************************************
+%%  PART III — CDF ANOMALY DETECTION
+%% ************************************************************
+\newpage
+\section{CDF Anomaly Detection}
+
+Dataset: Cumulative Distribution Function reconstruction task.
+Outer split: temporal holdout ($n_\text{test} = 864$).
+Inner CV: 3-fold.
+Metric: reconstruction error (lower is better).
+
+%% --------------------------------------------------
+%%  Table 12: CDF main results
+%% --------------------------------------------------
+\begin{table}[ht]
+\centering
+\caption{CDF anomaly detection — held-out test reconstruction error.
+Lower is better. Best values in \textbf{bold}.
+FM = foundation model (zero-shot).}
+\label{tab:cdf_main}
+\small
+\begin{tabular}{@{}l rrrrr r@{}}
+\toprule
+ & \multicolumn{5}{c}{\textbf{Held-out Test}} & \textbf{CV} \\
+\cmidrule(lr){2-6} \cmidrule(lr){7-7}
+\textbf{Model} & \textbf{Mean} & \textbf{Std} & \textbf{P50} & \textbf{P95} & \textbf{P99} & \textbf{Mean} $\pm$ \textbf{Std} \\
+\midrule
+LSTM        & \best{0.005} & \best{0.003} & \best{0.004} & \best{0.009} & \best{0.014} & $0.099 \pm 0.104$ \\
+PatchTST    & 0.061 & 0.061 & 0.047 & 0.146 & 0.235 & $0.262 \pm 0.137$ \\
+DeepONet    & 0.219 & 0.123 & 0.186 & 0.449 & 0.503 & $0.975 \pm 0.605$ \\
+\midrule
+Chronos\fm  & 24.81 & 19.19 & 19.66 & 60.92 & 82.89 & $24.83 \pm 3.86$ \\
+TimesFM\fm  & 24.88 & 21.00 & 19.07 & 64.89 & 90.24 & $23.65 \pm 3.65$ \\
+TiRex\fm    & 24.88 & 20.48 & 19.21 & 63.19 & 85.22 & $21.93 \pm 3.22$ \\
+\midrule
+\textit{Mean baseline} & \textit{41.46} & \textit{17.51} & \textit{39.68} & \textit{66.26} & \textit{93.90} & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+%% ************************************************************
+%%  PART IV — CROSS-DATASET SUMMARY
+%% ************************************************************
+\newpage
+\section{Cross-Dataset Summary}
+
+%% --------------------------------------------------
+%%  Table 13: Model capabilities overview
+%% --------------------------------------------------
+\begin{table}[ht]
+\centering
+\caption{Model performance summary across all three tasks.
+Arrows indicate metric direction ($\uparrow$ = higher is better, $\downarrow$ = lower is better).
+Best in \textbf{bold}. N/A = model not evaluated on task.}
+\label{tab:summary_all}
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}l cc cc c@{}}
+\toprule
+ & \multicolumn{2}{c}{\textbf{3W (Classification)}} & \multicolumn{2}{c}{\textbf{Ganymede ($h{=}7$)}} & \textbf{CDF} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5} \cmidrule(lr){6-6}
+\textbf{Model} & Acc. $\uparrow$ & $F_1$m $\uparrow$ & $\rp$ $\uparrow$ & MAE $\downarrow$ & Error $\downarrow$ \\
+\midrule
+DeepONet     & \best{.968} & \best{.964} & $-$5.72 & 4.84 & 0.219 \\
+LSTM         & .967 & .962 & .327 & 1.77 & \best{0.005} \\
+PatchTST     & .965 & .962 & .574 & 1.77 & 0.061 \\
+MLP          & .065 & .012 & N/A & N/A & N/A \\
+XGBoost      & N/A & N/A & $-$.031 & 1.93 & N/A \\
+\midrule
+TiRex\fm     & .912 & .895 & \best{.822} & \best{.658} & 24.88 \\
+TimesFM\fm   & N/A & N/A & .826 & .740 & 24.88 \\
+Chronos\fm   & N/A & N/A & .734 & .739 & 24.81 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+%% --------------------------------------------------
+%%  Table 14: Key findings per dataset
+%% --------------------------------------------------
+\begin{table}[ht]
+\centering
+\caption{Key findings per dataset.}
+\label{tab:key_findings}
+\small
+\begin{tabular}{@{}l l l@{}}
+\toprule
+\textbf{Dataset} & \textbf{Winner} & \textbf{Key Finding} \\
+\midrule
+3W  & Trained models & DeepONet 96.8\%, LSTM 96.7\%, PatchTST 96.5\% \\
+    & (structured)   & MLP collapses $\to$ spatial structure essential \\
+\midrule
+Ganymede & Foundation models & TiRex/TimesFM $\rp > 0.8$ at $h{=}7$ \\
+         &                   & All trained models degrade at $h{=}90$ \\
+\midrule
+CDF & Trained models & LSTM error 0.005 vs FMs $\sim$25 \\
+    & (task-specific) & FMs lack CDF reconstruction inductive bias \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\end{document}

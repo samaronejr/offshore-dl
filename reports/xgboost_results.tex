@@ -1,0 +1,303 @@
+% XGBoost Ganymede Forecasting Results
+% Generated: 2026-03-31
+% All metrics from: results/xgboost/ganymede_h{7,14,30,90}_multi_well.json
+%                   results/xgboost/ganymede_h*_per_well_*.json
+%
+% Compile standalone:
+%   pdflatex xgboost_results.tex
+% Or include tables individually in ieee_paper.tex via \input{}.
+
+\documentclass[10pt]{article}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{amsmath}
+\usepackage[margin=1in]{geometry}
+\usepackage{caption}
+\usepackage{xcolor}
+\usepackage{siunitx}
+
+\sisetup{
+  round-mode = places,
+  round-precision = 3,
+  detect-weight = true,
+  detect-family = true,
+  table-format = -1.3
+}
+
+\title{XGBoost Results --- Ganymede Gas Production Forecasting}
+\author{Supplementary Tables for M004}
+\date{March 2026}
+
+\begin{document}
+\maketitle
+
+%% ============================================================
+%% TABLE 1: Multi-well held-out test — all models + XGBoost
+%% ============================================================
+\begin{table}[ht]
+\centering
+\caption{Ganymede forecasting (held-out test, multi-well, MMSCF). Best values per column in bold. FM = foundation model (zero-shot). Tree = gradient boosted trees (no neural network).}
+\label{tab:ganymede_with_xgboost}
+\small
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{@{}ll rrrr @{}}
+\toprule
+\textbf{Model} & \textbf{Metric} & $\boldsymbol{h{=}7}$ & $\boldsymbol{h{=}14}$ & $\boldsymbol{h{=}30}$ & $\boldsymbol{h{=}90}$ \\
+\midrule
+\multirow{2}{*}{TimesFM\textsuperscript{FM}}
+ & $R^2_\text{prod}$ & \textbf{.826} & .763 & .656 & .413 \\
+ & MAE               & .740 & .868 & .949 & 1.02 \\
+\midrule
+\multirow{2}{*}{TiRex\textsuperscript{FM}}
+ & $R^2_\text{prod}$ & .822 & \textbf{.775} & \textbf{.699} & \textbf{.565} \\
+ & MAE               & \textbf{.658} & \textbf{.749} & \textbf{.804} & \textbf{.831} \\
+\midrule
+\multirow{2}{*}{Chronos\textsuperscript{FM}}
+ & $R^2_\text{prod}$ & .734 & .668 & .584 & .361 \\
+ & MAE               & .739 & .835 & .886 & .995 \\
+\midrule
+\multirow{2}{*}{PatchTST}
+ & $R^2_\text{prod}$ & .556 & .466 & .211 & $-$.382 \\
+ & MAE               & 1.77 & 1.98 & 2.14 & 2.48 \\
+\midrule
+\multirow{2}{*}{LSTM}
+ & $R^2_\text{prod}$ & .195 & .534 & .303 & .020 \\
+ & MAE               & 1.77 & 1.69 & 1.84 & 2.08 \\
+\midrule
+\multirow{2}{*}{XGBoost\textsuperscript{Tree}}
+ & $R^2_\text{prod}$ & $-$.031 & $-$.465 & $-$.415 & $-$1.25 \\
+ & MAE               & 1.93 & 2.45 & 2.47 & 2.77 \\
+\midrule
+\multirow{2}{*}{DeepONet}
+ & $R^2_\text{prod}$ & $-$40.1 & $-$4.35 & $-$5.01 & $-$4.32 \\
+ & MAE               & 9.53 & 4.12 & 4.51 & 3.84 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+%% ============================================================
+%% TABLE 2: XGBoost multi-well — full metric breakdown
+%% ============================================================
+\begin{table}[ht]
+\centering
+\caption{XGBoost held-out test metrics across all horizons (multi-well, MMSCF).}
+\label{tab:xgboost_multiwell_full}
+\small
+\begin{tabular}{@{}l rrrr @{}}
+\toprule
+\textbf{Metric} & $\boldsymbol{h{=}7}$ & $\boldsymbol{h{=}14}$ & $\boldsymbol{h{=}30}$ & $\boldsymbol{h{=}90}$ \\
+\midrule
+MAE             &  1.928 &  2.447 &  2.468 &  2.768 \\
+RMSE            &  3.196 &  3.792 &  3.650 &  4.058 \\
+$R^2$           & $-$0.078 & $-$0.574 & $-$0.664 & $-$1.720 \\
+$R^2_\text{prod}$ & $-$0.031 & $-$0.465 & $-$0.415 & $-$1.252 \\
+MASE            &  4.381 &  2.853 &  2.905 &  3.836 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+%% ============================================================
+%% TABLE 3: XGBoost cross-validation aggregates
+%% ============================================================
+\begin{table}[ht]
+\centering
+\caption{XGBoost 3-fold expanding window CV aggregates (multi-well, mean $\pm$ std).}
+\label{tab:xgboost_cv}
+\small
+\begin{tabular}{@{}l rrrr @{}}
+\toprule
+\textbf{Metric} & $\boldsymbol{h{=}7}$ & $\boldsymbol{h{=}14}$ & $\boldsymbol{h{=}30}$ & $\boldsymbol{h{=}90}$ \\
+\midrule
+MAE             & $3.10 \pm 1.20$ & $3.26 \pm 1.23$ & $3.81 \pm 0.73$ & $3.80 \pm 1.50$ \\
+RMSE            & $6.11 \pm 2.88$ & $6.33 \pm 2.62$ & $7.39 \pm 1.95$ & $7.43 \pm 3.22$ \\
+$R^2_\text{prod}$ & $0.69 \pm 0.24$ & $0.60 \pm 0.36$ & $-0.23 \pm 1.52$ & $-0.15 \pm 1.34$ \\
+MASE            & $1.88 \pm 0.94$ & $1.76 \pm 0.87$ & $2.10 \pm 0.61$ & $2.30 \pm 0.85$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+%% ============================================================
+%% TABLE 4: XGBoost CV fold-level detail
+%% ============================================================
+\begin{table}[ht]
+\centering
+\caption{XGBoost fold-level CV metrics (multi-well). 3-fold expanding window.}
+\label{tab:xgboost_cv_folds}
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}cl rrrrr @{}}
+\toprule
+$\boldsymbol{h}$ & \textbf{Fold} & \textbf{MAE} & \textbf{RMSE} & $\boldsymbol{R^2}$ & $\boldsymbol{R^2_\text{prod}}$ & \textbf{MASE} \\
+\midrule
+\multirow{3}{*}{7}
+ & 0 & 1.426 & 2.037 &  0.366 &  0.354 & 3.208 \\
+ & 1 & 3.686 & 8.294 &  0.795 &  0.840 & 1.224 \\
+ & 2 & 4.195 & 7.988 &  0.851 &  0.891 & 1.201 \\
+\midrule
+\multirow{3}{*}{14}
+ & 0 & 1.622 & 2.380 &  0.314 &  0.237 & 1.971 \\
+ & 1 & 3.718 & 8.136 &  0.712 &  0.790 & 1.289 \\
+ & 2 & 4.434 & 8.468 &  0.818 &  0.773 & 2.013 \\
+\midrule
+\multirow{3}{*}{30}
+ & 0 & 3.019 & 5.145 &  0.191 &  0.129 & 1.514 \\
+ & 1 & 3.873 & 7.819 &  0.652 &  0.403 & 2.067 \\
+ & 2 & 4.527 & 9.197 &  0.643 & $-$1.217 & 2.734 \\
+\midrule
+\multirow{3}{*}{90}
+ & 0 & 2.102 & 3.561 & $-$2.038 & $-$2.038 & 1.228 \\
+ & 1 & 5.747 & 10.99 &  0.800 &  0.800 & 3.369 \\
+ & 2 & 3.561 & 7.741 &  0.793 &  0.793 & 2.294 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+%% ============================================================
+%% TABLE 5: XGBoost per-well results — h=7
+%% ============================================================
+\begin{table}[ht]
+\centering
+\caption{XGBoost per-well held-out test metrics, $h{=}7$.}
+\label{tab:xgboost_perwell_h7}
+\small
+\begin{tabular}{@{}l rrrrr @{}}
+\toprule
+\textbf{Well} & \textbf{MAE} & \textbf{RMSE} & $\boldsymbol{R^2}$ & $\boldsymbol{R^2_\text{prod}}$ & \textbf{MASE} \\
+\midrule
+49/22-Z01Z & 0.372 &  0.561 & $-$80.33 & $-$31.34 &  9.229 \\
+49/22-Z02Z & 2.122 &  2.744 &    0.048 &   $-$0.163 &  2.903 \\
+49/22-Z04  & 0.767 &  1.002 &    0.076 &   $-$0.244 &  2.291 \\
+49/22-Z05Z & 0.713 &  0.917 &   $-$3.580 &   $-$4.709 &  5.368 \\
+49/22-Z06  & 3.099 &  4.320 &  $-$20.73 &   $-$5.170 & 12.530 \\
+49/22-Z07  & 1.734 &  2.343 &    0.240 &    0.292 &  1.979 \\
+49/22-Z08  & 1.915 &  2.591 &   $-$4.011 &   $-$1.101 &  2.185 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+%% ============================================================
+%% TABLE 6: XGBoost per-well results — h=14
+%% ============================================================
+\begin{table}[ht]
+\centering
+\caption{XGBoost per-well held-out test metrics, $h{=}14$.}
+\label{tab:xgboost_perwell_h14}
+\small
+\begin{tabular}{@{}l rrrrr @{}}
+\toprule
+\textbf{Well} & \textbf{MAE} & \textbf{RMSE} & $\boldsymbol{R^2}$ & $\boldsymbol{R^2_\text{prod}}$ & \textbf{MASE} \\
+\midrule
+49/22-Z01Z & 0.301 &   0.427 & $-$67.61 & $-$28.00 &  7.701 \\
+49/22-Z02Z & 2.562 &   3.411 &   $-$0.373 &   $-$0.453 &  1.289 \\
+49/22-Z04  & 0.863 &   1.080 &   $-$0.018 &   $-$0.383 &  1.434 \\
+49/22-Z05Z & 0.719 &   0.906 &   $-$2.741 &   $-$4.528 &  2.526 \\
+49/22-Z06  & 4.310 &   5.891 & $-$220.7  & $-$46.53 & 19.595 \\
+49/22-Z07  & 1.974 &   2.639 &    0.003 &    0.134 &  1.233 \\
+49/22-Z08  & 2.270 &   2.668 &   $-$6.350 &   $-$1.008 &  3.412 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+%% ============================================================
+%% TABLE 7: XGBoost per-well results — h=30
+%% ============================================================
+\begin{table}[ht]
+\centering
+\caption{XGBoost per-well held-out test metrics, $h{=}30$.}
+\label{tab:xgboost_perwell_h30}
+\small
+\begin{tabular}{@{}l rrrrr @{}}
+\toprule
+\textbf{Well} & \textbf{MAE} & \textbf{RMSE} & $\boldsymbol{R^2}$ & $\boldsymbol{R^2_\text{prod}}$ & \textbf{MASE} \\
+\midrule
+49/22-Z01Z &  0.353 &  0.540 & $-$124.9  & $-$48.34 & 10.472 \\
+49/22-Z02Z &  3.232 &  4.227 &    $-$1.015 &   $-$1.077 &  1.575 \\
+49/22-Z04  &  1.134 &  1.380 &    $-$0.754 &   $-$0.481 &  1.845 \\
+49/22-Z05Z &  0.692 &  0.883 &    $-$2.021 &   $-$4.154 &  2.453 \\
+49/22-Z06  &  4.297 &  5.475 &  $-$412.0  & $-$71.77 & 35.261 \\
+49/22-Z07  &  2.399 &  3.124 &    $-$0.438 &    0.044 &  1.571 \\
+49/22-Z08  &  3.340 &  3.491 &  $-$102.5  &   $-$6.832 & 25.989 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+%% ============================================================
+%% TABLE 8: XGBoost per-well results — h=90
+%% ============================================================
+\begin{table}[ht]
+\centering
+\caption{XGBoost per-well held-out test metrics, $h{=}90$.}
+\label{tab:xgboost_perwell_h90}
+\small
+\begin{tabular}{@{}l rrrrr @{}}
+\toprule
+\textbf{Well} & \textbf{MAE} & \textbf{RMSE} & $\boldsymbol{R^2}$ & $\boldsymbol{R^2_\text{prod}}$ & \textbf{MASE} \\
+\midrule
+49/22-Z01Z &  0.390 &   0.590 &   $-$145.4 &   $-$50.10 & 12.073 \\
+49/22-Z02Z &  6.537 &   8.903 &     $-$8.059 &    $-$6.449 &  3.824 \\
+49/22-Z04  &  1.548 &   1.847 &     $-$2.628 &    $-$0.814 &  3.153 \\
+49/22-Z05Z &  0.681 &   0.910 &     $-$1.900 &    $-$1.928 &  3.398 \\
+49/22-Z06  &  3.573 &   4.523 &  $-$6549.7  & $-$511.9   & 307.8 \\
+49/22-Z07  &  2.775 &   3.443 &     $-$0.829 &    $-$0.185 &  2.287 \\
+49/22-Z08  &  0.179 &   0.363 &     $-$1.170 &    $-$1.083 &  2.822 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+%% ============================================================
+%% TABLE 9: Compact per-well R²_prod summary across horizons
+%% ============================================================
+\begin{table}[ht]
+\centering
+\caption{XGBoost $R^2_\text{prod}$ per well across all horizons (held-out test).}
+\label{tab:xgboost_r2prod_perwell}
+\small
+\begin{tabular}{@{}l rrrr @{}}
+\toprule
+\textbf{Well} & $\boldsymbol{h{=}7}$ & $\boldsymbol{h{=}14}$ & $\boldsymbol{h{=}30}$ & $\boldsymbol{h{=}90}$ \\
+\midrule
+49/22-Z01Z & $-$31.34  & $-$28.00  & $-$48.34  & $-$50.10  \\
+49/22-Z02Z &   $-$0.163 &   $-$0.453 &   $-$1.077 &   $-$6.449 \\
+49/22-Z04  &   $-$0.244 &   $-$0.383 &   $-$0.481 &   $-$0.814 \\
+49/22-Z05Z &   $-$4.709 &   $-$4.528 &   $-$4.154 &   $-$1.928 \\
+49/22-Z06  &   $-$5.170 &  $-$46.53  &  $-$71.77  & $-$511.9   \\
+49/22-Z07  &    0.292 &    0.134 &    0.044 &   $-$0.185 \\
+49/22-Z08  &   $-$1.101 &   $-$1.008 &   $-$6.832 &   $-$1.083 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+%% ============================================================
+%% TABLE 10: Compact per-well MAE summary across horizons
+%% ============================================================
+\begin{table}[ht]
+\centering
+\caption{XGBoost MAE per well across all horizons (held-out test, MMSCF).}
+\label{tab:xgboost_mae_perwell}
+\small
+\begin{tabular}{@{}l rrrr @{}}
+\toprule
+\textbf{Well} & $\boldsymbol{h{=}7}$ & $\boldsymbol{h{=}14}$ & $\boldsymbol{h{=}30}$ & $\boldsymbol{h{=}90}$ \\
+\midrule
+49/22-Z01Z & 0.372 & 0.301 & 0.353 & 0.390 \\
+49/22-Z02Z & 2.122 & 2.562 & 3.232 & 6.537 \\
+49/22-Z04  & 0.767 & 0.863 & 1.134 & 1.548 \\
+49/22-Z05Z & 0.713 & 0.719 & 0.692 & 0.681 \\
+49/22-Z06  & 3.099 & 4.310 & 4.297 & 3.573 \\
+49/22-Z07  & 1.734 & 1.974 & 2.399 & 2.775 \\
+49/22-Z08  & 1.915 & 2.270 & 3.340 & 0.179 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\end{document}
