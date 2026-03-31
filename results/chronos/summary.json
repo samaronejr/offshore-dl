@@ -1,0 +1,32 @@
+{
+  "cdf": {
+    "status": "ok",
+    "elapsed": 67.4,
+    "aggregate": {
+      "error_mean_mean": 29.68381575285839,
+      "error_mean_std": 0.0,
+      "error_std_mean": 37.13278661025317,
+      "error_std_std": 0.0,
+      "error_p50_mean": 20.625623628873917,
+      "error_p50_std": 0.0,
+      "error_p95_mean": 83.04601251395836,
+      "error_p95_std": 0.0,
+      "error_p99_mean": 257.4058844143308,
+      "error_p99_std": 0.0
+    }
+  },
+  "ganymede": {
+    "status": "ok",
+    "elapsed": 44.1,
+    "aggregate": {
+      "mae_mean": 0.9123727188058969,
+      "mae_std": 1.194152456800584,
+      "rmse_mean": 1.2135234211668438,
+      "rmse_std": 1.5343084000494065,
+      "r2_mean": -1.4573863754915022,
+      "r2_std": 1.7755240594917896,
+      "mase_mean": 1.2176841529329536,
+      "mase_std": 0.18281837858738828
+    }
+  }
+}

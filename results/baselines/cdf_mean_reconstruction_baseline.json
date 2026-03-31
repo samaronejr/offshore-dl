@@ -1,0 +1,24 @@
+{
+  "folds": [
+    {
+      "error_mean": 41.463780998496325,
+      "error_std": 17.51316546199848,
+      "error_p50": 39.67754935811656,
+      "error_p95": 66.26166204296186,
+      "error_p99": 93.90140182989127
+    }
+  ],
+  "aggregate": {
+    "error_mean_mean": 41.463780998496325,
+    "error_mean_std": 0.0,
+    "error_std_mean": 17.51316546199848,
+    "error_std_std": 0.0,
+    "error_p50_mean": 39.67754935811656,
+    "error_p50_std": 0.0,
+    "error_p95_mean": 66.26166204296186,
+    "error_p95_std": 0.0,
+    "error_p99_mean": 93.90140182989127,
+    "error_p99_std": 0.0
+  },
+  "elapsed": 0.05792689323425293
+}
