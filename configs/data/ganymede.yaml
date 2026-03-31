@@ -1,0 +1,58 @@
+# ─── NSTA Ganymede Dataset Configuration ───
+# UKCS Daily Production Data — gas production forecasting
+
+data:
+  name: "ganymede"
+  task: "forecasting"
+
+  paths:
+    raw: "${paths.raw_data}/NSTA_datasets/cleaned/DC_COP_SNS Field GANYMEDE.csv"
+    processed: "${paths.processed_data}/ganymede"
+
+  # Column mapping
+  time_column: "DAYTIME"
+  well_column: "WELLNAME"
+  target_column: "ALLOC_GAS_VOL_MMSCF"
+
+  # Feature columns to retain (after dropping 100%-missing ones)
+  feature_columns:
+    - "ALLOC_GAS_VOL_SM3"
+    - "ALLOC_GAS_VOL_MMSCF"
+    - "BHP_BARG"
+    - "BHT_DEGC"
+    - "CHOKE"
+    - "HRS_ON"
+    - "WHP_BARG"
+    - "WHT_DEGC"
+    - "GAS_INJ_SM3"
+
+  # Columns dropped (100% missing): ALLOC_H2O_VOL_M3, ALLOC_OIL_VOL_SM3,
+  # ALLOC_H2O_VOL_BBLS, ALLOC_OIL_VOL_BBLS, WATER_CUT, and their unit variants
+  # Also drop redundant unit columns: BHP_PSIG, BHT_DEGF, WHP_PSIG, WHT_DEGF,
+  # GAS_INJ_MMSCF, H2O_INJ_M3, H2O_INJ_BBLS (keep metric units only)
+
+  preprocessing:
+    shutdown_zero_days: 2           # consecutive zero-production days → shutdown flag
+    ema_windows: [7, 14, 30, 90]   # exponential moving average windows (days)
+    log_transform_columns:
+      - "ALLOC_GAS_VOL_SM3"
+    log_eps: 1.0e-8
+
+  forecasting:
+    input_window: 90               # days of input context
+    horizons: [7, 14, 30, 90]      # forecast horizons to benchmark
+    default_horizon: 30             # default horizon for single-run experiments
+    gap: 0                          # gap between input end and forecast start (days)
+
+  modes:
+    - "per_well"                    # independent model per well
+    - "multi_well"                  # single model across all wells
+
+  wells:
+    - "49/22-Z01Z"
+    - "49/22-Z02Z"
+    - "49/22-Z04"
+    - "49/22-Z05Z"
+    - "49/22-Z06"
+    - "49/22-Z07"
+    - "49/22-Z08"

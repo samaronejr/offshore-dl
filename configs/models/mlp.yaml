@@ -1,0 +1,27 @@
+# ─── MLP Model Configuration ───
+# Feedforward baseline for 3W classification on statistical features
+
+model:
+  name: "mlp"
+  architecture:
+    hidden_dims: [256, 128]
+    dropout: 0.3
+
+  training:
+    lr: 0.001
+    weight_decay: 0.0001
+    scheduler: "cosine"
+
+  optuna_search_space:
+    hidden_dims:
+      type: "categorical"
+      choices: [[128, 64], [256, 128], [512, 256, 128]]
+    dropout:
+      type: "float"
+      low: 0.1
+      high: 0.5
+    lr:
+      type: "float"
+      low: 0.00001
+      high: 0.01
+      log: true

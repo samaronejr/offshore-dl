@@ -1,0 +1,49 @@
+# ─── CDF (Cognite Data Fusion) Dataset Configuration ───
+# Single compressor sensor data — unsupervised anomaly discovery
+
+data:
+  name: "cdf"
+  task: "anomaly_unsupervised"
+
+  paths:
+    raw: "${paths.raw_data}/CogniteDataFusion/23-KA-9101_2019-09-01_2020-03-01_1h.csv"
+    processed: "${paths.processed_data}/cdf"
+
+  timestamp_column: "timestamp"
+  well_column: "well_id"
+
+  # Sensor columns (drop "PH (CBM) 1st Stage Poly Eff Dev" — 100% missing)
+  sensor_columns:
+    - "PH (CBM) 1st Stage ExpPress Ratio"
+    - "PH (CBM) 1st Stage Poly Head Dev"
+    - "PH (CBM) 1st Stage ActShaft Power"
+    - "PH (CBM) 1st Stage Press Rat Dev"
+    - "PH (CBM) 1st Stg ActCompr Poly Head"
+    - "PH (CBM) 1st Stage Shft Pwr Dev"
+    - "PH (CBM) 1st Stage ActCompr Poly Eff"
+    - "PH (CBM) 1st Stage ExpCompr Poly Eff"
+    - "PH (CBM) 1st Stage ExpShaft Power"
+    - "PH (CBM) 1st Stage ActPress Ratio"
+    - "PH (CBM) 1st Stg ExpCompr Poly Head"
+
+  # Clean short names for columns after preprocessing
+  column_renames:
+    "PH (CBM) 1st Stage ExpPress Ratio": "exp_press_ratio"
+    "PH (CBM) 1st Stage Poly Head Dev": "poly_head_dev"
+    "PH (CBM) 1st Stage ActShaft Power": "act_shaft_power"
+    "PH (CBM) 1st Stage Press Rat Dev": "press_rat_dev"
+    "PH (CBM) 1st Stg ActCompr Poly Head": "act_compr_poly_head"
+    "PH (CBM) 1st Stage Shft Pwr Dev": "shft_pwr_dev"
+    "PH (CBM) 1st Stage ActCompr Poly Eff": "act_compr_poly_eff"
+    "PH (CBM) 1st Stage ExpCompr Poly Eff": "exp_compr_poly_eff"
+    "PH (CBM) 1st Stage ExpShaft Power": "exp_shaft_power"
+    "PH (CBM) 1st Stage ActPress Ratio": "act_press_ratio"
+    "PH (CBM) 1st Stg ExpCompr Poly Head": "exp_compr_poly_head"
+
+  preprocessing:
+    window_size: 48                 # hourly timesteps (2 days)
+    window_stride: 1                # stride=1 maximizes samples from 4.4k rows
+    mode: "reconstruction"          # "reconstruction" or "prediction"
+    prediction_horizon: 12          # hours ahead (for prediction mode)
+    train_ratio: 0.8                # temporal train/val split
+    cache_in_memory: true           # small enough to cache entirely

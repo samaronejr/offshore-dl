@@ -34,6 +34,7 @@ coverage/
 tmp/
 
 # ── Project-specific ──
+IMPLEMENTATION_PLAN.md
 data/raw/
 data/processed/
 data/splits/

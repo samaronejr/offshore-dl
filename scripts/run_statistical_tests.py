@@ -35,6 +35,7 @@ CDF_METRICS = ["error_mean", "error_p50"]
 
 # ── Ganymede forecasting models (trained only for now) ──
 FC_TRAINED = ["lstm", "deeponet", "patchtst"]
+FC_TREE = ["xgboost"]
 FC_FMS = ["chronos", "timesfm", "tirex"]
 FC_METRICS = ["mae", "r2_prod"]
 HORIZONS = [7, 14, 30, 90]
@@ -234,7 +235,7 @@ def _run_ganymede_tests() -> dict:
     logger.info("═══ Ganymede Forecasting Statistical Tests ═══")
 
     results = {}
-    all_models = FC_TRAINED + FC_FMS
+    all_models = FC_TRAINED + FC_TREE + FC_FMS
 
     for horizon in HORIZONS:
         all_folds = {}
