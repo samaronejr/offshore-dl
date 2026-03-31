@@ -1,0 +1,35 @@
+# ─── Time-Dependent DeepONet Model Configuration ───
+# Neural operator approach for offshore monitoring tasks
+# Branch uses 1D-CNN (not flat MLP) to preserve temporal structure
+
+model:
+  name: "deeponet"
+  architecture:
+    branch_hidden: [128, 128]     # branch MLP fallback (unused with CNN branch)
+    trunk_hidden: [128, 128]      # trunk network layer sizes
+    rank: 128                      # rank of the outer product
+    activation: "gelu"
+    dropout: 0.15
+
+  training:
+    lr: 0.0005
+    weight_decay: 0.0001
+    scheduler: "cosine"
+    warmup_epochs: 5
+
+  optuna_search_space:
+    rank:
+      type: "categorical"
+      choices: [64, 128, 256]
+    lr:
+      type: "float"
+      low: 0.00001
+      high: 0.005
+      log: true
+    dropout:
+      type: "float"
+      low: 0.05
+      high: 0.3
+    branch_width:
+      type: "categorical"
+      choices: [64, 128, 256]

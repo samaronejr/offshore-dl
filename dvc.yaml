@@ -1,0 +1,123 @@
+# DVC Pipeline — offshore-dl experimental benchmark
+#
+# Stages: preprocess → train models → compare → report
+#
+# Usage:
+#   dvc repro           # run full pipeline
+#   dvc repro compare   # just re-run comparison
+
+stages:
+  # ─── Data Preprocessing ───
+  preprocess_3w:
+    cmd: python -m offshore_dl.data.preprocess_3w
+    deps:
+      - data/raw/3w/
+      - src/offshore_dl/data/preprocess_3w.py
+    outs:
+      - data/processed/3w/:
+          persist: true
+
+  preprocess_cdf:
+    cmd: python -m offshore_dl.data.preprocess_cdf
+    deps:
+      - data/raw/CogniteDataFusion/
+      - src/offshore_dl/data/preprocess_cdf.py
+    outs:
+      - data/processed/cdf/:
+          persist: true
+
+  # ─── Model Training (trained models) ───
+  train_lstm:
+    cmd: python scripts/run_lstm_baseline.py
+    deps:
+      - src/offshore_dl/models/lstm.py
+      - src/offshore_dl/training/
+      - configs/models/lstm.yaml
+      - configs/base.yaml
+    outs:
+      - results/lstm/:
+          persist: true
+
+  train_deeponet:
+    cmd: python scripts/run_deeponet_baseline.py
+    deps:
+      - src/offshore_dl/models/deeponet.py
+      - src/offshore_dl/training/
+      - configs/models/deeponet.yaml
+    outs:
+      - results/deeponet/:
+          persist: true
+
+  train_patchtst:
+    cmd: python scripts/run_patchtst_baseline.py
+    deps:
+      - src/offshore_dl/models/patchtst.py
+      - src/offshore_dl/training/
+      - configs/models/patchtst.yaml
+    outs:
+      - results/patchtst/:
+          persist: true
+
+  # ─── Zero-Shot FM Inference ───
+  infer_chronos:
+    cmd: python scripts/run_chronos_baseline.py
+    deps:
+      - src/offshore_dl/models/chronos_wrapper.py
+    outs:
+      - results/chronos/:
+          persist: true
+
+  infer_timesfm:
+    cmd: python scripts/run_timesfm_baseline.py
+    deps:
+      - src/offshore_dl/models/timesfm_wrapper.py
+    outs:
+      - results/timesfm/:
+          persist: true
+
+  infer_tirex:
+    cmd: python scripts/run_tirex_baseline.py
+    deps:
+      - src/offshore_dl/models/tirex_wrapper.py
+    outs:
+      - results/tirex/:
+          persist: true
+
+  # ─── Production Sweeps ───
+  train_ganymede_multihorizon:
+    cmd: python scripts/run_production_ganymede.py --device cuda
+    deps:
+      - scripts/run_production_ganymede.py
+      - src/offshore_dl/models/
+      - src/offshore_dl/training/
+      - src/offshore_dl/run_experiment.py
+      - configs/models/
+      - configs/data/ganymede.yaml
+      - configs/base.yaml
+
+  train_3w_full:
+    cmd: python scripts/run_production_3w.py --device cuda
+    deps:
+      - scripts/run_production_3w.py
+      - src/offshore_dl/models/
+      - src/offshore_dl/training/
+      - src/offshore_dl/run_experiment.py
+      - configs/models/
+      - configs/data/3w.yaml
+      - configs/base.yaml
+
+  # ─── Comparative Analysis ───
+  compare:
+    cmd: python -m offshore_dl.analysis.compare --results-dir results --output-dir reports
+    deps:
+      - src/offshore_dl/analysis/compare.py
+      - results/lstm/
+      - results/deeponet/
+      - results/patchtst/
+      - results/chronos/
+      - results/timesfm/
+      - results/tirex/
+      - results/baselines/
+    outs:
+      - reports/:
+          persist: true

@@ -1,0 +1,42 @@
+# ─── PatchTST Foundation Model Configuration ───
+# Trained from scratch (HF pretrained weights incompatible with our input dims)
+# Best practices from ICLR 2023 paper + follow-up work
+
+model:
+  name: "patchtst"
+  architecture:
+    patch_len: 16                  # patch length (timesteps)
+    stride: 8                      # patch stride
+    d_model: 256                   # transformer hidden dimension
+    n_heads: 8                     # attention heads
+    n_layers: 3                    # transformer layers
+    d_ff: 512                      # feedforward dimension
+    dropout: 0.2
+    pretrained: false              # train from scratch (D#24)
+
+  training:
+    lr: 0.0001                     # Adam lr (standard for PatchTST)
+    weight_decay: 0.01
+    scheduler: "onecycle"
+    scheduler_pct_start: 0.22      # from PatchTST paper
+
+  optuna_search_space:
+    d_model:
+      type: "categorical"
+      choices: [128, 256, 512]
+    n_heads:
+      type: "categorical"
+      choices: [4, 8, 16]
+    n_layers:
+      type: "int"
+      low: 2
+      high: 6
+    lr:
+      type: "float"
+      low: 0.000005
+      high: 0.001
+      log: true
+    dropout:
+      type: "float"
+      low: 0.05
+      high: 0.3

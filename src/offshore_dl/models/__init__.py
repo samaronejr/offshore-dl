@@ -1,0 +1,35 @@
+"""Model implementations — all inherit from BaseModel."""
+
+from offshore_dl.models.base import BaseModel, model_summary
+from offshore_dl.models.chronos_wrapper import ChronosWrapper
+from offshore_dl.models.deeponet import DeepONetModel
+from offshore_dl.models.dummy import DummyModel
+from offshore_dl.models.lstm import LSTMModel
+from offshore_dl.models.mlp import MLPModel
+from offshore_dl.models.patchtst import PatchTSTModel
+
+__all__ = [
+    "BaseModel",
+    "ChronosWrapper",
+    "DeepONetModel",
+    "DummyModel",
+    "LSTMModel",
+    "MLPModel",
+    "PatchTSTModel",
+    "model_summary",
+]
+
+# Optional imports — these require extra dependencies
+try:
+    from offshore_dl.models.timesfm_wrapper import TimesFMWrapper
+
+    __all__.append("TimesFMWrapper")
+except ImportError:
+    pass
+
+try:
+    from offshore_dl.models.tirex_wrapper import TiRexWrapper
+
+    __all__.append("TiRexWrapper")
+except ImportError:
+    pass

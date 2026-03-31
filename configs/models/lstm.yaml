@@ -1,0 +1,34 @@
+# ─── LSTM Model Configuration ───
+# Recurrent baseline for all 3 experimental tracks
+
+model:
+  name: "lstm"
+  architecture:
+    hidden_size: 256
+    num_layers: 2
+    dropout: 0.3
+    bidirectional: true
+
+  training:
+    lr: 0.001
+    weight_decay: 0.0001
+    scheduler: "onecycle"
+    scheduler_pct_start: 0.3
+
+  optuna_search_space:
+    hidden_size:
+      type: "categorical"
+      choices: [128, 256, 512]
+    num_layers:
+      type: "int"
+      low: 1
+      high: 3
+    dropout:
+      type: "float"
+      low: 0.1
+      high: 0.5
+    lr:
+      type: "float"
+      low: 0.00001
+      high: 0.01
+      log: true

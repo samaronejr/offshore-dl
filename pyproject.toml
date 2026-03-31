@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "offshore-dl"
+version = "0.1.0"
+description = "Benchmarking framework for deep learning in offshore production monitoring"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "Samarone Lima Santos Júnior"},
+]
+
+dependencies = [
+    "torch>=2.3,<2.6",
+    "numpy>=1.26",
+    "pandas>=2.2",
+    "pyarrow>=15.0",
+    "scikit-learn>=1.4",
+    "omegaconf>=2.3",
+    "mlflow>=2.14",
+    "optuna>=3.6",
+    "properscoring>=0.1",
+    "matplotlib>=3.9",
+    "seaborn>=0.13",
+    "scipy>=1.12",
+    "xgboost>=2.0",
+]
+
+[project.optional-dependencies]
+fm = [
+    "transformers>=4.40",
+    "huggingface-hub>=0.23",
+    "chronos-forecasting>=1.3",
+    "accelerate>=0.30",
+    "einops>=0.8",
+    "timesfm>=1.3.0",
+    "tirex-ts @ git+https://github.com/NX-AI/tirex",
+]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
