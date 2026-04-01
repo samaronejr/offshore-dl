@@ -24,6 +24,7 @@
 \definecolor{deeponet}{HTML}{DD8452}
 \definecolor{patchtst}{HTML}{55A868}
 \definecolor{tirex}{HTML}{C44E52}
+\definecolor{xgboost}{HTML}{8B4513}
 
 \begin{document}
 
@@ -41,7 +42,7 @@ Rio de Janeiro, Brazil\\
 
 % ═══════════════════════════════════════════════════════════════════
 \begin{abstract}
-Digital monitoring of offshore oil and gas operations demands models capable of detecting equipment faults and forecasting production volumes under challenging conditions: high class imbalance, limited labeled data, multi-well heterogeneity, and long forecast horizons. We present a systematic benchmark of seven deep learning architectures---four trained models (Bidirectional LSTM, DeepONet, MLP, PatchTST) and three foundation models (Chronos, TimesFM, TiRex)---evaluated on two real-world offshore datasets using a nested evaluation protocol with held-out test sets and inner cross-validation. For fault classification on the Petrobras 3W dataset (208{,}973 windows, 10 classes), a statistical feature extraction pipeline compresses 720-step windows into 14-descriptor feature matrices; DeepONet achieves the best held-out accuracy of 96.83\% (macro $F_1{=}0.964$), with three of four trained models reaching $>$96.5\% after hyperparameter optimization, while the MLP baseline collapses to single-class prediction (6.5\% accuracy), revealing that temporal structure in the feature matrix is essential. TiRex provides a competitive zero-shot baseline (91.2\%). For gas production forecasting on the Ganymede dataset (31{,}359 samples, 7 wells), foundation models dominate: TimesFM achieves $R^2_\text{prod}{=}0.83$ at the 7-day horizon, exceeding the best trained model (PatchTST, 0.59) by 40\%. Statistical significance is confirmed via Friedman tests on both tasks ($p < 0.05$).
+Digital monitoring of offshore oil and gas operations demands models capable of detecting equipment faults and forecasting production volumes under challenging conditions: high class imbalance, limited labeled data, multi-well heterogeneity, and long forecast horizons. We present a systematic benchmark of eight deep learning architectures---five trained models (Bidirectional LSTM, DeepONet, MLP, PatchTST, XGBoost) and three foundation models (Chronos, TimesFM, TiRex)---evaluated on two real-world offshore datasets using a nested evaluation protocol with held-out test sets and inner cross-validation. For fault classification on the Petrobras 3W dataset (208{,}973 windows, 10 classes), a statistical feature extraction pipeline compresses 720-step windows into 14-descriptor feature matrices; DeepONet achieves the best held-out accuracy of 96.83\% (macro $F_1{=}0.964$), with three of four trained models reaching $>$96.5\% after hyperparameter optimization, while the MLP baseline collapses to single-class prediction (6.5\% accuracy), revealing that temporal structure in the feature matrix is essential. TiRex provides a competitive zero-shot baseline (91.2\%). For gas production forecasting on the Ganymede dataset (31{,}359 samples, 7 wells), foundation models dominate: TimesFM achieves $R^2_\text{prod}{=}0.83$ at the 7-day horizon, exceeding the best trained model (PatchTST, 0.59) by 40\%; XGBoost produces negative $R^2_\text{prod}$ at all horizons despite Optuna HPO, confirming that flattened temporal features lose the sequential structure forecasting requires. Statistical significance is confirmed via Friedman tests on both tasks ($p < 0.05$).
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -64,7 +65,7 @@ Recent advances in foundation models (FMs) for time series \cite{chronos, timesf
 We make the following contributions:
 
 \begin{enumerate}
-    \item A \textbf{systematic benchmark} of seven architectures---four trained (LSTM, DeepONet, MLP, PatchTST) and three foundation models (Chronos, TimesFM, TiRex)---across two real-world offshore datasets covering fault classification and production forecasting.
+    \item A \textbf{systematic benchmark} of eight architectures---five trained (LSTM, DeepONet, MLP, PatchTST, XGBoost) and three foundation models (Chronos, TimesFM, TiRex)---across two real-world offshore datasets covering fault classification and production forecasting.
     \item A \textbf{statistical feature extraction pipeline} that compresses raw 720-timestep sensor windows into compact 14-descriptor matrices, reducing computation by $\sim$50$\times$ while preserving discriminative information.
     \item A \textbf{nested evaluation protocol} with held-out test sets and inner cross-validation that provides both unbiased performance estimates and variance diagnostics, following best practices for ML evaluation \cite{cawley2010over}.
     \item A \textbf{multi-horizon analysis} comparing trained models and foundation models across 7, 14, 30, and 90-day forecasting horizons with per-well granularity.
@@ -180,6 +181,10 @@ PatchTST \cite{patchtst} segments multivariate time series into patches and appl
 \subsubsection{MLP Baseline}
 
 As a non-sequential baseline, we include a feedforward MLP that flattens the $(14 \times 27)$ feature matrix into a 378-dimensional vector and applies two FC$\to$BatchNorm$\to$GELU$\to$Dropout blocks with hidden dimensions $[256, 128]$. Unlike the recurrent, operator-learning, and attention-based architectures above, this model treats the feature matrix as an unstructured vector, discarding all positional relationships among descriptors and sensors. Total parameters: 132K (classification only).
+
+\subsubsection{XGBoost Baseline}
+
+As a gradient-boosted tree baseline for Ganymede forecasting, we wrap \texttt{XGBRegressor} in scikit-learn's \texttt{MultiOutputRegressor} to produce multi-step forecasts. The 90-timestep $\times$ 63-feature input window is flattened into a 5{,}670-dimensional vector---like the MLP, this discards all temporal structure, treating the input as an unordered bag of features. We use histogram-based splitting (\texttt{tree\_method=hist}), 500 estimators, max depth~6, and L1/L2 regularization. Unlike the neural models, XGBoost requires no GPU and trains via coordinate descent on the gradient-boosted objective. This baseline tests whether ensemble tree methods can compensate for the loss of temporal structure through their superior handling of tabular features.
 
 \subsubsection{Foundation Models}
 
@@ -393,7 +398,7 @@ Table~\ref{tab:confusion} presents the confusion matrix for DeepONet (best overa
 
 \subsection{Ganymede Gas Production Forecasting}
 
-Table~\ref{tab:ganymede} presents multi-horizon forecasting results on the Ganymede multi-well setting, with gas production measured in MMSCF (million standard cubic feet). All three foundation models achieve positive $R^2_\text{prod}$ across all four horizons, with TiRex leading at longer horizons ($h{=}30$: 0.70, $h{=}90$: 0.57) and TimesFM at the shortest ($h{=}7$: 0.83). Among trained models, PatchTST and LSTM achieve positive $R^2_\text{prod}$ at most horizons, while DeepONet yields consistently negative $R^2$.
+Table~\ref{tab:ganymede} presents multi-horizon forecasting results on the Ganymede multi-well setting, with gas production measured in MMSCF (million standard cubic feet). All three foundation models achieve positive $R^2_\text{prod}$ across all four horizons, with TiRex leading at longer horizons ($h{=}30$: 0.70, $h{=}90$: 0.57) and TimesFM at the shortest ($h{=}7$: 0.83). Among trained models, PatchTST and LSTM achieve positive $R^2_\text{prod}$ at most horizons, while DeepONet and XGBoost yield consistently negative $R^2$.
 
 \begin{table}[t]
 \centering
@@ -428,11 +433,15 @@ Table~\ref{tab:ganymede} presents multi-horizon forecasting results on the Ganym
 \multirow{2}{*}{DeepONet}
  & $R^2_\text{prod}$ & $-$40.1 & $-$4.35 & $-$5.01 & $-$4.32 \\
  & MAE              & 9.53 & 4.12 & 4.51 & 3.84 \\
+\midrule
+\multirow{2}{*}{XGBoost}
+ & $R^2_\text{prod}$ & $-$0.031 & $-$0.465 & $-$0.415 & $-$1.252 \\
+ & MAE              & 1.93 & 2.45 & 2.47 & 2.77 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Fig.~\ref{fig:ganymede} visualizes $R^2_\text{prod}$ across horizons. Foundation models maintain positive $R^2_\text{prod}$ at all horizons, with TiRex showing the most graceful degradation (0.82$\to$0.57). Among trained models, PatchTST degrades from 0.56 ($h{=}7$) to $-0.38$ ($h{=}90$). LSTM shows an unusual pattern: low $R^2_\text{prod}$ at $h{=}7$ (0.20) but peaking at $h{=}14$ (0.53), possibly reflecting how its recurrent architecture captures medium-term trends while struggling with short-term variability. DeepONet consistently fails ($R^2 < -4$), confirming that its operator-learning formulation is poorly suited for autoregressive production forecasting.
+Fig.~\ref{fig:ganymede} visualizes $R^2_\text{prod}$ across horizons. Foundation models maintain positive $R^2_\text{prod}$ at all horizons, with TiRex showing the most graceful degradation (0.82$\to$0.57). Among trained models, PatchTST degrades from 0.56 ($h{=}7$) to $-0.38$ ($h{=}90$). LSTM shows an unusual pattern: low $R^2_\text{prod}$ at $h{=}7$ (0.20) but peaking at $h{=}14$ (0.53), possibly reflecting how its recurrent architecture captures medium-term trends while struggling with short-term variability. DeepONet consistently fails ($R^2 < -4$), confirming that its operator-learning formulation is poorly suited for autoregressive production forecasting. XGBoost's near-zero $R^2_\text{prod}$ at $h{=}7$ ($-0.031$) degrades to $-0.47$ at $h{=}14$ before partially recovering at $h{=}30$ ($-0.42$), but collapses to $-1.25$ at $h{=}90$ (outside the plotted range). Like MLP on 3W, this confirms that flattening temporal input into a high-dimensional vector (5{,}670-dim) discards the sequential structure that forecasting requires.
 
 \begin{figure}[t]
 \centering
@@ -457,11 +466,12 @@ Fig.~\ref{fig:ganymede} visualizes $R^2_\text{prod}$ across horizons. Foundation
 \addplot[color=orange!80!black, mark=pentagon*, mark size=2.5pt, line width=1.2pt] coordinates {(7,0.734)(14,0.668)(30,0.584)(90,0.361)};
 \addplot[color=patchtst, mark=triangle*, mark size=3pt, line width=1.2pt] coordinates {(7,0.556)(14,0.466)(30,0.211)(90,-0.382)};
 \addplot[color=lstm, mark=o, mark size=2.5pt, line width=1.2pt] coordinates {(7,0.195)(14,0.534)(30,0.303)(90,0.020)};
+\addplot[color=xgboost, mark=square*, mark size=2.5pt, line width=1.2pt, forget plot] coordinates {(7,-0.031)(14,-0.465)(30,-0.415)};
 \addplot[dashed, gray, domain=0:95] {0};
 \legend{TimesFM, TiRex, Chronos, PatchTST, LSTM}
 \end{axis}
 \end{tikzpicture}
-\caption{$R^2_\text{prod}$ vs.\ forecast horizon (Ganymede, held-out test, multi-well). Foundation models (top 3 curves) consistently outperform trained models. DeepONet omitted ($R^2 < -5$). Dashed line: $R^2{=}0$ (naive baseline).}
+\caption{$R^2_\text{prod}$ vs.\ forecast horizon (Ganymede, held-out test, multi-well). Foundation models (top 3 curves) consistently outperform trained models. DeepONet omitted ($R^2 < -5$). XGBoost (\protect\tikz[baseline=-0.5ex]{\protect\draw[xgboost, fill=xgboost] (0,0) rectangle (0.25em,0.5em);}) shown for $h{\leq}30$; its $h{=}90$ value ($R^2{=}-1.25$) falls below the axis range. Dashed line: $R^2{=}0$ (naive baseline).}
 \label{fig:ganymede}
 \end{figure}
 
@@ -472,7 +482,7 @@ Fig.~\ref{fig:ganymede} visualizes $R^2_\text{prod}$ across horizons. Foundation
 
 \subsection{Classification: Trained Models vs.\ Foundation Models}
 
-Three of the four trained models achieve strong performance ($>$96.5\% accuracy after HPO), suggesting that the statistical feature extraction captures the essential fault signatures when paired with architectures that model sequential or structural dependencies. DeepONet's flat MLP branch is the most parameter-efficient (209K) while marginally leading in accuracy (96.83\%). Optuna hyperparameter optimization (30 trials per model) improved PatchTST from 95.7\% to 96.5\% by finding a deeper, narrower architecture (4 layers, $d_\text{model}{=}128$), while LSTM and DeepONet showed no improvement---confirming that manual tuning was near-optimal for these architectures.
+Three of the four trained classification models achieve strong performance ($>$96.5\% accuracy after HPO), suggesting that the statistical feature extraction captures the essential fault signatures when paired with architectures that model sequential or structural dependencies. DeepONet's flat MLP branch is the most parameter-efficient (209K) while marginally leading in accuracy (96.83\%). Optuna hyperparameter optimization (30 trials per model) improved PatchTST from 95.7\% to 96.5\% by finding a deeper, narrower architecture (4 layers, $d_\text{model}{=}128$), while LSTM and DeepONet showed no improvement---confirming that manual tuning was near-optimal for these architectures.
 
 The MLP baseline's complete failure (6.5\% accuracy, single-class prediction) is instructive: despite receiving the same $(14 \times 27)$ feature matrix as the other trained models, flattening it into a 378-dimensional vector destroys the descriptor$\times$sensor structure that the other architectures exploit. This confirms that the statistical features contain discriminative information \emph{in their spatial arrangement}, not merely in their aggregate statistics---even the simplest structured model (DeepONet at 209K parameters) succeeds where a comparably-sized unstructured model (MLP at 132K) fails entirely.
 
@@ -483,6 +493,8 @@ TiRex provides a strong zero-shot baseline (91.2\%) that would be adequate for i
 The Ganymede results reveal a striking finding: all three foundation models substantially outperform all trained models at every forecast horizon. TiRex achieves the best overall performance ($R^2_\text{prod}{=}0.82$ at $h{=}7$, 0.57 at $h{=}90$), followed closely by TimesFM ($R^2_\text{prod}{=}0.83$ at $h{=}7$) and Chronos ($R^2_\text{prod}{=}0.73$ at $h{=}7$). The best trained model, PatchTST, peaks at $R^2_\text{prod}{=}0.56$ and degrades to negative $R^2$ at $h{=}90$.
 
 This performance gap likely reflects the FMs' pre-training on diverse time-series corpora: production data shares temporal patterns (trends, seasonality, autocorrelation) with the training distributions, enabling effective zero-shot transfer. In contrast, the trained models must learn these patterns from $\sim$25{,}000 samples with considerable well heterogeneity, insufficient for capturing the full dynamics.
+
+XGBoost's negative $R^2_\text{prod}$ at all horizons (best: $-0.031$ at $h{=}7$, worst: $-1.25$ at $h{=}90$) mirrors the MLP's complete failure on 3W classification, providing convergent evidence that \emph{flattened features lose the structural information required for both tasks}. On 3W, the MLP flattened the $(14 \times 27)$ descriptor$\times$sensor matrix into a 378-dim vector and collapsed to single-class prediction; on Ganymede, XGBoost flattens the $(90 \times 63)$ temporal window into a 5{,}670-dim vector and performs worse than a naive mean predictor. Despite XGBoost's well-known strength on tabular data, the 5{,}670 features created by flattening lack the temporal ordering that LSTM, PatchTST, and the foundation models exploit. This consistent failure across both tasks and both flattening baselines strengthens the conclusion that inductive biases preserving temporal or spatial structure are essential for offshore monitoring.
 
 \subsection{Evaluation Protocol Validation}
 
@@ -498,25 +510,26 @@ For Ganymede forecasting, MAE reaches significance at $h{=}7$ ($p{=}0.014$), $h{
 
 \subsection{Limitations}
 
-This study has several limitations: (i) hyperparameter optimization was performed for the 3W classification task but not for Ganymede forecasting, where the large gap between FMs and trained models may partly reflect suboptimal trained-model tuning; and (ii) no interpretability analysis (e.g., attention visualization, SHAP values) has been conducted.
+This study has several limitations: (i) hyperparameter optimization was performed for the 3W classification task and for XGBoost on Ganymede forecasting, but not for the remaining trained models on Ganymede, where the large gap between FMs and trained models may partly reflect suboptimal tuning; and (ii) no interpretability analysis (e.g., attention visualization, SHAP values) has been conducted.
 
 % ═══════════════════════════════════════════════════════════════════
 \section{Conclusion and Future Work}
 \label{sec:conclusion}
 % ═══════════════════════════════════════════════════════════════════
 
-We benchmarked seven deep learning architectures on offshore fault classification and gas production forecasting using a rigorous nested evaluation protocol. Key findings:
+We benchmarked eight deep learning architectures on offshore fault classification and gas production forecasting using a rigorous nested evaluation protocol. Key findings:
 
 \begin{enumerate}
     \item \textbf{Statistical features enable efficient classification}: Compressing 720-step windows into 14-descriptor matrices yields $>$96.5\% accuracy on 3W fault detection with three of four trained models (after HPO), while reducing training time by $\sim$50$\times$.
     \item \textbf{Feature matrix structure matters}: The MLP baseline (6.5\% accuracy) demonstrates that the discriminative information in the statistical feature matrix resides in the descriptor$\times$sensor arrangement, not the raw values---even the simplest structured model succeeds where a flat feedforward network fails entirely.
+    \item \textbf{Flattened features fail across tasks and model families}: XGBoost, despite its strength on tabular data, produces negative $R^2_\text{prod}$ at all Ganymede horizons when given the flattened 5{,}670-dim input---converging with MLP's 3W failure to confirm that temporal/spatial structure preservation is essential for offshore monitoring.
     \item \textbf{DeepONet leads classification, fails forecasting}: The operator-learning framework achieves the best classification accuracy (96.83\%) with the fewest parameters (209K) but produces negative $R^2$ on all forecasting horizons.
     \item \textbf{PatchTST is the most versatile trained model}: Achieves $R^2_\text{prod}{=}0.56$ at the 7-day horizon (best among trained models) and 96.5\% classification accuracy after HPO.
     \item \textbf{Foundation models dominate forecasting}: TimesFM, TiRex, and Chronos all achieve $R^2_\text{prod} > 0.7$ at $h{=}7$ without any task-specific training, exceeding the best trained model by 24--40\%. TiRex maintains the strongest performance at long horizons ($R^2_\text{prod}{=}0.57$ at $h{=}90$).
     \item \textbf{FMs provide competitive classification baselines}: TiRex achieves 91.2\% zero-shot classification with the highest AUC-PR (0.938), demonstrating the versatility of pre-trained time-series representations for offshore monitoring.
 \end{enumerate}
 
-Future work includes Ganymede hyperparameter optimization, model interpretability analysis, and evaluation of domain-adapted foundation models.
+Future work includes Ganymede hyperparameter optimization for the remaining trained models, model interpretability analysis, and evaluation of domain-adapted foundation models.
 
 % ═══════════════════════════════════════════════════════════════════
 % References
