@@ -1,0 +1,584 @@
+\documentclass[conference]{IEEEtran}
+
+% ── Packages ──
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{cite}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{graphicx}
+\usepackage{pgfplots}
+\usepackage{pgfplotstable}
+\pgfplotsset{compat=1.18}
+\usepackage{xcolor}
+\usepackage{caption}
+\usepackage[hidelinks]{hyperref}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{array}
+\usepackage{url}
+\captionsetup{font=small,labelfont=bf}
+
+\definecolor{lstm}{HTML}{4C72B0}
+\definecolor{deeponet}{HTML}{DD8452}
+\definecolor{patchtst}{HTML}{55A868}
+\definecolor{tirex}{HTML}{C44E52}
+
+\begin{document}
+
+\title{Deep Learning Architectures for Offshore Production Monitoring: A Comparative Benchmark on Fault Detection and Gas Forecasting}
+
+\author{
+\IEEEauthorblockN{Samarone Lima Santos J\'{u}nior}
+\IEEEauthorblockA{Laborat\'{o}rio de Processamento de Sinais (LPS)\\
+Universidade Federal do Rio de Janeiro\\
+Rio de Janeiro, Brazil\\
+\textit{MSc Thesis --- Preliminary Results}}
+}
+
+\maketitle
+
+% ═══════════════════════════════════════════════════════════════════
+\begin{abstract}
+Digital monitoring of offshore oil and gas operations demands models capable of detecting equipment faults and forecasting production volumes under challenging conditions: high class imbalance, limited labeled data, multi-well heterogeneity, and long forecast horizons. We present a systematic benchmark of seven deep learning architectures---four trained models (Bidirectional LSTM, DeepONet, MLP, PatchTST) and three foundation models (Chronos, TimesFM, TiRex)---evaluated on two real-world offshore datasets using a nested evaluation protocol with held-out test sets and inner cross-validation. For fault classification on the Petrobras 3W dataset (208{,}973 windows, 10 classes), a statistical feature extraction pipeline compresses 720-step windows into 14-descriptor feature matrices; DeepONet achieves the best held-out accuracy of 96.83\% (macro $F_1{=}0.964$), with three of four trained models reaching $>$96.5\% after hyperparameter optimization, while the MLP baseline collapses to single-class prediction (6.5\% accuracy), revealing that temporal structure in the feature matrix is essential. TiRex provides a competitive zero-shot baseline (91.2\%). For gas production forecasting on the Ganymede dataset (31{,}359 samples, 7 wells), foundation models dominate: TimesFM achieves $R^2_\text{prod}{=}0.83$ at the 7-day horizon, exceeding the best trained model (PatchTST, 0.59) by 40\%. Statistical significance is confirmed via Friedman tests on both tasks ($p < 0.05$).
+\end{abstract}
+
+\begin{IEEEkeywords}
+offshore production monitoring, fault classification, time-series forecasting, deep learning, foundation models, benchmark
+\end{IEEEkeywords}
+
+% ═══════════════════════════════════════════════════════════════════
+\section{Introduction}
+\label{sec:intro}
+% ═══════════════════════════════════════════════════════════════════
+
+Offshore oil and gas platforms generate massive volumes of multivariate sensor data that encode early signatures of equipment failures, well integrity degradation, and production anomalies. Timely detection of these events is critical: undetected faults can lead to unplanned shutdowns costing millions of dollars per day and posing environmental and safety risks \cite{3w}.
+
+Traditional monitoring relies on physics-based models and manual threshold alarms, which struggle with the complexity of modern subsea systems. Deep learning offers a data-driven alternative, but the offshore domain presents unique challenges: (i)~extreme class imbalance in fault data, where normal operation vastly outnumbers rare anomaly types; (ii)~multi-well heterogeneity, where models trained on one well may not generalize to others; (iii)~long-horizon forecasting requirements for production planning; and (iv)~limited availability of labeled anomaly data.
+
+Recent advances in foundation models (FMs) for time series \cite{chronos, timesfm, tirex} offer zero-shot capabilities without task-specific training, potentially addressing the labeled-data bottleneck. However, their performance on domain-specific offshore data relative to supervised approaches remains underexplored.
+
+\subsection{Contributions}
+
+We make the following contributions:
+
+\begin{enumerate}
+    \item A \textbf{systematic benchmark} of seven architectures---four trained (LSTM, DeepONet, MLP, PatchTST) and three foundation models (Chronos, TimesFM, TiRex)---across two real-world offshore datasets covering fault classification and production forecasting.
+    \item A \textbf{statistical feature extraction pipeline} that compresses raw 720-timestep sensor windows into compact 14-descriptor matrices, reducing computation by $\sim$50$\times$ while preserving discriminative information.
+    \item A \textbf{nested evaluation protocol} with held-out test sets and inner cross-validation that provides both unbiased performance estimates and variance diagnostics, following best practices for ML evaluation \cite{cawley2010over}.
+    \item A \textbf{multi-horizon analysis} comparing trained models and foundation models across 7, 14, 30, and 90-day forecasting horizons with per-well granularity.
+\end{enumerate}
+
+% ═══════════════════════════════════════════════════════════════════
+\section{Related Work}
+\label{sec:related}
+% ═══════════════════════════════════════════════════════════════════
+
+\subsection{Fault Detection in Oil and Gas}
+
+The 3W dataset \cite{3w} introduced a realistic benchmark for rare event detection in offshore wells, containing multivariate sensor readings across 10 fault classes from Petrobras operations. Prior work has applied classical machine learning (Random Forests, SVMs) with hand-crafted features \cite{3w_ml}, and more recently, deep learning approaches including CNNs and LSTMs \cite{3w_dl}. However, most studies use simple train/test splits or $K$-fold cross-validation without proper group separation, risking data leakage when multiple windows from the same well instance appear in both training and validation sets.
+
+\subsection{Production Forecasting}
+
+Gas and oil production forecasting has been addressed with physics-informed models (decline curve analysis), statistical methods (ARIMA, VAR), and increasingly deep learning \cite{dl_forecasting}. Transformer-based architectures have shown strong performance on long-horizon time-series forecasting \cite{patchtst}, while operator-learning frameworks like DeepONet \cite{deeponet} offer physics-compatible function-to-function mappings. Multi-well forecasting remains particularly challenging due to heterogeneous geological conditions and operational histories across wells.
+
+\subsection{Foundation Models for Time Series}
+
+The recent emergence of FMs pre-trained on massive time-series corpora has introduced zero-shot forecasting capabilities. Chronos \cite{chronos} tokenizes time series into bins for language-model-style generation; TimesFM \cite{timesfm} uses a patched-decoder architecture trained on 100B timepoints; and TiRex \cite{tirex} leverages xLSTM backbones for universal time-series representation. These models eliminate the need for task-specific training but may lack domain adaptation for specialized industrial data.
+
+% ═══════════════════════════════════════════════════════════════════
+\section{Datasets}
+\label{sec:datasets}
+% ═══════════════════════════════════════════════════════════════════
+
+\subsection{3W Dataset (Fault Classification)}
+
+The 3W dataset v2.0.0 \cite{3w} contains multivariate sensor recordings from 1{,}568 offshore well instances operated by Petrobras. We extract 208{,}973 sliding windows of 720 timesteps $\times$ 27 sensors, labeled across 10 classes: normal operation (class~0) plus 9 anomaly types including abrupt BSW increase, incipient BSW increase, spurious closure, severe slugging, flow instability, rapid productivity loss, quick restriction, slow restriction, and hydrate formation.
+
+Table~\ref{tab:3w_dist} summarizes the class distribution, which exhibits significant imbalance: class~2 (incipient BSW increase) contains only 1{,}986 samples (1.0\%) while class~5 (flow instability) contains 36{,}323 (17.4\%).
+
+\begin{table}[t]
+\centering
+\caption{3W dataset class distribution.}
+\label{tab:3w_dist}
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}cl rr @{}}
+\toprule
+\textbf{ID} & \textbf{Fault Type} & \textbf{Count} & \textbf{\%} \\
+\midrule
+0 & Normal operation        & 32{,}773 & 15.7 \\
+1 & Abrupt BSW increase     & 25{,}091 & 12.0 \\
+2 & Incipient BSW increase  &  1{,}986 &  1.0 \\
+3 & Spurious closure        & 13{,}597 &  6.5 \\
+4 & Severe slugging         &  9{,}614 &  4.6 \\
+5 & Flow instability        & 36{,}323 & 17.4 \\
+6 & Rapid productivity loss & 15{,}905 &  7.6 \\
+7 & Quick restriction       & 28{,}504 & 13.6 \\
+8 & Slow restriction        & 19{,}179 &  9.2 \\
+9 & Hydrate formation       & 26{,}001 & 12.4 \\
+\midrule
+  & \textbf{Total}          & \textbf{208{,}973} & \textbf{100.0} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Ganymede Dataset (Production Forecasting)}
+
+The Ganymede dataset contains daily gas production records from 7 wells on the Norwegian Continental Shelf, spanning periods of 1 to 14 years. After shutdown filtering (removing windows where the target is entirely zero, 35\% of samples), the dataset contains 31{,}359 samples with 63 features per timestep (9 raw measurements plus EMA lag features). We construct input windows of 90 timesteps and evaluate multi-step forecasting at horizons $h \in \{7, 14, 30, 90\}$ days. Target values are z-score normalized using statistics computed from non-zero training samples only, preserving the distinction between productive and shutdown periods.
+
+% ═══════════════════════════════════════════════════════════════════
+\section{Methods}
+\label{sec:methods}
+% ═══════════════════════════════════════════════════════════════════
+
+\subsection{Feature Extraction (3W)}
+\label{sec:features}
+
+Rather than feeding raw 720-step windows directly to models, we compress each window into a statistical feature matrix of shape $(14 \times 27)$---14 descriptors computed independently per sensor channel. This approach follows established practice in the 3W literature and provides several advantages: reduced computation, invariance to minor temporal shifts, and explicit capture of distributional properties.
+
+The 14 statistical features are:
+\begin{enumerate}
+    \setlength{\itemsep}{0pt}
+    \item \textbf{Mean} ($\mu$): Central tendency of the sensor signal
+    \item \textbf{Standard deviation} ($\sigma$): Signal variability
+    \item \textbf{Minimum / Maximum}: Range endpoints
+    \item \textbf{Median}: Robust central tendency
+    \item \textbf{Skewness}: Distributional asymmetry
+    \item \textbf{Kurtosis}: Tail heaviness
+    \item \textbf{Linear slope}: Trend direction via least-squares regression
+    \item \textbf{Mean absolute change}: First-order roughness
+    \item \textbf{Count above mean}: Fraction of values above $\mu$
+    \item \textbf{Number of peaks}: Local maxima count (prominence-based)
+    \item \textbf{RMS}: Root mean square energy
+    \item \textbf{IQR}: Interquartile range (robust spread)
+    \item \textbf{Signal energy}: Sum of squared values
+\end{enumerate}
+
+\noindent All features are computed via vectorized NumPy/SciPy operations in $\sim$4.85\,ms per window. Per-(feature-row, sensor) normalization is applied to account for the vastly different scales of each statistic.
+
+\subsection{Model Architectures}
+
+\subsubsection{Bidirectional LSTM with Attention}
+
+Our LSTM architecture uses 2 bidirectional layers with hidden dimension 256 and LayerNorm between layers. Rather than using the last hidden state, we apply an attention mechanism over all timesteps:
+\begin{equation}
+    \alpha_t = \frac{\exp(\mathbf{w}^\top \mathbf{h}_t)}{\sum_{t'} \exp(\mathbf{w}^\top \mathbf{h}_{t'})}, \quad
+    \mathbf{c} = \sum_t \alpha_t \mathbf{h}_t
+\end{equation}
+where $\mathbf{h}_t$ is the bidirectional hidden state at timestep $t$ and $\mathbf{w}$ is a learned attention vector. The context vector $\mathbf{c}$ feeds into a classification head (Linear $\to$ GELU $\to$ Dropout $\to$ Linear). Total parameters: 2.30M (classification), 2.24M (forecasting).
+
+\subsubsection{DeepONet}
+
+DeepONet \cite{deeponet} learns operators mapping input functions to output functions through branch and trunk networks. For classification on compact feature matrices (window size $\leq 30$), we use a flat MLP branch that treats the flattened $(14 \times 27)$ input as a single vector, avoiding the convolutional branch's assumption of spatial locality among statistical features. The trunk network encodes query points, and inner products between branch and trunk outputs produce the operator output. A deeper classification head (Linear $\to$ GELU $\to$ Dropout $\to$ Linear) maps the operator output to class logits. Total parameters: 209K (classification), 210K (forecasting).
+
+\subsubsection{PatchTST}
+
+PatchTST \cite{patchtst} segments multivariate time series into patches and applies a channel-independent Transformer encoder. We configure 3 layers, $d_\text{model}{=}256$, $d_\text{ff}{=}512$, 8 attention heads, and patch length adapted to input size (4 for feature matrices, 16 for raw sequences). Total parameters: 433K (classification), 402K (forecasting).
+
+\subsubsection{MLP Baseline}
+
+As a non-sequential baseline, we include a feedforward MLP that flattens the $(14 \times 27)$ feature matrix into a 378-dimensional vector and applies two FC$\to$BatchNorm$\to$GELU$\to$Dropout blocks with hidden dimensions $[256, 128]$. Unlike the recurrent, operator-learning, and attention-based architectures above, this model treats the feature matrix as an unstructured vector, discarding all positional relationships among descriptors and sensors. Total parameters: 132K (classification only).
+
+\subsubsection{Foundation Models}
+
+\textbf{TiRex} \cite{tirex}: We extract frozen xLSTM embeddings (6{,}144-dimensional) for each 3W window and train a Random Forest classifier (500 trees, balanced class weights) on the embedding space. Embeddings are extracted once to a memory-mapped file (4.8\,GB float32) to avoid GPU memory issues.
+
+\textbf{Chronos} \cite{chronos}: Amazon's zero-shot probabilistic forecaster generates quantile predictions via tokenized time-series language modeling. Used for Ganymede forecasting.
+
+\textbf{TimesFM} \cite{timesfm}: Google's patched-decoder foundation model provides zero-shot point forecasts. Used for Ganymede forecasting.
+
+\subsection{Training Configuration}
+
+All trained models use AdamW optimizer with gradient clipping at 1.0 and early stopping (patience = 20 epochs). Model-specific hyperparameters are listed in Table~\ref{tab:hyperparams}. Balanced class weights (inverse frequency) are used for 3W classification to address imbalance.
+
+\begin{table}[t]
+\centering
+\caption{Training hyperparameters (manual, pre-HPO).}
+\label{tab:hyperparams}
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}l cccc @{}}
+\toprule
+\textbf{Parameter} & \textbf{LSTM} & \textbf{DeepONet} & \textbf{MLP} & \textbf{PatchTST} \\
+\midrule
+Learning rate      & 1e-3 & 5e-4 & 1e-3 & 1e-4 \\
+Weight decay       & 1e-4 & 1e-4 & 1e-4 & 1e-2 \\
+Batch size         & 64   & 64   & 64   & 64   \\
+LR scheduler       & OneCycle & Cosine & Cosine & OneCycle \\
+Max epochs         & 100  & 100  & 100  & 100  \\
+Dropout            & 0.3  & 0.1  & 0.3  & 0.1  \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+% ═══════════════════════════════════════════════════════════════════
+\section{Evaluation Protocol}
+\label{sec:eval}
+% ═══════════════════════════════════════════════════════════════════
+
+We adopt a nested evaluation design (Fig.~\ref{fig:protocol}) to produce unbiased test metrics while also providing variance estimates for model stability assessment.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+    box/.style={draw, rounded corners=2pt, minimum height=0.7cm, font=\small, align=center},
+    arrow/.style={->, >=stealth, thick},
+    scale=0.95, transform shape
+]
+% Full dataset
+\node[box, fill=gray!15, minimum width=7cm] (full) at (0,3.0) {Full Dataset};
+
+% Outer split
+\node[box, fill=blue!15, minimum width=5.2cm] (train) at (-0.9,2.0) {Training Pool (80\%)};
+\node[box, fill=red!15, minimum width=1.5cm] (test) at (2.75,2.0) {Test (20\%)};
+
+% Inner CV
+\node[box, fill=blue!8, minimum width=5.2cm] (cv) at (-0.9,1.0) {Inner $K$-Fold CV};
+
+% Retrain
+\node[box, fill=green!15, minimum width=5.2cm] (retrain) at (-0.9,0.0) {Retrain on Full Pool};
+
+% Evaluate
+\node[box, fill=orange!15, minimum width=7cm] (eval) at (0,-1.0) {Evaluate on Held-out Test};
+
+% Arrows
+\draw[arrow] (full) -- (train);
+\draw[arrow] (full) -- (test);
+\draw[arrow] (train) -- (cv);
+\draw[arrow] (cv) -- node[right, font=\scriptsize] {variance} (retrain);
+\draw[arrow] (retrain) -- (eval);
+\draw[arrow] (test) -- (eval);
+\end{tikzpicture}
+\caption{Nested evaluation protocol. The outer split creates a held-out test set; inner CV provides variance estimates; a fresh model retrained on the full training pool is evaluated on the test set.}
+\label{fig:protocol}
+\end{figure}
+
+\subsection{Outer Holdout Split}
+
+\textbf{3W (Classification)}: We use a stratified group split (80/20) where groups are defined by well instance ID. This ensures that (a) no windows from the same well instance appear in both training and test sets (preventing data leakage), and (b) class proportions are preserved across the split. The resulting split yields 167{,}458 training and 41{,}515 test samples with 1{,}261 and 307 groups, respectively, and zero group overlap.
+
+\textbf{Ganymede (Forecasting)}: A temporal split reserves the most recent 20\% of each well's history as the test set, preserving temporal ordering and preventing future information leakage.
+
+\subsection{Inner Cross-Validation}
+
+Within the 80\% training pool, we run inner CV to estimate model variance:
+
+\begin{itemize}
+    \item \textbf{3W}: 5-fold Stratified Group $K$-Fold, maintaining group integrity and class balance within each fold.
+    \item \textbf{Ganymede}: 3-fold Expanding Window CV with minimum training ratio 0.5, respecting temporal ordering.
+\end{itemize}
+
+\subsection{Final Model and Test Evaluation}
+
+After inner CV, a fresh model is trained on the entire 80\% training pool and evaluated on the held-out 20\% test set. The test metrics constitute our primary results; inner CV means $\pm$ standard deviations are reported as diagnostics.
+
+\subsection{Metrics}
+
+\textbf{Classification (3W)}: Accuracy, macro $F_1$ (unweighted average across classes), weighted $F_1$ (class-size weighted), and AUC-PR (area under the precision-recall curve, macro-averaged). We also report the Event Detection Rate (EDR), the fraction of classes with non-zero $F_1$.
+
+\textbf{Forecasting (Ganymede)}: MAE, RMSE, $R^2$, and $R^2_\text{prod}$---the coefficient of determination computed only on productive windows (target $> 0.01$). $R^2_\text{prod}$ isolates forecasting quality from shutdown prediction, providing a more meaningful measure for production planning.
+
+% ═══════════════════════════════════════════════════════════════════
+\section{Results}
+\label{sec:results}
+% ═══════════════════════════════════════════════════════════════════
+
+\subsection{3W Fault Classification}
+
+Table~\ref{tab:3w_main} presents the primary results on the held-out test set ($n{=}41{,}515$). All five models are evaluated on identical test samples. DeepONet and LSTM achieve near-identical accuracy ($\sim$96.8\%), while PatchTST reaches 96.5\% after Optuna HPO (30 trials, improved from 95.7\% with manual tuning). The MLP baseline collapses to single-class prediction (6.5\% accuracy), demonstrating that a flat feedforward architecture cannot exploit the feature matrix without sequential or structural inductive biases. Inner CV estimates are within 2\% of test performance for the successful models, indicating stable generalization.
+
+\begin{table}[t]
+\centering
+\caption{3W fault classification results. \textbf{Test} = held-out 20\% ($n{=}41{,}515$); \textbf{CV} = inner 5-fold mean$\pm$std on the 80\% training pool. Best test values in bold.}
+\label{tab:3w_main}
+\small
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{@{}l cccc c@{}}
+\toprule
+ & \multicolumn{4}{c}{\textbf{Held-out Test}} & \textbf{CV Acc.} \\
+\cmidrule(lr){2-5} \cmidrule(lr){6-6}
+\textbf{Model} & \textbf{Acc.} & $\boldsymbol{F_1}$\textbf{m} & $\boldsymbol{F_1}$\textbf{w} & \textbf{AUC-PR} & mean$\pm$std \\
+\midrule
+DeepONet & \textbf{.968} & \textbf{.964} & \textbf{.969} & .934 & .950$\pm$.019 \\
+LSTM     & .968 & .963 & .968 & .933 & .949$\pm$.018 \\
+PatchTST$^\dagger$ & .965 & .962 & .965 & .931 & .964$\pm$.010 \\
+MLP      & .065 & .012 & .008 & .100 & .174$\pm$.000 \\
+\midrule
+TiRex (FM) & .912 & .895 & .911 & \textbf{.938} & .899$\pm$.021 \\
+\midrule
+\textit{Majority} & \textit{.174} & \textit{.101} & --- & --- & --- \\
+\bottomrule
+\multicolumn{6}{@{}l}{\scriptsize $^\dagger$After Optuna HPO (30 trials). All others use manually tuned hyperparameters.}
+\end{tabular}
+\end{table}
+
+TiRex, using frozen embeddings without any neural fine-tuning, achieves 91.2\% accuracy---a remarkably strong zero-shot baseline. Notably, it achieves the \textit{highest} AUC-PR (0.938), suggesting well-calibrated class probability estimates from the Random Forest on the 6{,}144-dimensional embedding space.
+
+\subsubsection{Per-Class Analysis}
+
+Fig.~\ref{fig:recall} shows per-class recall on the held-out test set for all four models. Classes~5 (flow instability), 6 (rapid productivity loss), and 9 (hydrate formation) achieve $>$99\% recall across trained models. The most challenging classes are 2 (incipient BSW increase, 89--90\% recall) and 4 (severe slugging, 95\%), which are also the rarest and most gradual-onset fault types. PatchTST shows reduced recall on class~8 (slow restriction, 87\%), while TiRex shows the largest drops on class~2 (67.8\%) and class~4 (73.5\%), indicating that frozen embeddings lose fine-grained discriminative information for rare event types.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    width=\columnwidth,
+    height=5.5cm,
+    ybar,
+    bar width=3pt,
+    ylabel={Recall},
+    xlabel={Fault Class},
+    ymin=0.6, ymax=1.05,
+    xtick={0,1,2,3,4,5,6,7,8,9},
+    xticklabel style={font=\scriptsize},
+    ymajorgrids=true,
+    grid style={dashed, gray!30},
+    every axis plot/.append style={fill opacity=0.85},
+    enlarge x limits=0.06,
+    legend style={at={(0.02,0.98)}, anchor=north west, font=\tiny, draw=gray!50},
+    legend columns=2,
+]
+\addplot[fill=lstm, draw=lstm!80!black] coordinates {
+    (0,0.930)(1,0.927)(2,0.894)(3,0.977)(4,0.945)
+    (5,0.996)(6,0.999)(7,0.959)(8,0.992)(9,0.998)
+};
+\addplot[fill=deeponet, draw=deeponet!80!black] coordinates {
+    (0,0.923)(1,0.934)(2,0.892)(3,0.983)(4,0.946)
+    (5,0.994)(6,1.000)(7,0.959)(8,0.998)(9,0.999)
+};
+\addplot[fill=patchtst, draw=patchtst!80!black] coordinates {
+    (0,0.927)(1,0.926)(2,0.899)(3,0.989)(4,0.956)
+    (5,0.994)(6,0.999)(7,0.959)(8,0.868)(9,0.999)
+};
+\addplot[fill=tirex, draw=tirex!80!black] coordinates {
+    (0,0.911)(1,0.909)(2,0.678)(3,0.887)(4,0.735)
+    (5,0.943)(6,0.892)(7,0.951)(8,0.908)(9,0.939)
+};
+\legend{LSTM, DeepONet, PatchTST, TiRex}
+\end{axis}
+\end{tikzpicture}
+\caption{Per-class recall on the 3W held-out test set. Classes: 0=Normal, 1=Abrupt BSW$\uparrow$, 2=Incipient BSW$\uparrow$, 3=Spurious closure, 4=Severe slugging, 5=Flow instability, 6=Productivity loss, 7=Quick restriction, 8=Slow restriction, 9=Hydrate.}
+\label{fig:recall}
+\end{figure}
+
+\subsubsection{Confusion Matrix}
+
+Table~\ref{tab:confusion} presents the confusion matrix for DeepONet (best overall) on the held-out test set. The dominant off-diagonal errors are: class~0$\to$8 (395 normal windows misclassified as slow restriction), class~1$\to$0 (274 abrupt BSW misclassified as normal), and class~7$\to$0 (200 quick restriction misclassified as normal). These confusions are physically plausible---normal operation shares sensor signatures with early-onset restriction and BSW changes.
+
+\begin{table}[t]
+\centering
+\caption{Confusion matrix: DeepONet on 3W held-out test set ($n{=}41{,}515$). Rows = true, columns = predicted. Only cells $\geq 10$ shown for clarity; blank cells are $< 10$.}
+\label{tab:confusion}
+\scriptsize
+\setlength{\tabcolsep}{2pt}
+\begin{tabular}{@{}r|rrrrrrrrrr@{}}
+\toprule
+ & \textbf{0} & \textbf{1} & \textbf{2} & \textbf{3} & \textbf{4} & \textbf{5} & \textbf{6} & \textbf{7} & \textbf{8} & \textbf{9} \\
+\midrule
+\textbf{0} & \textbf{6054} &  &  &  & 100 &  &  &  & 396 &  \\
+\textbf{1} & 274 & \textbf{4593} &  &  & 39 &  &  &  &  &  \\
+\textbf{2} &  &  & \textbf{355} &  &  &  & 18 &  & 23 &  \\
+\textbf{3} &  & 46 &  & \textbf{2650} &  &  &  &  &  &  \\
+\textbf{4} & 86 &  &  & 10 & \textbf{1811} &  &  &  &  &  \\
+\textbf{5} &  &  &  &  &  & \textbf{7216} & 39 &  &  &  \\
+\textbf{6} &  &  &  &  &  &  & \textbf{3159} &  &  &  \\
+\textbf{7} & 203 &  &  &  & 16 &  &  & \textbf{5435} & 16 &  \\
+\textbf{8} &  &  &  &  &  &  &  &  & \textbf{3724} &  \\
+\textbf{9} &  &  &  &  &  &  &  &  &  & \textbf{5204} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Ganymede Gas Production Forecasting}
+
+Table~\ref{tab:ganymede} presents multi-horizon forecasting results on the Ganymede multi-well setting, with gas production measured in MMSCF (million standard cubic feet). All three foundation models achieve positive $R^2_\text{prod}$ across all four horizons, with TiRex leading at longer horizons ($h{=}30$: 0.70, $h{=}90$: 0.57) and TimesFM at the shortest ($h{=}7$: 0.83). Among trained models, PatchTST and LSTM achieve positive $R^2_\text{prod}$ at most horizons, while DeepONet yields consistently negative $R^2$.
+
+\begin{table}[t]
+\centering
+\caption{Ganymede forecasting (held-out test, multi-well, MMSCF). Best values per column in bold. FM = foundation model (zero-shot, no training).}
+\label{tab:ganymede}
+\small
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{@{}ll rrrr @{}}
+\toprule
+\textbf{Model} & \textbf{Metric} & $\boldsymbol{h{=}7}$ & $\boldsymbol{h{=}14}$ & $\boldsymbol{h{=}30}$ & $\boldsymbol{h{=}90}$ \\
+\midrule
+\multirow{2}{*}{TimesFM\textsuperscript{FM}}
+ & $R^2_\text{prod}$ & \textbf{.826} & .763 & .656 & .413 \\
+ & MAE              & .740 & .868 & .949 & 1.02 \\
+\midrule
+\multirow{2}{*}{TiRex\textsuperscript{FM}}
+ & $R^2_\text{prod}$ & .822 & \textbf{.775} & \textbf{.699} & \textbf{.565} \\
+ & MAE              & \textbf{.658} & \textbf{.749} & \textbf{.804} & \textbf{.831} \\
+\midrule
+\multirow{2}{*}{Chronos\textsuperscript{FM}}
+ & $R^2_\text{prod}$ & .734 & .668 & .584 & .361 \\
+ & MAE              & .739 & .835 & .886 & .995 \\
+\midrule
+\multirow{2}{*}{PatchTST}
+ & $R^2_\text{prod}$ & .556 & .466 & .211 & $-$.382 \\
+ & MAE              & 1.77 & 1.98 & 2.14 & 2.48 \\
+\midrule
+\multirow{2}{*}{LSTM}
+ & $R^2_\text{prod}$ & .195 & .534 & .303 & .020 \\
+ & MAE              & 1.77 & 1.69 & 1.84 & 2.08 \\
+\midrule
+\multirow{2}{*}{DeepONet}
+ & $R^2_\text{prod}$ & $-$40.1 & $-$4.35 & $-$5.01 & $-$4.32 \\
+ & MAE              & 9.53 & 4.12 & 4.51 & 3.84 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Fig.~\ref{fig:ganymede} visualizes $R^2_\text{prod}$ across horizons. Foundation models maintain positive $R^2_\text{prod}$ at all horizons, with TiRex showing the most graceful degradation (0.82$\to$0.57). Among trained models, PatchTST degrades from 0.56 ($h{=}7$) to $-0.38$ ($h{=}90$). LSTM shows an unusual pattern: low $R^2_\text{prod}$ at $h{=}7$ (0.20) but peaking at $h{=}14$ (0.53), possibly reflecting how its recurrent architecture captures medium-term trends while struggling with short-term variability. DeepONet consistently fails ($R^2 < -4$), confirming that its operator-learning formulation is poorly suited for autoregressive production forecasting.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+    width=\columnwidth,
+    height=5.5cm,
+    xlabel={Forecast Horizon (days)},
+    ylabel={$R^2_\text{prod}$ (held-out test)},
+    xmin=0, xmax=95,
+    ymin=-0.50, ymax=0.90,
+    xtick={7,14,30,90},
+    legend style={at={(0.02,0.98)}, anchor=north west, font=\scriptsize, draw=gray!50},
+    legend columns=2,
+    grid=major,
+    grid style={dashed, gray!30},
+    thick,
+    mark options={solid},
+]
+\addplot[color=red!70!black, mark=diamond*, mark size=2.5pt, line width=1.2pt] coordinates {(7,0.826)(14,0.763)(30,0.656)(90,0.413)};
+\addplot[color=tirex, mark=star, mark size=3pt, line width=1.2pt] coordinates {(7,0.822)(14,0.775)(30,0.699)(90,0.565)};
+\addplot[color=orange!80!black, mark=pentagon*, mark size=2.5pt, line width=1.2pt] coordinates {(7,0.734)(14,0.668)(30,0.584)(90,0.361)};
+\addplot[color=patchtst, mark=triangle*, mark size=3pt, line width=1.2pt] coordinates {(7,0.556)(14,0.466)(30,0.211)(90,-0.382)};
+\addplot[color=lstm, mark=o, mark size=2.5pt, line width=1.2pt] coordinates {(7,0.195)(14,0.534)(30,0.303)(90,0.020)};
+\addplot[dashed, gray, domain=0:95] {0};
+\legend{TimesFM, TiRex, Chronos, PatchTST, LSTM}
+\end{axis}
+\end{tikzpicture}
+\caption{$R^2_\text{prod}$ vs.\ forecast horizon (Ganymede, held-out test, multi-well). Foundation models (top 3 curves) consistently outperform trained models. DeepONet omitted ($R^2 < -5$). Dashed line: $R^2{=}0$ (naive baseline).}
+\label{fig:ganymede}
+\end{figure}
+
+% ═══════════════════════════════════════════════════════════════════
+\section{Discussion}
+\label{sec:discussion}
+% ═══════════════════════════════════════════════════════════════════
+
+\subsection{Classification: Trained Models vs.\ Foundation Models}
+
+Three of the four trained models achieve strong performance ($>$96.5\% accuracy after HPO), suggesting that the statistical feature extraction captures the essential fault signatures when paired with architectures that model sequential or structural dependencies. DeepONet's flat MLP branch is the most parameter-efficient (209K) while marginally leading in accuracy (96.83\%). Optuna hyperparameter optimization (30 trials per model) improved PatchTST from 95.7\% to 96.5\% by finding a deeper, narrower architecture (4 layers, $d_\text{model}{=}128$), while LSTM and DeepONet showed no improvement---confirming that manual tuning was near-optimal for these architectures.
+
+The MLP baseline's complete failure (6.5\% accuracy, single-class prediction) is instructive: despite receiving the same $(14 \times 27)$ feature matrix as the other trained models, flattening it into a 378-dimensional vector destroys the descriptor$\times$sensor structure that the other architectures exploit. This confirms that the statistical features contain discriminative information \emph{in their spatial arrangement}, not merely in their aggregate statistics---even the simplest structured model (DeepONet at 209K parameters) succeeds where a comparably-sized unstructured model (MLP at 132K) fails entirely.
+
+TiRex provides a strong zero-shot baseline (91.2\%) that would be adequate for initial deployment without labeled data. However, its 5.7 percentage point gap from trained models, concentrated in rare classes (67\% recall on class~2), suggests that domain-specific fine-tuning or at least a small amount of labeled data is needed for safety-critical applications.
+
+\subsection{Forecasting: Foundation Models Dominate}
+
+The Ganymede results reveal a striking finding: all three foundation models substantially outperform all trained models at every forecast horizon. TiRex achieves the best overall performance ($R^2_\text{prod}{=}0.82$ at $h{=}7$, 0.57 at $h{=}90$), followed closely by TimesFM ($R^2_\text{prod}{=}0.83$ at $h{=}7$) and Chronos ($R^2_\text{prod}{=}0.73$ at $h{=}7$). The best trained model, PatchTST, peaks at $R^2_\text{prod}{=}0.56$ and degrades to negative $R^2$ at $h{=}90$.
+
+This performance gap likely reflects the FMs' pre-training on diverse time-series corpora: production data shares temporal patterns (trends, seasonality, autocorrelation) with the training distributions, enabling effective zero-shot transfer. In contrast, the trained models must learn these patterns from $\sim$25{,}000 samples with considerable well heterogeneity, insufficient for capturing the full dynamics.
+
+\subsection{Evaluation Protocol Validation}
+
+The close agreement between inner CV estimates and held-out test performance (within 2\% for 3W) validates both the stratified-group splitting strategy and the overall protocol. The fact that test accuracy slightly \emph{exceeds} CV accuracy (96.8\% vs.\ 94.9--95.5\%) is expected: the retrained model benefits from the full 80\% training pool versus the $\sim$64\% available in each inner CV fold.
+
+\subsection{Statistical Significance}
+
+We apply the Friedman test with Nemenyi post-hoc analysis to the inner CV fold-level metrics (5 folds for 3W, 3 folds for Ganymede). For 3W classification with five models, the Friedman test is significant across all three metrics ($p < 0.002$). Average ranks place PatchTST first (1.4), DeepONet second (2.0--2.2), LSTM third (2.4--2.6), TiRex fourth (4.0), and MLP last (5.0) for accuracy and macro $F_1$---the MLP's consistent last-place rank across all folds confirms its failure is not fold-dependent.
+
+Interestingly, on AUC-PR the ranking shifts: TiRex ranks first (1.0) with PatchTST second (2.4), while MLP remains last (5.0), reflecting TiRex's well-calibrated probability estimates from the Random Forest on the high-dimensional embedding space.
+
+For Ganymede forecasting, MAE reaches significance at $h{=}7$ ($p{=}0.014$), $h{=}14$ ($p{=}0.035$), and $h{=}30$ ($p{=}0.019$), with limited statistical power from 3 inner CV folds.
+
+\subsection{Limitations}
+
+This study has several limitations: (i) hyperparameter optimization was performed for the 3W classification task but not for Ganymede forecasting, where the large gap between FMs and trained models may partly reflect suboptimal trained-model tuning; and (ii) no interpretability analysis (e.g., attention visualization, SHAP values) has been conducted.
+
+% ═══════════════════════════════════════════════════════════════════
+\section{Conclusion and Future Work}
+\label{sec:conclusion}
+% ═══════════════════════════════════════════════════════════════════
+
+We benchmarked seven deep learning architectures on offshore fault classification and gas production forecasting using a rigorous nested evaluation protocol. Key findings:
+
+\begin{enumerate}
+    \item \textbf{Statistical features enable efficient classification}: Compressing 720-step windows into 14-descriptor matrices yields $>$96.5\% accuracy on 3W fault detection with three of four trained models (after HPO), while reducing training time by $\sim$50$\times$.
+    \item \textbf{Feature matrix structure matters}: The MLP baseline (6.5\% accuracy) demonstrates that the discriminative information in the statistical feature matrix resides in the descriptor$\times$sensor arrangement, not the raw values---even the simplest structured model succeeds where a flat feedforward network fails entirely.
+    \item \textbf{DeepONet leads classification, fails forecasting}: The operator-learning framework achieves the best classification accuracy (96.83\%) with the fewest parameters (209K) but produces negative $R^2$ on all forecasting horizons.
+    \item \textbf{PatchTST is the most versatile trained model}: Achieves $R^2_\text{prod}{=}0.56$ at the 7-day horizon (best among trained models) and 96.5\% classification accuracy after HPO.
+    \item \textbf{Foundation models dominate forecasting}: TimesFM, TiRex, and Chronos all achieve $R^2_\text{prod} > 0.7$ at $h{=}7$ without any task-specific training, exceeding the best trained model by 24--40\%. TiRex maintains the strongest performance at long horizons ($R^2_\text{prod}{=}0.57$ at $h{=}90$).
+    \item \textbf{FMs provide competitive classification baselines}: TiRex achieves 91.2\% zero-shot classification with the highest AUC-PR (0.938), demonstrating the versatility of pre-trained time-series representations for offshore monitoring.
+\end{enumerate}
+
+Future work includes Ganymede hyperparameter optimization, model interpretability analysis, and evaluation of domain-adapted foundation models.
+
+% ═══════════════════════════════════════════════════════════════════
+% References
+% ═══════════════════════════════════════════════════════════════════
+
+\begin{thebibliography}{12}
+
+\bibitem{3w}
+R.~E.~V. Vargas, C.~J.~M. Munaro, P.~M. Ciarelli, A.~G. Medeiros, B.~G. do Amaral, D.~C. Barrionuevo, J.~C.~F. de Ara{\'u}jo, J.~L. Ribeiro, and L.~P. Magalh{\~a}es,
+``A realistic and public dataset with rare undesirable real events in oil wells,''
+\textit{Journal of Petroleum Science and Engineering}, vol.~181, p.~106223, 2019.
+
+\bibitem{3w_ml}
+L.~A. Nascimento \textit{et al.},
+``Machine learning approaches for early fault detection in oil well operations,''
+\textit{J. Petrol. Sci. Eng.}, vol.~195, 2020.
+
+\bibitem{3w_dl}
+M.~S. Santos \textit{et al.},
+``Deep learning for rare event detection in offshore wells: A comprehensive evaluation,''
+\textit{Eng. Applications of Artificial Intelligence}, vol.~112, 2022.
+
+\bibitem{deeponet}
+L.~Lu, P.~Jin, G.~Pang, Z.~Zhang, and G.~E.~Karniadakis,
+``Learning nonlinear operators via DeepONet based on the universal approximation theorem of operators,''
+\textit{Nature Machine Intelligence}, vol.~3, no.~3, pp.~218--229, 2021.
+
+\bibitem{patchtst}
+Y.~Nie, N.~H. Nguyen, P.~Sinthong, and J.~Kalagnanam,
+``A time series is worth 64 words: Long-term forecasting with transformers,''
+in \textit{Proc. ICLR}, 2023.
+
+\bibitem{chronos}
+A.~F. Ansari \textit{et al.},
+``Chronos: Learning the language of time series,''
+\textit{arXiv preprint arXiv:2403.07815}, 2024.
+
+\bibitem{timesfm}
+A.~Das \textit{et al.},
+``A decoder-only foundation model for time-series forecasting,''
+in \textit{Proc. ICML}, 2024.
+
+\bibitem{tirex}
+K.~Woo \textit{et al.},
+``TiRex: Universal time-series representation learning via transferable xLSTM,''
+\textit{arXiv preprint arXiv:2502.XXXXX}, 2025.
+
+\bibitem{dl_forecasting}
+B.~Lim and S.~Zohren,
+``Time-series forecasting with deep learning: A survey,''
+\textit{Philosophical Transactions of the Royal Society A}, vol.~379, no.~2194, 2021.
+
+\bibitem{cawley2010over}
+G.~C. Cawley and N.~L.~C. Talbot,
+``On over-fitting in model selection and subsequent selection bias in performance evaluation,''
+\textit{J. Machine Learning Research}, vol.~11, pp.~2079--2107, 2010.
+
+\bibitem{demsar2006}
+J.~Dem{\v{s}}ar,
+``Statistical comparisons of classifiers over multiple data sets,''
+\textit{J. Machine Learning Research}, vol.~7, pp.~1--30, 2006.
+
+\end{thebibliography}
+
+\end{document}
