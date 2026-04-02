@@ -305,7 +305,212 @@ def run_3w_hpo(model_name: str, n_trials: int, device: str) -> dict:
 
 
 # ═══════════════════════════════════════════════════════════════════
-# GANYMEDE FORECASTING
+# 3W CLASSIFICATION — SKLEARN MODELS (Random Forest, etc.)
+# ═══════════════════════════════════════════════════════════════════
+
+
+def _suggest_param(trial, name: str, spec: dict):
+    """Sample a hyperparameter from its YAML spec (replicates OptunaObjective._suggest)."""
+    suggest_type = spec.get("type", "float")
+    if suggest_type == "float":
+        return trial.suggest_float(
+            name, spec.get("low", 0.0001), spec.get("high", 0.1),
+            log=spec.get("log", False),
+        )
+    elif suggest_type == "int":
+        return trial.suggest_int(name, spec.get("low", 1), spec.get("high", 100))
+    elif suggest_type == "categorical":
+        return trial.suggest_categorical(name, spec.get("choices", []))
+    else:
+        msg = f"Unknown suggest type: {suggest_type!r}"
+        raise ValueError(msg)
+
+
+def run_3w_rf_hpo(n_trials: int, device: str) -> dict:
+    """Run sklearn Random Forest HPO for 3W classification.
+
+    Custom Optuna objective: each trial samples RF hyperparameters from
+    the YAML search space, runs 5-fold StratifiedGroupKFoldSKLearn inner CV,
+    and maximizes mean f1_macro.  After the study completes, the best params
+    are used to retrain on the full training pool and evaluate on held-out test.
+    """
+    from sklearn.ensemble import RandomForestClassifier
+
+    set_global_seed(42)
+
+    model_cfg = OmegaConf.load("configs/models/random_forest.yaml")
+    search_space = OmegaConf.to_container(
+        model_cfg.model.optuna_search_space, resolve=True,
+    )
+    base_arch = OmegaConf.to_container(
+        model_cfg.model.architecture, resolve=True,
+    )
+    logger.info("  RF search space: %s", list(search_space.keys()))
+
+    # Load dataset and extract numpy arrays
+    dataset = ThreeWFeatureDataset("configs/data/3w.yaml")
+    n = len(dataset)
+    logger.info("  3W loaded: %d samples", n)
+
+    n_features = dataset[0][0].shape[0]  # window_size (14)
+    n_sensors = dataset[0][0].shape[1]   # 27
+    flat_dim = n_features * n_sensors
+
+    X_all = np.empty((n, flat_dim), dtype=np.float32)
+    Y_all = np.empty(n, dtype=np.int64)
+    for i in range(n):
+        x, y, _ = dataset[i]
+        X_all[i] = x.numpy().reshape(-1)
+        Y_all[i] = int(y)
+
+    labels = np.array([int(dataset[i][1]) for i in range(n)])
+    groups = np.array([dataset[i][2].get("instance_id", i) for i in range(n)])
+
+    # Holdout split
+    holdout = HoldoutSplitter(
+        test_ratio=0.2, mode="stratified_group",
+        labels=labels, groups=groups,
+    )
+    train_pool, test_indices = holdout.split(n)
+    logger.info("  Holdout: train=%d, test=%d", len(train_pool), len(test_indices))
+
+    X_train_pool, Y_train_pool = X_all[train_pool], Y_all[train_pool]
+    X_test, Y_test = X_all[test_indices], Y_all[test_indices]
+
+    pool_labels = labels[train_pool]
+    pool_groups = groups[train_pool]
+
+    # Inner CV for trials
+    inner_cv = StratifiedGroupKFoldSKLearn(
+        n_folds=5, labels=pool_labels, groups=pool_groups, seed=42,
+    )
+    inner_splits = inner_cv.get_splits(len(train_pool))
+
+    # Optuna objective
+    def objective(trial):
+        params = {name: _suggest_param(trial, name, spec)
+                  for name, spec in search_space.items()}
+        # Merge sampled params with base architecture defaults
+        rf_kwargs = dict(base_arch)
+        rf_kwargs.update(params)
+
+        fold_f1s = []
+        for local_train, local_val in inner_splits:
+            X_tr, Y_tr = X_train_pool[local_train], Y_train_pool[local_train]
+            X_va, Y_va = X_train_pool[local_val], Y_train_pool[local_val]
+
+            clf = RandomForestClassifier(**rf_kwargs)
+            clf.fit(X_tr, Y_tr)
+            preds = clf.predict(X_va)
+            probs = clf.predict_proba(X_va)
+
+            metrics = MetricRegistry.compute(
+                "classification", preds, Y_va, prediction_scores=probs,
+            )
+            fold_f1s.append(metrics["f1_macro"])
+
+        return float(np.mean(fold_f1s))
+
+    # Create study and run optimization
+    cfg = load_merged_config(
+        "configs/base.yaml", "configs/data/3w.yaml",
+        "configs/models/random_forest.yaml",
+    )
+    study = optuna.create_study(
+        study_name="3w_random_forest",
+        direction="maximize",
+        pruner=optuna.pruners.NopPruner(),
+    )
+    study.optimize(objective, n_trials=n_trials)
+
+    best_params = study.best_trial.params
+    best_value = study.best_value
+    n_completed = len(study.trials)
+    logger.info("  Best params: %s (f1_macro=%.4f, trials=%d)",
+                best_params, best_value, n_completed)
+
+    # ── Final evaluation with best params ──
+    final_kwargs = dict(base_arch)
+    final_kwargs.update(best_params)
+
+    # Setup MLflow
+    mlflow = None
+    try:
+        import mlflow as _mlflow
+        _mlflow.set_tracking_uri("mlruns")
+        _mlflow.set_experiment("3w-random-forest-hpo")
+        mlflow = _mlflow
+    except ImportError:
+        pass
+
+    if mlflow:
+        mlflow.start_run(run_name="rf_hpo_best_retrain")
+        mlflow.log_params({k: str(v) for k, v in best_params.items()})
+        mlflow.log_metric("hpo_best_f1_macro", best_value)
+
+    # Inner CV with best params for cv_aggregate
+    cv_fold_results = []
+    for fold_idx, (local_train, local_val) in enumerate(inner_splits):
+        X_tr, Y_tr = X_train_pool[local_train], Y_train_pool[local_train]
+        X_va, Y_va = X_train_pool[local_val], Y_train_pool[local_val]
+
+        clf = RandomForestClassifier(**final_kwargs)
+        clf.fit(X_tr, Y_tr)
+        preds = clf.predict(X_va)
+        probs = clf.predict_proba(X_va)
+        metrics = MetricRegistry.compute(
+            "classification", preds, Y_va, prediction_scores=probs,
+        )
+        cv_fold_results.append({"fold_idx": fold_idx, "metrics": metrics})
+        if mlflow:
+            mlflow.log_metric(f"cv_fold_{fold_idx}_f1_macro", metrics["f1_macro"])
+
+    cv_agg = {}
+    if cv_fold_results:
+        metric_keys = [
+            k for k in cv_fold_results[0]["metrics"]
+            if isinstance(cv_fold_results[0]["metrics"][k], (int, float))
+        ]
+        for k in metric_keys:
+            vals = [f["metrics"][k] for f in cv_fold_results]
+            cv_agg[f"{k}_mean"] = float(np.mean(vals))
+            cv_agg[f"{k}_std"] = float(np.std(vals))
+
+    # Retrain on full pool → held-out test
+    final_clf = RandomForestClassifier(**final_kwargs)
+    final_clf.fit(X_train_pool, Y_train_pool)
+    test_preds = final_clf.predict(X_test)
+    test_probs = final_clf.predict_proba(X_test)
+    test_metrics = MetricRegistry.compute(
+        "classification", test_preds, Y_test, prediction_scores=test_probs,
+    )
+
+    if mlflow:
+        for k, v in test_metrics.items():
+            if isinstance(v, (int, float)):
+                mlflow.log_metric(f"test_{k}", v)
+        mlflow.end_run()
+
+    metric_str = ", ".join(
+        f"{k}={v:.4f}" for k, v in sorted(test_metrics.items())
+        if isinstance(v, (int, float))
+    )
+    logger.info("  RF HPO final — TEST: %s", metric_str)
+
+    return {
+        "hpo": {
+            "best_params": best_params,
+            "best_value": best_value,
+            "n_trials": n_completed,
+        },
+        "test_metrics": test_metrics,
+        "cv_aggregate": cv_agg,
+        "cv_fold_results": cv_fold_results,
+        "baseline_kwargs": base_arch,
+        "best_kwargs": final_kwargs,
+    }
+
+
 # ═══════════════════════════════════════════════════════════════════
 # GANYMEDE FORECASTING (PyTorch models)
 # ═══════════════════════════════════════════════════════════════════
@@ -441,8 +646,8 @@ def main():
 
     if args.dataset == "3w":
         # Valid 3W models — names only for validation (lazy import of PyTorch deps)
-        valid_models = {"lstm", "deeponet", "patchtst"}
-        default_models = ["lstm", "deeponet", "patchtst"]
+        valid_models = {"lstm", "deeponet", "patchtst", "random_forest"}
+        default_models = ["lstm", "deeponet", "patchtst", "random_forest"]
     else:
         # Valid Ganymede models
         valid_models = {"lstm", "deeponet", "patchtst", "tcn"}
@@ -467,7 +672,10 @@ def main():
         start = time.time()
         try:
             if args.dataset == "3w":
-                result = run_3w_hpo(model_name, args.n_trials, args.device)
+                if model_name == "random_forest":
+                    result = run_3w_rf_hpo(args.n_trials, args.device)
+                else:
+                    result = run_3w_hpo(model_name, args.n_trials, args.device)
             else:
                 result = run_ganymede_hpo(model_name, args.horizon, args.n_trials, args.device)
 
