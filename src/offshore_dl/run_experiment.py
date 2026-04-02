@@ -39,6 +39,10 @@ try:
     from offshore_dl.models.tirex_wrapper import TiRexWrapper
 except ImportError:
     TiRexWrapper = None
+try:
+    from offshore_dl.models.fkmad import FKMADModel
+except (ImportError, ModuleNotFoundError, RuntimeError):
+    FKMADModel = None
 from offshore_dl.training.experiment import ExperimentRunner
 from offshore_dl.utils.config import load_merged_config
 from offshore_dl.utils.reproducibility import set_global_seed
@@ -62,6 +66,8 @@ if TimesFMWrapper is not None:
     MODEL_REGISTRY["timesfm"] = TimesFMWrapper
 if TiRexWrapper is not None:
     MODEL_REGISTRY["tirex"] = TiRexWrapper
+if FKMADModel is not None:
+    MODEL_REGISTRY["fkmad"] = FKMADModel
 
 DATASET_REGISTRY: dict[str, dict] = {
     "3w": {

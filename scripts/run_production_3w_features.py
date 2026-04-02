@@ -39,6 +39,11 @@ from offshore_dl.training.experiment import ExperimentRunner
 from offshore_dl.utils.config import load_merged_config
 from offshore_dl.utils.reproducibility import set_global_seed
 
+try:
+    from offshore_dl.models.fkmad import FKMADModel
+except (ImportError, ModuleNotFoundError, RuntimeError):
+    FKMADModel = None
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
@@ -88,8 +93,20 @@ MODELS: dict[str, dict] = {
     },
 }
 
+if FKMADModel is not None:
+    MODELS["fkmad"] = {
+        "class": FKMADModel,
+        "config": "configs/models/fkmad.yaml",
+        "overrides": {
+            "d_model": 128,
+            "n_mamba_layers": 2,
+            "dropout": 0.2,
+        },
+    }
+
 TREE_MODELS = ["random_forest"]
-ALL_MODELS = list(MODELS.keys()) + TREE_MODELS
+RAW_MODELS = ["fkmad_raw"]
+ALL_MODELS = list(MODELS.keys()) + TREE_MODELS + RAW_MODELS
 
 RESULTS_DIR = Path("results")
 
@@ -359,6 +376,9 @@ def main() -> None:
     summary: dict[str, dict] = {}
 
     for model_name in models_to_run:
+        if model_name in RAW_MODELS:
+            continue  # handled in dedicated block below
+
         logger.info("─" * 60)
         logger.info("TRAINING: %s on 3W features", model_name.upper())
         logger.info("─" * 60)
@@ -444,6 +464,106 @@ def main() -> None:
     summary_path.parent.mkdir(parents=True, exist_ok=True)
     summary_path.write_text(json.dumps(_make_serializable(summary), indent=2))
     logger.info("Summary saved: %s", summary_path)
+
+    # ── FKM-AD Raw Classification (720×27 windows, Mamba backbone) ──
+    # Uses raw 3W windows instead of feature-extracted data.
+    # Reuses the same holdout split (train_pool/test_indices) from the
+    # feature dataset — sample ordering is identical.
+    run_fkmad_raw = (args.models is None) or ("fkmad_raw" in args.models)
+    if run_fkmad_raw and FKMADModel is not None:
+        logger.info("─" * 60)
+        logger.info("FKMAD_RAW CLASSIFICATION (720×27 raw windows)")
+        logger.info("─" * 60)
+        try:
+            from offshore_dl.data.datasets import ThreeWDataset
+
+            raw_dataset = ThreeWDataset("configs/data/3w.yaml")
+            logger.info("  Raw 3W loaded: %d samples", len(raw_dataset))
+
+            raw_labels = np.array([int(raw_dataset[i][1]) for i in range(len(raw_dataset))])
+            raw_groups = np.array([raw_dataset[i][2]["instance_id"] for i in range(len(raw_dataset))])
+
+            # Inner CV within train_pool (reuse same holdout split)
+            pool_labels_raw = raw_labels[train_pool]
+            pool_groups_raw = raw_groups[train_pool]
+            inner_cv_raw = StratifiedGroupKFoldSKLearn(
+                n_folds=5, labels=pool_labels_raw, groups=pool_groups_raw, seed=42,
+            )
+
+            cfg_raw = load_merged_config(
+                "configs/base.yaml", "configs/data/3w.yaml", "configs/models/fkmad.yaml",
+            )
+            cfg_raw.training.max_epochs = args.max_epochs
+            cfg_raw.training.batch_size = 32  # reduced for 720-length sequences — VRAM safety
+            cfg_raw.device = args.device
+            cfg_raw.training.scheduler = "cosine"
+
+            model_kwargs_raw = {
+                "task": "classification",
+                "n_vars": 27,
+                "n_classes": cfg_raw.data.n_classes,
+                "window_size": 720,
+            }
+
+            # Merge architecture params from model config
+            if hasattr(cfg_raw, "model") and hasattr(cfg_raw.model, "architecture"):
+                arch_raw = OmegaConf.to_container(cfg_raw.model.architecture, resolve=True)
+                model_kwargs_raw.update(arch_raw)
+
+            # Merge training LR/weight_decay
+            if hasattr(cfg_raw, "model") and hasattr(cfg_raw.model, "training"):
+                model_kwargs_raw["lr"] = cfg_raw.model.training.lr
+                model_kwargs_raw["weight_decay"] = cfg_raw.model.training.weight_decay
+
+            fkmad_raw_start = time.time()
+            runner_raw = ExperimentRunner(
+                model_class=FKMADModel,
+                dataset=raw_dataset,
+                cv_strategy=inner_cv_raw,
+                cfg=cfg_raw,
+                model_kwargs=model_kwargs_raw,
+            )
+
+            fkmad_raw_results = runner_raw.run_nested(
+                train_pool=train_pool,
+                test_indices=test_indices,
+                use_mlflow=not args.no_mlflow,
+            )
+            fkmad_raw_elapsed = time.time() - fkmad_raw_start
+
+            out_path_raw = RESULTS_DIR / "fkmad_raw" / "3w.json"
+            out_path_raw.parent.mkdir(parents=True, exist_ok=True)
+            out_path_raw.write_text(json.dumps(_make_serializable(fkmad_raw_results), indent=2))
+            logger.info("  Results saved: %s", out_path_raw)
+
+            agg_raw = fkmad_raw_results.get("test_metrics", {})
+            metric_str_raw = ", ".join(
+                f"{k}={v:.4f}" for k, v in sorted(agg_raw.items())
+                if isinstance(v, (int, float))
+            )
+            summary["fkmad_raw"] = {
+                "status": "ok",
+                "elapsed": round(fkmad_raw_elapsed, 1),
+                "test_metrics": fkmad_raw_results.get("test_metrics", {}),
+                "cv_aggregate": fkmad_raw_results.get("cv_aggregate", {}),
+                "n_train": fkmad_raw_results.get("n_train", 0),
+                "n_test": fkmad_raw_results.get("n_test", 0),
+                "n_cv_folds": fkmad_raw_results.get("n_cv_folds", 0),
+            }
+            logger.info("✓ fkmad_raw: %s (%.1fs)", metric_str_raw, fkmad_raw_elapsed)
+
+            # Re-save summary with fkmad_raw
+            summary_path.write_text(json.dumps(_make_serializable(summary), indent=2))
+
+        except Exception as e:
+            logger.error("✗ fkmad_raw failed: %s", e)
+            traceback.print_exc()
+            summary["fkmad_raw"] = {"status": "error", "error": str(e)}
+            summary_path.write_text(json.dumps(_make_serializable(summary), indent=2))
+    elif run_fkmad_raw and FKMADModel is None:
+        logger.warning("FKMADModel not available (CUDA required) — skipping fkmad_raw")
+        summary["fkmad_raw"] = {"status": "skipped", "error": "FKMADModel import failed (CUDA required)"}
+        summary_path.write_text(json.dumps(_make_serializable(summary), indent=2))
 
     # ── TiRex Classification (embedding + RF) ──
     # TiRex uses raw windows, not feature-extracted — loads its own dataset.

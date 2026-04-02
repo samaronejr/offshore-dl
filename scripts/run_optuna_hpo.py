@@ -64,11 +64,16 @@ def _load_pytorch_deps():
     from offshore_dl.models.tcn import TCNModel
     from offshore_dl.training.experiment import ExperimentRunner
     from offshore_dl.training.optuna_utils import run_hpo
+    try:
+        from offshore_dl.models.fkmad import FKMADModel
+    except (ImportError, ModuleNotFoundError, RuntimeError):
+        FKMADModel = None
     return {
         "LSTMModel": LSTMModel,
         "DeepONetModel": DeepONetModel,
         "PatchTSTModel": PatchTSTModel,
         "TCNModel": TCNModel,
+        "FKMADModel": FKMADModel,
         "ExperimentRunner": ExperimentRunner,
         "run_hpo": run_hpo,
     }
@@ -77,7 +82,7 @@ def _load_pytorch_deps():
 def _get_3w_models():
     """Build 3W model registry (lazy, imports PyTorch models)."""
     deps = _load_pytorch_deps()
-    return {
+    models = {
         "lstm": {
             "class": deps["LSTMModel"],
             "config": "configs/models/lstm.yaml",
@@ -124,6 +129,21 @@ def _get_3w_models():
             },
         },
     }
+    if deps["FKMADModel"] is not None:
+        models["fkmad"] = {
+            "class": deps["FKMADModel"],
+            "config": "configs/models/fkmad.yaml",
+            "kwargs": {
+                "task": "classification",
+                "n_vars": 27,
+                "window_size": 14,
+                "n_classes": 10,
+                "d_model": 128,
+                "n_mamba_layers": 2,
+                "dropout": 0.2,
+            },
+        }
+    return models
 
 
 def _get_ganymede_models():
@@ -646,8 +666,8 @@ def main():
 
     if args.dataset == "3w":
         # Valid 3W models — names only for validation (lazy import of PyTorch deps)
-        valid_models = {"lstm", "deeponet", "patchtst", "random_forest"}
-        default_models = ["lstm", "deeponet", "patchtst", "random_forest"]
+        valid_models = {"lstm", "deeponet", "patchtst", "random_forest", "fkmad"}
+        default_models = ["lstm", "deeponet", "patchtst", "random_forest", "fkmad"]
     else:
         # Valid Ganymede models
         valid_models = {"lstm", "deeponet", "patchtst", "tcn"}
