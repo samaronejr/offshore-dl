@@ -39,3 +39,10 @@ try:
     __all__.append("TiRexWrapper")
 except ImportError:
     pass
+
+try:
+    from offshore_dl.models.fkmad import FKMADModel
+
+    __all__.append("FKMADModel")
+except (ImportError, ModuleNotFoundError, RuntimeError):
+    pass
