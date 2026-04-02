@@ -1,6 +1,7 @@
 """Tests for DeepONetModel — all 3 task types."""
 
 import torch
+import torch.nn as nn
 import pytest
 
 from offshore_dl.models.deeponet import (
@@ -468,3 +469,166 @@ class TestDeepONetAttentionConvergence:
         assert losses[-1] < losses[0], (
             f"Attention loss did not decrease: {losses[0]:.4f} → {losses[-1]:.4f}"
         )
+
+
+# ═══════════════════════════════════════════════════════════════════
+# FocalLoss Unit Tests
+# ═══════════════════════════════════════════════════════════════════
+
+from offshore_dl.models.base import FocalLoss
+
+
+class TestFocalLoss:
+    """Unit tests for the FocalLoss module."""
+
+    def test_forward_shape(self) -> None:
+        """FocalLoss returns a scalar loss from random logits/targets."""
+        fl = FocalLoss(gamma=2.0)
+        logits = torch.randn(8, 10)
+        targets = torch.randint(0, 10, (8,))
+        loss = fl(logits, targets)
+        assert loss.dim() == 0
+        assert loss.item() > 0
+
+    def test_gradient_flow(self) -> None:
+        """loss.backward() produces non-zero gradients through FocalLoss."""
+        fl = FocalLoss(gamma=2.0)
+        logits = torch.randn(8, 10, requires_grad=True)
+        targets = torch.randint(0, 10, (8,))
+        loss = fl(logits, targets)
+        loss.backward()
+        assert logits.grad is not None
+        assert logits.grad.abs().sum() > 0
+
+    def test_gamma_zero_equals_ce(self) -> None:
+        """FocalLoss(gamma=0) matches nn.CrossEntropyLoss within atol=1e-5."""
+        torch.manual_seed(42)
+        logits = torch.randn(16, 5)
+        targets = torch.randint(0, 5, (16,))
+
+        focal_loss = FocalLoss(gamma=0.0)(logits, targets)
+        ce_loss = nn.CrossEntropyLoss()(logits, targets)
+
+        torch.testing.assert_close(focal_loss, ce_loss, atol=1e-5, rtol=0)
+
+    def test_with_class_weights(self) -> None:
+        """FocalLoss with per-class weights produces a valid scalar loss."""
+        weights = torch.tensor([1.0, 2.0, 0.5, 1.5, 3.0])
+        fl = FocalLoss(gamma=2.0, weight=weights)
+        logits = torch.randn(8, 5)
+        targets = torch.randint(0, 5, (8,))
+        loss = fl(logits, targets)
+        assert loss.dim() == 0
+        assert loss.item() > 0
+
+    def test_high_gamma_reduces_easy_loss(self) -> None:
+        """Confident predictions get lower loss with high gamma (focal down-weighting)."""
+        # Create a confident prediction: class 0 logit much higher than others
+        logits = torch.tensor([[ 5.0, -2.0, -2.0, -2.0, -2.0]])
+        targets = torch.tensor([0])
+
+        loss_gamma0 = FocalLoss(gamma=0.0)(logits, targets)
+        loss_gamma5 = FocalLoss(gamma=5.0)(logits, targets)
+
+        assert loss_gamma5.item() < loss_gamma0.item(), (
+            f"High gamma should reduce easy-example loss: γ=0 → {loss_gamma0.item():.6f}, γ=5 → {loss_gamma5.item():.6f}"
+        )
+
+    def test_sum_reduction(self) -> None:
+        """FocalLoss with reduction='sum' returns sum instead of mean."""
+        fl_mean = FocalLoss(gamma=2.0, reduction="mean")
+        fl_sum = FocalLoss(gamma=2.0, reduction="sum")
+        logits = torch.randn(8, 5)
+        targets = torch.randint(0, 5, (8,))
+        # Sum should be larger than mean for batch_size > 1
+        assert fl_sum(logits, targets).item() > fl_mean(logits, targets).item()
+
+
+# ═══════════════════════════════════════════════════════════════════
+# DeepONet + Focal Loss Integration Tests
+# ═══════════════════════════════════════════════════════════════════
+
+
+class TestDeepONetFocalLossClassification:
+    """Integration tests: DeepONet classification with focal loss."""
+
+    @pytest.fixture
+    def model(self):
+        return DeepONetModel(
+            task="classification", n_vars=27, n_classes=10,
+            rank=16, window_size=14, loss_type="focal", focal_gamma=2.0,
+        )
+
+    @pytest.fixture
+    def batch(self):
+        x = torch.randn(4, 14, 27)
+        y = torch.randint(0, 10, (4,))
+        return x, y, [{}] * 4
+
+    def test_forward_shape_focal(self, model, batch) -> None:
+        """Output shape is (batch, n_classes) with focal loss."""
+        x, _, _ = batch
+        out = model(x)
+        assert out.shape == (4, 10)
+
+    def test_training_step_focal(self, model, batch) -> None:
+        """training_step returns a scalar differentiable loss with focal loss."""
+        loss = model.training_step(batch)
+        assert loss.dim() == 0
+        assert loss.requires_grad
+
+    def test_class_weights_with_focal(self, model, batch) -> None:
+        """set_class_weights + focal loss training_step produces valid loss."""
+        weights = torch.ones(10)
+        weights[2] = 3.0
+        model.set_class_weights(weights)
+        loss = model.training_step(batch)
+        assert loss.dim() == 0
+        assert loss.requires_grad
+        assert loss.item() > 0
+
+    def test_default_is_ce(self) -> None:
+        """DeepONet without loss_type kwarg uses CrossEntropyLoss."""
+        model = DeepONetModel(
+            task="classification", n_vars=27, n_classes=10, window_size=14,
+        )
+        assert isinstance(model._loss_fn, nn.CrossEntropyLoss)
+
+    def test_invalid_loss_type_raises(self) -> None:
+        """loss_type='unknown' raises ValueError during construction."""
+        with pytest.raises(ValueError, match="Unknown loss_type"):
+            DeepONetModel(
+                task="classification", n_vars=27, n_classes=10,
+                window_size=14, loss_type="unknown",
+            )
+
+    def test_focal_with_conv1d_branch(self) -> None:
+        """Focal loss works with conv1d branch type."""
+        model = DeepONetModel(
+            task="classification", n_vars=27, n_classes=10,
+            rank=16, window_size=14, branch_type="conv1d",
+            loss_type="focal", focal_gamma=2.0,
+        )
+        x = torch.randn(4, 14, 27)
+        y = torch.randint(0, 10, (4,))
+        loss = model.training_step((x, y, [{}] * 4))
+        assert loss.dim() == 0
+        assert loss.requires_grad
+
+    def test_focal_with_attention_branch(self) -> None:
+        """Focal loss works with attention branch type."""
+        model = DeepONetModel(
+            task="classification", n_vars=27, n_classes=10,
+            rank=16, window_size=14, branch_type="attention",
+            loss_type="focal", focal_gamma=2.0,
+        )
+        x = torch.randn(4, 14, 27)
+        y = torch.randint(0, 10, (4,))
+        loss = model.training_step((x, y, [{}] * 4))
+        assert loss.dim() == 0
+        assert loss.requires_grad
+
+    def test_focal_criterion_is_focal_loss(self, model) -> None:
+        """Internal loss function is FocalLoss when loss_type='focal'."""
+        assert isinstance(model._loss_fn, FocalLoss)
+        assert model._loss_fn.gamma == 2.0
