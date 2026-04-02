@@ -295,7 +295,7 @@ After inner CV, a fresh model is trained on the entire 80\% training pool and ev
 
 \subsection{3W Fault Classification}
 
-Table~\ref{tab:3w_main} presents the primary results on the held-out test set ($n{=}41{,}515$). All five models are evaluated on identical test samples. DeepONet and LSTM achieve near-identical accuracy ($\sim$96.8\%), while PatchTST reaches 96.5\% after Optuna HPO (30 trials, improved from 95.7\% with manual tuning). Notably, Random Forest achieves 96.58\% accuracy on the flattened 378-dimensional feature vector, demonstrating that the statistical feature extraction pipeline captures discriminative information accessible even to non-sequential, tabular learners. Inner CV estimates are within 2\% of test performance for all trained models, indicating stable generalization.
+Table~\ref{tab:3w_main} presents the primary results on the held-out test set ($n{=}41{,}515$). All five models are evaluated on identical test samples. DeepONet and LSTM achieve near-identical accuracy ($\sim$96.8\%), while PatchTST reaches 96.5\% after Optuna HPO (30 trials, improved from 95.7\% with manual tuning). Notably, Random Forest achieves 96.58\% accuracy (0.966, macro $F_1{=}0.964$, AUC-PR${=}0.985$) on the flattened 378-dimensional feature vector, demonstrating that the statistical feature extraction pipeline captures discriminative information accessible even to non-sequential, tabular learners. Inner CV estimates are within 2\% of test performance for all trained models, indicating stable generalization.
 
 \begin{table}[t]
 \centering
