@@ -36,7 +36,7 @@
         "final_val_loss": 0.24969197224293435
       },
       "cost": {
-        "wall_time_seconds": 19.24,
+        "wall_time_seconds": 18.21,
         "gpu_memory_peak_mb": 205.01,
         "param_count": 587399,
         "trainable_params": 587399,
@@ -60,7 +60,7 @@
         "final_val_loss": 0.03545119387230703
       },
       "cost": {
-        "wall_time_seconds": 21.9,
+        "wall_time_seconds": 20.46,
         "gpu_memory_peak_mb": 205.01,
         "param_count": 587399,
         "trainable_params": 587399,
@@ -84,7 +84,7 @@
         "final_val_loss": 0.021958409675530026
       },
       "cost": {
-        "wall_time_seconds": 32.14,
+        "wall_time_seconds": 30.31,
         "gpu_memory_peak_mb": 205.01,
         "param_count": 587399,
         "trainable_params": 587399,
