@@ -1,0 +1,194 @@
+[
+  {
+    "run": "tcn h7 multi_well",
+    "status": "error",
+    "elapsed": 1.2,
+    "error": "Unknown model: 'tcn'. Available: ['lstm', 'deeponet', 'patchtst', 'chronos', 'timesfm', 'tirex']"
+  },
+  {
+    "run": "tcn h7 per_well 49/22-Z01Z",
+    "status": "error",
+    "elapsed": 0.0,
+    "error": "Unknown model: 'tcn'. Available: ['lstm', 'deeponet', 'patchtst', 'chronos', 'timesfm', 'tirex']"
+  },
+  {
+    "run": "tcn h7 per_well 49/22-Z02Z",
+    "status": "error",
+    "elapsed": 0.0,
+    "error": "Unknown model: 'tcn'. Available: ['lstm', 'deeponet', 'patchtst', 'chronos', 'timesfm', 'tirex']"
+  },
+  {
+    "run": "tcn h7 per_well 49/22-Z04",
+    "status": "error",
+    "elapsed": 0.0,
+    "error": "Unknown model: 'tcn'. Available: ['lstm', 'deeponet', 'patchtst', 'chronos', 'timesfm', 'tirex']"
+  },
+  {
+    "run": "tcn h7 per_well 49/22-Z05Z",
+    "status": "error",
+    "elapsed": 0.0,
+    "error": "Unknown model: 'tcn'. Available: ['lstm', 'deeponet', 'patchtst', 'chronos', 'timesfm', 'tirex']"
+  },
+  {
+    "run": "tcn h7 per_well 49/22-Z06",
+    "status": "error",
+    "elapsed": 0.0,
+    "error": "Unknown model: 'tcn'. Available: ['lstm', 'deeponet', 'patchtst', 'chronos', 'timesfm', 'tirex']"
+  },
+  {
+    "run": "tcn h7 per_well 49/22-Z07",
+    "status": "error",
+    "elapsed": 0.0,
+    "error": "Unknown model: 'tcn'. Available: ['lstm', 'deeponet', 'patchtst', 'chronos', 'timesfm', 'tirex']"
+  },
+  {
+    "run": "tcn h7 per_well 49/22-Z08",
+    "status": "error",
+    "elapsed": 0.0,
+    "error": "Unknown model: 'tcn'. Available: ['lstm', 'deeponet', 'patchtst', 'chronos', 'timesfm', 'tirex']"
+  },
+  {
+    "run": "tcn h14 multi_well",
+    "status": "error",
+    "elapsed": 0.0,
+    "error": "Unknown model: 'tcn'. Available: ['lstm', 'deeponet', 'patchtst', 'chronos', 'timesfm', 'tirex']"
+  },
+  {
+    "run": "tcn h14 per_well 49/22-Z01Z",
+    "status": "error",
+    "elapsed": 0.0,
+    "error": "Unknown model: 'tcn'. Available: ['lstm', 'deeponet', 'patchtst', 'chronos', 'timesfm', 'tirex']"
+  },
+  {
+    "run": "tcn h14 per_well 49/22-Z02Z",
+    "status": "error",
+    "elapsed": 0.0,
+    "error": "Unknown model: 'tcn'. Available: ['lstm', 'deeponet', 'patchtst', 'chronos', 'timesfm', 'tirex']"
+  },
+  {
+    "run": "tcn h14 per_well 49/22-Z04",
+    "status": "error",
+    "elapsed": 0.0,
+    "error": "Unknown model: 'tcn'. Available: ['lstm', 'deeponet', 'patchtst', 'chronos', 'timesfm', 'tirex']"
+  },
+  {
+    "run": "tcn h14 per_well 49/22-Z05Z",
+    "status": "error",
+    "elapsed": 0.0,
+    "error": "Unknown model: 'tcn'. Available: ['lstm', 'deeponet', 'patchtst', 'chronos', 'timesfm', 'tirex']"
+  },
+  {
+    "run": "tcn h14 per_well 49/22-Z06",
+    "status": "error",
+    "elapsed": 0.0,
+    "error": "Unknown model: 'tcn'. Available: ['lstm', 'deeponet', 'patchtst', 'chronos', 'timesfm', 'tirex']"
+  },
+  {
+    "run": "tcn h14 per_well 49/22-Z07",
+    "status": "error",
+    "elapsed": 0.0,
+    "error": "Unknown model: 'tcn'. Available: ['lstm', 'deeponet', 'patchtst', 'chronos', 'timesfm', 'tirex']"
+  },
+  {
+    "run": "tcn h14 per_well 49/22-Z08",
+    "status": "error",
+    "elapsed": 0.0,
+    "error": "Unknown model: 'tcn'. Available: ['lstm', 'deeponet', 'patchtst', 'chronos', 'timesfm', 'tirex']"
+  },
+  {
+    "run": "tcn h30 multi_well",
+    "status": "error",
+    "elapsed": 0.0,
+    "error": "Unknown model: 'tcn'. Available: ['lstm', 'deeponet', 'patchtst', 'chronos', 'timesfm', 'tirex']"
+  },
+  {
+    "run": "tcn h30 per_well 49/22-Z01Z",
+    "status": "error",
+    "elapsed": 0.0,
+    "error": "Unknown model: 'tcn'. Available: ['lstm', 'deeponet', 'patchtst', 'chronos', 'timesfm', 'tirex']"
+  },
+  {
+    "run": "tcn h30 per_well 49/22-Z02Z",
+    "status": "error",
+    "elapsed": 0.0,
+    "error": "Unknown model: 'tcn'. Available: ['lstm', 'deeponet', 'patchtst', 'chronos', 'timesfm', 'tirex']"
+  },
+  {
+    "run": "tcn h30 per_well 49/22-Z04",
+    "status": "error",
+    "elapsed": 0.0,
+    "error": "Unknown model: 'tcn'. Available: ['lstm', 'deeponet', 'patchtst', 'chronos', 'timesfm', 'tirex']"
+  },
+  {
+    "run": "tcn h30 per_well 49/22-Z05Z",
+    "status": "error",
+    "elapsed": 0.0,
+    "error": "Unknown model: 'tcn'. Available: ['lstm', 'deeponet', 'patchtst', 'chronos', 'timesfm', 'tirex']"
+  },
+  {
+    "run": "tcn h30 per_well 49/22-Z06",
+    "status": "error",
+    "elapsed": 0.0,
+    "error": "Unknown model: 'tcn'. Available: ['lstm', 'deeponet', 'patchtst', 'chronos', 'timesfm', 'tirex']"
+  },
+  {
+    "run": "tcn h30 per_well 49/22-Z07",
+    "status": "error",
+    "elapsed": 0.0,
+    "error": "Unknown model: 'tcn'. Available: ['lstm', 'deeponet', 'patchtst', 'chronos', 'timesfm', 'tirex']"
+  },
+  {
+    "run": "tcn h30 per_well 49/22-Z08",
+    "status": "error",
+    "elapsed": 0.0,
+    "error": "Unknown model: 'tcn'. Available: ['lstm', 'deeponet', 'patchtst', 'chronos', 'timesfm', 'tirex']"
+  },
+  {
+    "run": "tcn h90 multi_well",
+    "status": "error",
+    "elapsed": 0.0,
+    "error": "Unknown model: 'tcn'. Available: ['lstm', 'deeponet', 'patchtst', 'chronos', 'timesfm', 'tirex']"
+  },
+  {
+    "run": "tcn h90 per_well 49/22-Z01Z",
+    "status": "error",
+    "elapsed": 0.0,
+    "error": "Unknown model: 'tcn'. Available: ['lstm', 'deeponet', 'patchtst', 'chronos', 'timesfm', 'tirex']"
+  },
+  {
+    "run": "tcn h90 per_well 49/22-Z02Z",
+    "status": "error",
+    "elapsed": 0.0,
+    "error": "Unknown model: 'tcn'. Available: ['lstm', 'deeponet', 'patchtst', 'chronos', 'timesfm', 'tirex']"
+  },
+  {
+    "run": "tcn h90 per_well 49/22-Z04",
+    "status": "error",
+    "elapsed": 0.0,
+    "error": "Unknown model: 'tcn'. Available: ['lstm', 'deeponet', 'patchtst', 'chronos', 'timesfm', 'tirex']"
+  },
+  {
+    "run": "tcn h90 per_well 49/22-Z05Z",
+    "status": "error",
+    "elapsed": 0.0,
+    "error": "Unknown model: 'tcn'. Available: ['lstm', 'deeponet', 'patchtst', 'chronos', 'timesfm', 'tirex']"
+  },
+  {
+    "run": "tcn h90 per_well 49/22-Z06",
+    "status": "error",
+    "elapsed": 0.0,
+    "error": "Unknown model: 'tcn'. Available: ['lstm', 'deeponet', 'patchtst', 'chronos', 'timesfm', 'tirex']"
+  },
+  {
+    "run": "tcn h90 per_well 49/22-Z07",
+    "status": "error",
+    "elapsed": 0.0,
+    "error": "Unknown model: 'tcn'. Available: ['lstm', 'deeponet', 'patchtst', 'chronos', 'timesfm', 'tirex']"
+  },
+  {
+    "run": "tcn h90 per_well 49/22-Z08",
+    "status": "error",
+    "elapsed": 0.0,
+    "error": "Unknown model: 'tcn'. Available: ['lstm', 'deeponet', 'patchtst', 'chronos', 'timesfm', 'tirex']"
+  }
+]

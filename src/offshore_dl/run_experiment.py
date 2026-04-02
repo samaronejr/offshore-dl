@@ -29,6 +29,7 @@ from offshore_dl.models.chronos_wrapper import ChronosWrapper
 from offshore_dl.models.deeponet import DeepONetModel
 from offshore_dl.models.lstm import LSTMModel
 from offshore_dl.models.patchtst import PatchTSTModel
+from offshore_dl.models.tcn import TCNModel
 
 try:
     from offshore_dl.models.timesfm_wrapper import TimesFMWrapper
@@ -53,6 +54,7 @@ MODEL_REGISTRY: dict[str, type] = {
     "lstm": LSTMModel,
     "deeponet": DeepONetModel,
     "patchtst": PatchTSTModel,
+    "tcn": TCNModel,
     "chronos": ChronosWrapper,
 }
 
