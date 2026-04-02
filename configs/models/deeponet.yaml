@@ -10,6 +10,7 @@ model:
     rank: 128                      # rank of the outer product
     activation: "gelu"
     dropout: 0.15
+    branch_type: "mlp"            # "mlp", "conv1d", or "attention" (for short windows ≤30)
 
   training:
     lr: 0.0005
@@ -33,3 +34,6 @@ model:
     branch_width:
       type: "categorical"
       choices: [64, 128, 256]
+    branch_type:
+      type: "categorical"
+      choices: ["mlp", "conv1d", "attention"]

@@ -1,8 +1,8 @@
 % ============================================================
 %  ALL RESULTS — Offshore Deep Learning Benchmark
-%  Models: LSTM, DeepONet, PatchTST, MLP, TiRex, Chronos, TimesFM, XGBoost
+%  Models: LSTM, DeepONet, PatchTST, Random Forest, TiRex, Chronos, TimesFM, TCN
 %  Datasets: 3W (classification), Ganymede (forecasting), CDF (anomaly detection)
-%  Generated: 2026-03-31
+%  Generated: 2026-04-02
 % ============================================================
 %
 % Compile:  tectonic all_results.tex   OR   pdflatex all_results.tex
@@ -22,14 +22,14 @@
 
 \newcommand{\best}[1]{\textbf{#1}}
 \newcommand{\fm}{\textsuperscript{FM}}
-\newcommand{\tree}{\textsuperscript{Tree}}
+\newcommand{\treemodel}{\textsuperscript{Tree}}
 \newcommand{\hpo}{\textsuperscript{$\dagger$}}
 \newcommand{\rp}{R^2_\text{prod}}
 
 \title{Complete Experimental Results\\[4pt]
 \large Offshore Production Monitoring Benchmark}
 \author{}
-\date{March 2026}
+\date{April 2026}
 
 \begin{document}
 \maketitle
@@ -53,7 +53,8 @@ Inner CV: 5-fold stratified.
 \centering
 \caption{3W fault classification — held-out test and inner 5-fold CV.
 Best test values per column in \textbf{bold}.
-FM = foundation model (zero-shot). $^\dagger$After 30-trial Optuna HPO.}
+FM = foundation model (zero-shot). Tree = Random Forest ensemble.
+$^\dagger$After 30-trial Optuna HPO.}
 \label{tab:3w_main}
 \small
 \setlength{\tabcolsep}{3pt}
@@ -65,14 +66,14 @@ FM = foundation model (zero-shot). $^\dagger$After 30-trial Optuna HPO.}
 \midrule
 DeepONet         & \best{.968} & \best{.964} & \best{.969} & .934 & .956$\pm$.013 \\
 LSTM             & .967 & .962 & .967 & .931 & .951$\pm$.014 \\
+Random Forest\treemodel & .966 & .964 & .966 & \best{.985} & .979$\pm$.016 \\
 PatchTST\hpo     & .965 & .962 & .965 & .931 & .955$\pm$.018 \\
-MLP              & .065 & .012 & .008 & .100 & .174$\pm$.000 \\
 \midrule
-TiRex\fm         & .912 & .895 & .911 & \best{.938} & .899$\pm$.021 \\
+TiRex\fm         & .912 & .895 & .911 & .938 & .899$\pm$.021 \\
 \midrule
 \textit{Majority baseline} & \textit{.174} & \textit{.101} & --- & --- & --- \\
 \bottomrule
-\multicolumn{6}{@{}l}{\scriptsize $^\dagger$30-trial Optuna HPO. All others use manually tuned hyperparameters.}
+\multicolumn{6}{@{}l}{\scriptsize $^\dagger$30-trial Optuna HPO. All others use manually tuned hyperparameters or defaults.}
 \end{tabular}
 \end{table}
 
@@ -117,7 +118,7 @@ Units: MMSCF (million standard cubic feet).
 \centering
 \caption{Ganymede forecasting — held-out test (multi-well, MMSCF).
 Best values per column in \textbf{bold}.
-FM = foundation model (zero-shot). Tree = gradient boosted trees.}
+FM = foundation model (zero-shot).}
 \label{tab:ganymede_main}
 \small
 \setlength{\tabcolsep}{2.5pt}
@@ -145,9 +146,9 @@ FM = foundation model (zero-shot). Tree = gradient boosted trees.}
  & $\rp$ & .327 & .177 & .213 & $-$.464 \\
  & MAE   & 1.77 & 1.95 & 1.83 & 2.25 \\
 \midrule
-\multirow{2}{*}{XGBoost\tree}
- & $\rp$ & $-$.031 & $-$.465 & $-$.415 & $-$1.25 \\
- & MAE   & 1.93 & 2.45 & 2.47 & 2.77 \\
+\multirow{2}{*}{TCN}
+ & $\rp$ & $-$4.51 & .108 & .060 & $-$.044 \\
+ & MAE   & 3.98 & 2.37 & 2.62 & 2.34 \\
 \midrule
 \multirow{2}{*}{DeepONet}
  & $\rp$ & $-$5.72 & $-$6.49 & $-$26.8 & $-$14.9 \\
@@ -176,7 +177,7 @@ TiRex    & FM   & 0.658 & 0.749 & 0.804 & 0.831 &  0.822 &  0.775 &  0.699 &  0.
 Chronos  & FM   & 0.739 & 0.835 & 0.886 & 0.995 &  0.734 &  0.668 &  0.584 &  0.361 \\
 PatchTST & NN   & 1.771 & 1.980 & 2.134 & 2.510 &  0.574 &  0.463 &  0.177 & $-$0.718 \\
 LSTM     & NN   & 1.768 & 1.948 & 1.833 & 2.254 &  0.327 &  0.177 &  0.213 & $-$0.464 \\
-XGBoost  & Tree & 1.928 & 2.447 & 2.468 & 2.768 & $-$0.031 & $-$0.465 & $-$0.415 & $-$1.252 \\
+TCN      & NN   & 3.982 & 2.369 & 2.623 & 2.336 & $-$4.509 &  0.108 &  0.060 & $-$0.044 \\
 DeepONet & NN   & 4.836 & 4.987 & 5.812 & 5.700 & $-$5.716 & $-$6.495 & $-$26.79 & $-$14.93 \\
 \bottomrule
 \end{tabular}
@@ -200,7 +201,7 @@ TiRex\fm    & $\rp$ & $.74 \pm .07$ & $.67 \pm .13$ & $.60 \pm .17$ & $.49 \pm .
 Chronos\fm  & $\rp$ & $.63 \pm .05$ & $.54 \pm .12$ & $.43 \pm .19$ & $.31 \pm .24$ \\
 PatchTST    & $\rp$ & $.56 \pm .40$ & $.39 \pm .60$ & $.14 \pm .91$ & $-.23 \pm 1.34$ \\
 LSTM        & $\rp$ & $.69 \pm .17$ & $.54 \pm .34$ & $.41 \pm .47$ & $.20 \pm .57$ \\
-XGBoost\tree & $\rp$ & $.69 \pm .24$ & $.60 \pm .36$ & $-.23 \pm 1.52$ & $-.15 \pm 1.34$ \\
+TCN         & $\rp$ & $-7.96 \pm 12.29$ & $-1.07 \pm 2.52$ & $-3.52 \pm 5.93$ & $-6.68 \pm 10.31$ \\
 DeepONet    & $\rp$ & $-.03 \pm 1.07$ & $-.17 \pm 1.16$ & $-10.9 \pm 16.4$ & $-27.9 \pm 40.2$ \\
 \midrule
 TimesFM\fm  & MAE & $3.54 \pm 1.97$ & $3.96 \pm 2.19$ & $4.28 \pm 2.38$ & $4.68 \pm 3.45$ \\
@@ -208,7 +209,7 @@ TiRex\fm    & MAE & $3.11 \pm 1.75$ & $3.34 \pm 1.84$ & $3.57 \pm 1.97$ & $3.99 
 Chronos\fm  & MAE & $3.42 \pm 1.93$ & $3.65 \pm 2.02$ & $3.93 \pm 2.18$ & $4.35 \pm 2.97$ \\
 PatchTST    & MAE & $4.16 \pm 1.41$ & $4.24 \pm 1.33$ & $4.56 \pm 1.48$ & $4.70 \pm 1.88$ \\
 LSTM        & MAE & $3.78 \pm 1.88$ & $4.08 \pm 1.69$ & $4.59 \pm 1.96$ & $4.81 \pm 2.68$ \\
-XGBoost\tree & MAE & $3.10 \pm 1.20$ & $3.26 \pm 1.23$ & $3.81 \pm 0.73$ & $3.80 \pm 1.50$ \\
+TCN         & MAE & $5.28 \pm 0.72$ & $5.05 \pm 0.85$ & $5.15 \pm 1.10$ & $5.79 \pm 1.61$ \\
 DeepONet    & MAE & $5.26 \pm 1.56$ & $5.36 \pm 2.06$ & $6.74 \pm 0.36$ & $7.50 \pm 1.86$ \\
 \bottomrule
 \end{tabular}
@@ -233,7 +234,7 @@ TiRex\fm    & RMSE & 1.398 & 1.525 & 1.602 & 1.635 \\
 Chronos\fm  & RMSE & 1.623 & 1.764 & 1.820 & 1.932 \\
 PatchTST    & RMSE & 2.192 & 2.441 & 2.717 & 3.307 \\
 LSTM        & RMSE & 2.616 & 2.876 & 2.546 & 3.090 \\
-XGBoost\tree & RMSE & 3.196 & 3.792 & 3.650 & 4.058 \\
+TCN         & RMSE & 7.082 & 3.201 & 3.479 & 3.032 \\
 DeepONet    & RMSE & 7.910 & 8.196 & 13.360 & 9.686 \\
 \midrule
 TimesFM\fm  & MASE & 1.681 & 1.012 & 1.117 & 1.415 \\
@@ -241,7 +242,7 @@ TiRex\fm    & MASE & 1.496 & 0.873 & 0.946 & 1.152 \\
 Chronos\fm  & MASE & 1.679 & 0.974 & 1.043 & 1.379 \\
 PatchTST    & MASE & 4.025 & 2.308 & 2.511 & 3.479 \\
 LSTM        & MASE & 4.018 & 2.271 & 2.158 & 3.123 \\
-XGBoost\tree & MASE & 4.381 & 2.853 & 2.905 & 3.836 \\
+TCN         & MASE & 9.050 & 2.761 & 3.088 & 3.236 \\
 DeepONet    & MASE & 10.99 & 5.814 & 6.842 & 7.899 \\
 \bottomrule
 \end{tabular}
@@ -269,7 +270,7 @@ TiRex\fm    & \best{$-$0.749} & \best{$-$0.248} & 0.129 & \best{0.179} & 0.205 &
 Chronos\fm  & $-$0.832 & $-$0.467 & $-$0.122 & $-$0.050 & 0.114 & $-$0.154 & $-$1.767 \\
 PatchTST    & $-$2266 & $-$0.213 & $-$0.345 & $-$151.5 & $-$7.139 & $-$1.339 & $-$0.825 \\
 LSTM        & $-$173.8 & $-$0.563 & $-$5.823 & $-$0.659 & $-$1.337 & 0.012 & $-$3.831 \\
-XGBoost\tree & $-$31.34 & $-$0.163 & $-$0.244 & $-$4.709 & $-$5.170 & 0.292 & $-$1.101 \\
+TCN         & $-$48.04 & $-$2.491 & $-$9.858 & $-$7.514 & $-$6.702 & $-$0.347 & $-$8.158 \\
 DeepONet    & $-$110.6 & $-$1.307 & $-$34.59 & $-$112.8 & $-$60.39 & $-$0.447 & $-$100.2 \\
 \bottomrule
 \end{tabular}
@@ -280,7 +281,8 @@ DeepONet    & $-$110.6 & $-$1.307 & $-$34.59 & $-$112.8 & $-$60.39 & $-$0.447 & 
 %% --------------------------------------------------
 \begin{table}[ht]
 \centering
-\caption{Ganymede $\rp$ per well — $h{=}14$ (held-out test). Best per well in \textbf{bold}.}
+\caption{Ganymede $\rp$ per well — $h{=}14$ (held-out test). Best per well in \textbf{bold}.
+TCN per-well results not available for $h{=}14$.}
 \label{tab:perwell_r2p_h14}
 \scriptsize
 \setlength{\tabcolsep}{2.5pt}
@@ -293,7 +295,6 @@ TiRex\fm    & $-$1.030 & \best{$-$0.714} & $-$0.075 & \best{$-$0.213} & $-$0.771
 Chronos\fm  & $-$1.162 & $-$0.877 & $-$0.360 & $-$0.469 & \best{$-$0.885} & $-$0.498 & $-$1.582 \\
 PatchTST    & $-$3963 & $-$0.579 & $-$0.478 & $-$187.1 & $-$57.43 & $-$1.964 & $-$1.288 \\
 LSTM        & $-$6.691 & $-$0.394 & $-$1.007 & $-$1.107 & $-$5.142 & \best{0.300} & $-$0.996 \\
-XGBoost\tree & $-$28.00 & $-$0.453 & $-$0.383 & $-$4.528 & $-$46.53 & 0.134 & $-$1.008 \\
 DeepONet    & $-$500.6 & $-$4.950 & $-$11.62 & $-$87.01 & $-$346.9 & $-$1.203 & $-$88.77 \\
 \bottomrule
 \end{tabular}
@@ -304,7 +305,8 @@ DeepONet    & $-$500.6 & $-$4.950 & $-$11.62 & $-$87.01 & $-$346.9 & $-$1.203 & 
 %% --------------------------------------------------
 \begin{table}[ht]
 \centering
-\caption{Ganymede $\rp$ per well — $h{=}30$ (held-out test). Best per well in \textbf{bold}.}
+\caption{Ganymede $\rp$ per well — $h{=}30$ (held-out test). Best per well in \textbf{bold}.
+TCN per-well results not available for $h{=}30$.}
 \label{tab:perwell_r2p_h30}
 \scriptsize
 \setlength{\tabcolsep}{2.5pt}
@@ -317,7 +319,6 @@ TiRex\fm    & $-$1.104 & $-$1.188 & $-$0.477 & \best{$-$0.693} & $-$0.686 & $-$0
 Chronos\fm  & $-$1.213 & $-$1.398 & $-$0.898 & $-$0.834 & $-$0.855 & $-$0.764 & $-$1.490 \\
 PatchTST    & $-$4761 & $-$0.826 & $-$1.013 & $-$244.1 & $-$111.1 & $-$3.556 & $-$1.795 \\
 LSTM        & $-$9.739 & $-$1.154 & $-$0.549 & $-$4.927 & $-$3.401 & $-$0.250 & $-$17.17 \\
-XGBoost\tree & $-$48.34 & $-$1.077 & $-$0.481 & $-$4.154 & $-$71.78 & 0.044 & $-$6.832 \\
 DeepONet    & $-$487.3 & $-$8.848 & $-$19.63 & $-$55.93 & $-$101.2 & $-$1.308 & $-$710.3 \\
 \bottomrule
 \end{tabular}
@@ -328,7 +329,8 @@ DeepONet    & $-$487.3 & $-$8.848 & $-$19.63 & $-$55.93 & $-$101.2 & $-$1.308 & 
 %% --------------------------------------------------
 \begin{table}[ht]
 \centering
-\caption{Ganymede $\rp$ per well — $h{=}90$ (held-out test). Best per well in \textbf{bold}.}
+\caption{Ganymede $\rp$ per well — $h{=}90$ (held-out test). Best per well in \textbf{bold}.
+TCN per-well results not available for $h{=}90$.}
 \label{tab:perwell_r2p_h90}
 \scriptsize
 \setlength{\tabcolsep}{2.5pt}
@@ -341,8 +343,7 @@ TiRex\fm    & $-$1.064 & \best{$-$1.640} & $-$0.716 & \best{$-$2.020} & $-$0.032
 Chronos\fm  & $-$1.115 & $-$1.548 & $-$1.450 & $-$2.211 & $-$8.270 & $-$0.987 & $-$0.885 \\
 PatchTST    & $-$4372 & $-$0.983 & $-$1.137 & $-$267.5 & $-$991.2 & $-$5.227 & $-$2.315 \\
 LSTM        & $-$58.83 & $-$1.384 & $-$1.801 & $-$0.919 & $-$66.27 & $-$0.372 & $-$1.422 \\
-XGBoost\tree & $-$50.11 & $-$6.449 & $-$0.814 & $-$1.928 & $-$511.9 & \best{$-$0.185} & $-$1.083 \\
-DeepONet    & $-$202.1 & $-$6.284 & $-$17.52 & $-$26.02 & $-$694.3 & $-$0.603 & $-$1.861 \\
+DeepONet    & $-$202.1 & $-$6.284 & $-$17.52 & $-$26.02 & $-$694.3 & \best{$-$0.603} & $-$1.861 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -363,11 +364,11 @@ DeepONet    & $-$202.1 & $-$6.284 & $-$17.52 & $-$26.02 & $-$694.3 & $-$0.603 & 
 \textbf{Model} & \textbf{Z01Z} & \textbf{Z02Z} & \textbf{Z04} & \textbf{Z05Z} & \textbf{Z06} & \textbf{Z07} & \textbf{Z08} \\
 \midrule
 TimesFM\fm  & 0.025 & 1.846 & 0.531 & 0.264 & 0.353 & 1.485 & 0.707 \\
-TiRex\fm    & 0.024 & 1.647 & 0.483 & 0.236 & 0.295 & 1.381 & 0.738 \\
-Chronos\fm  & 0.024 & 1.701 & 0.516 & 0.253 & 0.299 & 1.457 & 0.838 \\
+TiRex\fm    & \best{0.024} & \best{1.647} & \best{0.483} & \best{0.236} & \best{0.295} & \best{1.381} & \best{0.738} \\
+Chronos\fm  & \best{0.024} & 1.701 & 0.516 & 0.253 & 0.299 & 1.457 & 0.838 \\
 PatchTST    & 4.435 & 2.201 & 0.878 & 4.336 & 4.311 & 2.302 & 1.786 \\
 LSTM        & 0.982 & 2.309 & 1.521 & 0.390 & 1.695 & 1.974 & 2.835 \\
-XGBoost\tree & 0.372 & 2.122 & 0.767 & 0.713 & 3.099 & 1.734 & 1.915 \\
+TCN         & 0.524 & 3.394 & 1.970 & 0.824 & 3.921 & 2.175 & 3.554 \\
 DeepONet    & 0.787 & 3.305 & 2.893 & 2.848 & 7.069 & 2.176 & 9.681 \\
 \bottomrule
 \end{tabular}
@@ -440,9 +441,9 @@ Best in \textbf{bold}. N/A = model not evaluated on task.}
 \midrule
 DeepONet     & \best{.968} & \best{.964} & $-$5.72 & 4.84 & 0.219 \\
 LSTM         & .967 & .962 & .327 & 1.77 & \best{0.005} \\
+Random Forest\treemodel & .966 & .964 & N/A & N/A & N/A \\
 PatchTST     & .965 & .962 & .574 & 1.77 & 0.061 \\
-MLP          & .065 & .012 & N/A & N/A & N/A \\
-XGBoost      & N/A & N/A & $-$.031 & 1.93 & N/A \\
+TCN          & N/A & N/A & $-$4.51 & 3.98 & N/A \\
 \midrule
 TiRex\fm     & .912 & .895 & \best{.822} & \best{.658} & 24.88 \\
 TimesFM\fm   & N/A & N/A & .826 & .740 & 24.88 \\
@@ -464,11 +465,11 @@ Chronos\fm   & N/A & N/A & .734 & .739 & 24.81 \\
 \toprule
 \textbf{Dataset} & \textbf{Winner} & \textbf{Key Finding} \\
 \midrule
-3W  & Trained models & DeepONet 96.8\%, LSTM 96.7\%, PatchTST 96.5\% \\
-    & (structured)   & MLP collapses $\to$ spatial structure essential \\
+3W  & Trained models    & DeepONet 96.8\%, LSTM 96.7\%, RF 96.6\%, PatchTST 96.5\% \\
+    & \& Random Forest  & RF proves feature extraction captures structure \\
 \midrule
 Ganymede & Foundation models & TiRex/TimesFM $\rp > 0.8$ at $h{=}7$ \\
-         &                   & All trained models degrade at $h{=}90$ \\
+         &                   & TCN $\rp \leq 0.11$ $\to$ local receptive fields insufficient \\
 \midrule
 CDF & Trained models & LSTM error 0.005 vs FMs $\sim$25 \\
     & (task-specific) & FMs lack CDF reconstruction inductive bias \\
