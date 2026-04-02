@@ -24,7 +24,8 @@
 \definecolor{deeponet}{HTML}{DD8452}
 \definecolor{patchtst}{HTML}{55A868}
 \definecolor{tirex}{HTML}{C44E52}
-\definecolor{xgboost}{HTML}{8B4513}
+\definecolor{randomforest}{HTML}{228B22}
+\definecolor{tcn}{HTML}{FF6347}
 
 \begin{document}
 
@@ -42,7 +43,7 @@ Rio de Janeiro, Brazil\\
 
 % ═══════════════════════════════════════════════════════════════════
 \begin{abstract}
-Digital monitoring of offshore oil and gas operations demands models capable of detecting equipment faults and forecasting production volumes under challenging conditions: high class imbalance, limited labeled data, multi-well heterogeneity, and long forecast horizons. We present a systematic benchmark of eight deep learning architectures---five trained models (Bidirectional LSTM, DeepONet, MLP, PatchTST, XGBoost) and three foundation models (Chronos, TimesFM, TiRex)---evaluated on two real-world offshore datasets using a nested evaluation protocol with held-out test sets and inner cross-validation. For fault classification on the Petrobras 3W dataset (208{,}973 windows, 10 classes), a statistical feature extraction pipeline compresses 720-step windows into 14-descriptor feature matrices; DeepONet achieves the best held-out accuracy of 96.83\% (macro $F_1{=}0.964$), with three of four trained models reaching $>$96.5\% after hyperparameter optimization, while the MLP baseline collapses to single-class prediction (6.5\% accuracy), revealing that temporal structure in the feature matrix is essential. TiRex provides a competitive zero-shot baseline (91.2\%). For gas production forecasting on the Ganymede dataset (31{,}359 samples, 7 wells), foundation models dominate: TimesFM achieves $R^2_\text{prod}{=}0.83$ at the 7-day horizon, exceeding the best trained model (PatchTST, 0.59) by 40\%; XGBoost produces negative $R^2_\text{prod}$ at all horizons despite Optuna HPO, confirming that flattened temporal features lose the sequential structure forecasting requires. Statistical significance is confirmed via Friedman tests on both tasks ($p < 0.05$).
+Digital monitoring of offshore oil and gas operations demands models capable of detecting equipment faults and forecasting production volumes under challenging conditions: high class imbalance, limited labeled data, multi-well heterogeneity, and long forecast horizons. We present a systematic benchmark of ten architectures---five trained models (Bidirectional LSTM, DeepONet, Random Forest, PatchTST, TCN) and three foundation models (Chronos, TimesFM, TiRex)---evaluated on two real-world offshore datasets using a nested evaluation protocol with held-out test sets and inner cross-validation. For fault classification on the Petrobras 3W dataset (208{,}973 windows, 10 classes), a statistical feature extraction pipeline compresses 720-step windows into 14-descriptor feature matrices; DeepONet achieves the best held-out accuracy of 96.83\% (macro $F_1{=}0.964$), while all four trained models reach $>$96\% after hyperparameter optimization, including Random Forest at 96.58\%---demonstrating that the feature extraction pipeline captures discriminative structure accessible even to non-sequential learners. TiRex provides a competitive zero-shot baseline (91.2\%). For gas production forecasting on the Ganymede dataset (31{,}359 samples, 7 wells), foundation models dominate: TimesFM achieves $R^2_\text{prod}{=}0.83$ at the 7-day horizon, exceeding the best trained model (PatchTST, 0.56) by 48\%. Statistical significance is confirmed via Friedman tests on both tasks ($p < 0.05$).
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -65,7 +66,7 @@ Recent advances in foundation models (FMs) for time series \cite{chronos, timesf
 We make the following contributions:
 
 \begin{enumerate}
-    \item A \textbf{systematic benchmark} of eight architectures---five trained (LSTM, DeepONet, MLP, PatchTST, XGBoost) and three foundation models (Chronos, TimesFM, TiRex)---across two real-world offshore datasets covering fault classification and production forecasting.
+    \item A \textbf{systematic benchmark} of ten architectures---five trained (LSTM, DeepONet, Random Forest, PatchTST, TCN) and three foundation models (Chronos, TimesFM, TiRex)---across two real-world offshore datasets covering fault classification and production forecasting.
     \item A \textbf{statistical feature extraction pipeline} that compresses raw 720-timestep sensor windows into compact 14-descriptor matrices, reducing computation by $\sim$50$\times$ while preserving discriminative information.
     \item A \textbf{nested evaluation protocol} with held-out test sets and inner cross-validation that provides both unbiased performance estimates and variance diagnostics, following best practices for ML evaluation \cite{cawley2010over}.
     \item A \textbf{multi-horizon analysis} comparing trained models and foundation models across 7, 14, 30, and 90-day forecasting horizons with per-well granularity.
@@ -172,19 +173,19 @@ where $\mathbf{h}_t$ is the bidirectional hidden state at timestep $t$ and $\mat
 
 \subsubsection{DeepONet}
 
-DeepONet \cite{deeponet} learns operators mapping input functions to output functions through branch and trunk networks. For classification on compact feature matrices (window size $\leq 30$), we use a flat MLP branch that treats the flattened $(14 \times 27)$ input as a single vector, avoiding the convolutional branch's assumption of spatial locality among statistical features. The trunk network encodes query points, and inner products between branch and trunk outputs produce the operator output. A deeper classification head (Linear $\to$ GELU $\to$ Dropout $\to$ Linear) maps the operator output to class logits. Total parameters: 209K (classification), 210K (forecasting).
+DeepONet \cite{deeponet} learns operators mapping input functions to output functions through branch and trunk networks. For classification on compact feature matrices (window size $\leq 30$), we use a flat feedforward branch that treats the flattened $(14 \times 27)$ input as a single vector, avoiding the convolutional branch's assumption of spatial locality among statistical features. The trunk network encodes query points, and inner products between branch and trunk outputs produce the operator output. A deeper classification head (Linear $\to$ GELU $\to$ Dropout $\to$ Linear) maps the operator output to class logits. Total parameters: 209K (classification), 210K (forecasting).
 
 \subsubsection{PatchTST}
 
 PatchTST \cite{patchtst} segments multivariate time series into patches and applies a channel-independent Transformer encoder. We configure 3 layers, $d_\text{model}{=}256$, $d_\text{ff}{=}512$, 8 attention heads, and patch length adapted to input size (4 for feature matrices, 16 for raw sequences). Total parameters: 433K (classification), 402K (forecasting).
 
-\subsubsection{MLP Baseline}
+\subsubsection{Random Forest}
 
-As a non-sequential baseline, we include a feedforward MLP that flattens the $(14 \times 27)$ feature matrix into a 378-dimensional vector and applies two FC$\to$BatchNorm$\to$GELU$\to$Dropout blocks with hidden dimensions $[256, 128]$. Unlike the recurrent, operator-learning, and attention-based architectures above, this model treats the feature matrix as an unstructured vector, discarding all positional relationships among descriptors and sensors. Total parameters: 132K (classification only).
+As a non-sequential baseline for 3W classification, we train a scikit-learn \texttt{RandomForestClassifier} on the flattened $(14 \times 27) \to 378$-dimensional feature vector. Unlike the recurrent, operator-learning, and attention-based architectures, Random Forest treats the feature matrix as an unstructured tabular input---testing whether an ensemble of decision trees can extract discriminative patterns from the pre-computed statistical descriptors without exploiting their spatial arrangement. We use 500 estimators, Gini impurity, balanced class weights (inverse frequency), and evaluate via \texttt{StratifiedGroupKFold} 5-fold CV. Total parameters: $\sim$2.4M leaf nodes across the ensemble (non-gradient-based).
 
-\subsubsection{XGBoost Baseline}
+\subsubsection{Temporal Convolutional Network (TCN)}
 
-As a gradient-boosted tree baseline for Ganymede forecasting, we wrap \texttt{XGBRegressor} in scikit-learn's \texttt{MultiOutputRegressor} to produce multi-step forecasts. The 90-timestep $\times$ 63-feature input window is flattened into a 5{,}670-dimensional vector---like the MLP, this discards all temporal structure, treating the input as an unordered bag of features. We use histogram-based splitting (\texttt{tree\_method=hist}), 500 estimators, max depth~6, and L1/L2 regularization. Unlike the neural models, XGBoost requires no GPU and trains via coordinate descent on the gradient-boosted objective. This baseline tests whether ensemble tree methods can compensate for the loss of temporal structure through their superior handling of tabular features.
+For Ganymede forecasting, we employ a Temporal Convolutional Network (TCN) that applies stacked dilated causal 1D convolutions with residual connections. Dilation factors grow exponentially ($d_i = 2^i$), giving the network a receptive field that covers the full 90-timestep input window with only $\mathcal{O}(\log T)$ layers. Each residual block consists of two dilated convolutions with weight normalization, GELU activations, and spatial dropout. A final linear projection maps the last temporal output to multi-step forecasts at horizons $h \in \{7, 14, 30, 90\}$. Unlike RNNs, the TCN processes the entire sequence in parallel, enabling efficient training while preserving strict causal ordering. % TODO: S04 will fill final hyperparameters and results after TCN training.
 
 \subsubsection{Foundation Models}
 
@@ -206,14 +207,16 @@ All trained models use AdamW optimizer with gradient clipping at 1.0 and early s
 \setlength{\tabcolsep}{3pt}
 \begin{tabular}{@{}l cccc @{}}
 \toprule
-\textbf{Parameter} & \textbf{LSTM} & \textbf{DeepONet} & \textbf{MLP} & \textbf{PatchTST} \\
+\textbf{Parameter} & \textbf{LSTM} & \textbf{DeepONet} & \textbf{RF} & \textbf{PatchTST} \\
 \midrule
-Learning rate      & 1e-3 & 5e-4 & 1e-3 & 1e-4 \\
-Weight decay       & 1e-4 & 1e-4 & 1e-4 & 1e-2 \\
-Batch size         & 64   & 64   & 64   & 64   \\
-LR scheduler       & OneCycle & Cosine & Cosine & OneCycle \\
-Max epochs         & 100  & 100  & 100  & 100  \\
-Dropout            & 0.3  & 0.1  & 0.3  & 0.1  \\
+Learning rate      & 1e-3 & 5e-4 & ---  & 1e-4 \\
+Weight decay       & 1e-4 & 1e-4 & ---  & 1e-2 \\
+Batch size         & 64   & 64   & ---  & 64   \\
+LR scheduler       & OneCycle & Cosine & --- & OneCycle \\
+Max epochs         & 100  & 100  & ---  & 100  \\
+Dropout            & 0.3  & 0.1  & ---  & 0.1  \\
+\textit{n\_estimators} & --- & --- & 500 & --- \\
+\textit{class\_weight}  & --- & --- & balanced & --- \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -292,7 +295,7 @@ After inner CV, a fresh model is trained on the entire 80\% training pool and ev
 
 \subsection{3W Fault Classification}
 
-Table~\ref{tab:3w_main} presents the primary results on the held-out test set ($n{=}41{,}515$). All five models are evaluated on identical test samples. DeepONet and LSTM achieve near-identical accuracy ($\sim$96.8\%), while PatchTST reaches 96.5\% after Optuna HPO (30 trials, improved from 95.7\% with manual tuning). The MLP baseline collapses to single-class prediction (6.5\% accuracy), demonstrating that a flat feedforward architecture cannot exploit the feature matrix without sequential or structural inductive biases. Inner CV estimates are within 2\% of test performance for the successful models, indicating stable generalization.
+Table~\ref{tab:3w_main} presents the primary results on the held-out test set ($n{=}41{,}515$). All five models are evaluated on identical test samples. DeepONet and LSTM achieve near-identical accuracy ($\sim$96.8\%), while PatchTST reaches 96.5\% after Optuna HPO (30 trials, improved from 95.7\% with manual tuning). Notably, Random Forest achieves 96.58\% accuracy on the flattened 378-dimensional feature vector, demonstrating that the statistical feature extraction pipeline captures discriminative information accessible even to non-sequential, tabular learners. Inner CV estimates are within 2\% of test performance for all trained models, indicating stable generalization.
 
 \begin{table}[t]
 \centering
@@ -309,7 +312,7 @@ Table~\ref{tab:3w_main} presents the primary results on the held-out test set ($
 DeepONet & \textbf{.968} & \textbf{.964} & \textbf{.969} & .934 & .950$\pm$.019 \\
 LSTM     & .968 & .963 & .968 & .933 & .949$\pm$.018 \\
 PatchTST$^\dagger$ & .965 & .962 & .965 & .931 & .964$\pm$.010 \\
-MLP      & .065 & .012 & .008 & .100 & .174$\pm$.000 \\
+RF       & .966 & .964 & .966 & .985 & .979$\pm$.016 \\
 \midrule
 TiRex (FM) & .912 & .895 & .911 & \textbf{.938} & .899$\pm$.021 \\
 \midrule
@@ -323,7 +326,7 @@ TiRex, using frozen embeddings without any neural fine-tuning, achieves 91.2\% a
 
 \subsubsection{Per-Class Analysis}
 
-Fig.~\ref{fig:recall} shows per-class recall on the held-out test set for all four models. Classes~5 (flow instability), 6 (rapid productivity loss), and 9 (hydrate formation) achieve $>$99\% recall across trained models. The most challenging classes are 2 (incipient BSW increase, 89--90\% recall) and 4 (severe slugging, 95\%), which are also the rarest and most gradual-onset fault types. PatchTST shows reduced recall on class~8 (slow restriction, 87\%), while TiRex shows the largest drops on class~2 (67.8\%) and class~4 (73.5\%), indicating that frozen embeddings lose fine-grained discriminative information for rare event types.
+Fig.~\ref{fig:recall} shows per-class recall on the held-out test set for all five trained models. Classes~5 (flow instability), 6 (rapid productivity loss), and 9 (hydrate formation) achieve $>$99\% recall across trained models. Random Forest achieves the highest recall on class~2 (incipient BSW increase, 93.2\%), the rarest class, outperforming all neural architectures on this challenging category. PatchTST shows reduced recall on class~8 (slow restriction, 87\%), while TiRex shows the largest drops on class~2 (67.8\%) and class~4 (73.5\%), indicating that frozen embeddings lose fine-grained discriminative information for rare event types.
 
 \begin{figure}[t]
 \centering
@@ -357,14 +360,18 @@ Fig.~\ref{fig:recall} shows per-class recall on the held-out test set for all fo
     (0,0.927)(1,0.926)(2,0.899)(3,0.989)(4,0.956)
     (5,0.994)(6,0.999)(7,0.959)(8,0.868)(9,0.999)
 };
+\addplot[fill=randomforest, draw=randomforest!80!black] coordinates {
+    (0,0.938)(1,0.934)(2,0.932)(3,0.895)(4,0.936)
+    (5,0.998)(6,1.000)(7,0.962)(8,0.994)(9,1.000)
+};
 \addplot[fill=tirex, draw=tirex!80!black] coordinates {
     (0,0.911)(1,0.909)(2,0.678)(3,0.887)(4,0.735)
     (5,0.943)(6,0.892)(7,0.951)(8,0.908)(9,0.939)
 };
-\legend{LSTM, DeepONet, PatchTST, TiRex}
+\legend{LSTM, DeepONet, PatchTST, RF, TiRex}
 \end{axis}
 \end{tikzpicture}
-\caption{Per-class recall on the 3W held-out test set. Classes: 0=Normal, 1=Abrupt BSW$\uparrow$, 2=Incipient BSW$\uparrow$, 3=Spurious closure, 4=Severe slugging, 5=Flow instability, 6=Productivity loss, 7=Quick restriction, 8=Slow restriction, 9=Hydrate.}
+\caption{Per-class recall on the 3W held-out test set for all five trained models. Classes: 0=Normal, 1=Abrupt BSW$\uparrow$, 2=Incipient BSW$\uparrow$, 3=Spurious closure, 4=Severe slugging, 5=Flow instability, 6=Productivity loss, 7=Quick restriction, 8=Slow restriction, 9=Hydrate.}
 \label{fig:recall}
 \end{figure}
 
@@ -398,7 +405,7 @@ Table~\ref{tab:confusion} presents the confusion matrix for DeepONet (best overa
 
 \subsection{Ganymede Gas Production Forecasting}
 
-Table~\ref{tab:ganymede} presents multi-horizon forecasting results on the Ganymede multi-well setting, with gas production measured in MMSCF (million standard cubic feet). All three foundation models achieve positive $R^2_\text{prod}$ across all four horizons, with TiRex leading at longer horizons ($h{=}30$: 0.70, $h{=}90$: 0.57) and TimesFM at the shortest ($h{=}7$: 0.83). Among trained models, PatchTST and LSTM achieve positive $R^2_\text{prod}$ at most horizons, while DeepONet and XGBoost yield consistently negative $R^2$.
+Table~\ref{tab:ganymede} presents multi-horizon forecasting results on the Ganymede multi-well setting, with gas production measured in MMSCF (million standard cubic feet). All three foundation models achieve positive $R^2_\text{prod}$ across all four horizons, with TiRex leading at longer horizons ($h{=}30$: 0.70, $h{=}90$: 0.57) and TimesFM at the shortest ($h{=}7$: 0.83). Among trained models, PatchTST and LSTM achieve positive $R^2_\text{prod}$ at most horizons, while DeepONet yields consistently negative $R^2$. TCN results are pending (see Section~\ref{sec:conclusion}).
 
 \begin{table}[t]
 \centering
@@ -434,14 +441,15 @@ Table~\ref{tab:ganymede} presents multi-horizon forecasting results on the Ganym
  & $R^2_\text{prod}$ & $-$40.1 & $-$4.35 & $-$5.01 & $-$4.32 \\
  & MAE              & 9.53 & 4.12 & 4.51 & 3.84 \\
 \midrule
-\multirow{2}{*}{XGBoost}
- & $R^2_\text{prod}$ & $-$0.031 & $-$0.465 & $-$0.415 & $-$1.252 \\
- & MAE              & 1.93 & 2.45 & 2.47 & 2.77 \\
+% TODO: S04 will fill TCN results after training
+\multirow{2}{*}{TCN}
+ & $R^2_\text{prod}$ & -- & -- & -- & -- \\
+ & MAE              & -- & -- & -- & -- \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Fig.~\ref{fig:ganymede} visualizes $R^2_\text{prod}$ across horizons. Foundation models maintain positive $R^2_\text{prod}$ at all horizons, with TiRex showing the most graceful degradation (0.82$\to$0.57). Among trained models, PatchTST degrades from 0.56 ($h{=}7$) to $-0.38$ ($h{=}90$). LSTM shows an unusual pattern: low $R^2_\text{prod}$ at $h{=}7$ (0.20) but peaking at $h{=}14$ (0.53), possibly reflecting how its recurrent architecture captures medium-term trends while struggling with short-term variability. DeepONet consistently fails ($R^2 < -4$), confirming that its operator-learning formulation is poorly suited for autoregressive production forecasting. XGBoost's near-zero $R^2_\text{prod}$ at $h{=}7$ ($-0.031$) degrades to $-0.47$ at $h{=}14$ before partially recovering at $h{=}30$ ($-0.42$), but collapses to $-1.25$ at $h{=}90$ (outside the plotted range). Like MLP on 3W, this confirms that flattening temporal input into a high-dimensional vector (5{,}670-dim) discards the sequential structure that forecasting requires.
+Fig.~\ref{fig:ganymede} visualizes $R^2_\text{prod}$ across horizons. Foundation models maintain positive $R^2_\text{prod}$ at all horizons, with TiRex showing the most graceful degradation (0.82$\to$0.57). Among trained models, PatchTST degrades from 0.56 ($h{=}7$) to $-0.38$ ($h{=}90$). LSTM shows an unusual pattern: low $R^2_\text{prod}$ at $h{=}7$ (0.20) but peaking at $h{=}14$ (0.53), possibly reflecting how its recurrent architecture captures medium-term trends while struggling with short-term variability. DeepONet consistently fails ($R^2 < -4$), confirming that its operator-learning formulation is poorly suited for autoregressive production forecasting. TCN, a sequential architecture designed for temporal modeling, is expected to bridge the gap between the non-sequential trained models and foundation models; results will be reported upon completion of training (Section~\ref{sec:conclusion}).
 
 \begin{figure}[t]
 \centering
@@ -466,12 +474,12 @@ Fig.~\ref{fig:ganymede} visualizes $R^2_\text{prod}$ across horizons. Foundation
 \addplot[color=orange!80!black, mark=pentagon*, mark size=2.5pt, line width=1.2pt] coordinates {(7,0.734)(14,0.668)(30,0.584)(90,0.361)};
 \addplot[color=patchtst, mark=triangle*, mark size=3pt, line width=1.2pt] coordinates {(7,0.556)(14,0.466)(30,0.211)(90,-0.382)};
 \addplot[color=lstm, mark=o, mark size=2.5pt, line width=1.2pt] coordinates {(7,0.195)(14,0.534)(30,0.303)(90,0.020)};
-\addplot[color=xgboost, mark=square*, mark size=2.5pt, line width=1.2pt, forget plot] coordinates {(7,-0.031)(14,-0.465)(30,-0.415)};
+% TODO: TCN plot coordinates pending S04 training
 \addplot[dashed, gray, domain=0:95] {0};
 \legend{TimesFM, TiRex, Chronos, PatchTST, LSTM}
 \end{axis}
 \end{tikzpicture}
-\caption{$R^2_\text{prod}$ vs.\ forecast horizon (Ganymede, held-out test, multi-well). Foundation models (top 3 curves) consistently outperform trained models. DeepONet omitted ($R^2 < -5$). XGBoost (\protect\tikz[baseline=-0.5ex]{\protect\draw[xgboost, fill=xgboost] (0,0) rectangle (0.25em,0.5em);}) shown for $h{\leq}30$; its $h{=}90$ value ($R^2{=}-1.25$) falls below the axis range. Dashed line: $R^2{=}0$ (naive baseline).}
+\caption{$R^2_\text{prod}$ vs.\ forecast horizon (Ganymede, held-out test, multi-well). Foundation models (top 3 curves) consistently outperform trained models. DeepONet omitted ($R^2 < -5$). TCN results pending (S04). Dashed line: $R^2{=}0$ (naive baseline).}
 \label{fig:ganymede}
 \end{figure}
 
@@ -482,9 +490,9 @@ Fig.~\ref{fig:ganymede} visualizes $R^2_\text{prod}$ across horizons. Foundation
 
 \subsection{Classification: Trained Models vs.\ Foundation Models}
 
-Three of the four trained classification models achieve strong performance ($>$96.5\% accuracy after HPO), suggesting that the statistical feature extraction captures the essential fault signatures when paired with architectures that model sequential or structural dependencies. DeepONet's flat MLP branch is the most parameter-efficient (209K) while marginally leading in accuracy (96.83\%). Optuna hyperparameter optimization (30 trials per model) improved PatchTST from 95.7\% to 96.5\% by finding a deeper, narrower architecture (4 layers, $d_\text{model}{=}128$), while LSTM and DeepONet showed no improvement---confirming that manual tuning was near-optimal for these architectures.
+All four trained classification models achieve strong performance ($>$96\% accuracy after HPO), confirming that the statistical feature extraction pipeline captures the essential fault signatures. DeepONet's flat feedforward branch is the most parameter-efficient (209K) while marginally leading in accuracy (96.83\%). Optuna hyperparameter optimization (30 trials per model) improved PatchTST from 95.7\% to 96.5\% by finding a deeper, narrower architecture (4 layers, $d_\text{model}{=}128$), while LSTM and DeepONet showed no improvement---confirming that manual tuning was near-optimal for these architectures.
 
-The MLP baseline's complete failure (6.5\% accuracy, single-class prediction) is instructive: despite receiving the same $(14 \times 27)$ feature matrix as the other trained models, flattening it into a 378-dimensional vector destroys the descriptor$\times$sensor structure that the other architectures exploit. This confirms that the statistical features contain discriminative information \emph{in their spatial arrangement}, not merely in their aggregate statistics---even the simplest structured model (DeepONet at 209K parameters) succeeds where a comparably-sized unstructured model (MLP at 132K) fails entirely.
+Random Forest's success at 96.58\% accuracy on the flattened 378-dimensional feature vector is the most illuminating result for the inductive bias debate. Unlike the neural models that process the $(14 \times 27)$ feature matrix as a structured sequence, Random Forest treats the same features as unordered tabular input---yet achieves comparable performance. This demonstrates that the \emph{feature extraction pipeline itself} captures the discriminative structure: the 14 statistical descriptors per sensor encode temporal dynamics (slope, mean absolute change, peaks) in a form that is accessible to any competent learner, regardless of whether it models spatial or sequential relationships among features. The inductive bias argument is therefore more nuanced than a binary structured-vs-flat distinction: when feature engineering explicitly captures temporal structure, even non-sequential models can exploit the resulting representation.
 
 TiRex provides a strong zero-shot baseline (91.2\%) that would be adequate for initial deployment without labeled data. However, its 5.7 percentage point gap from trained models, concentrated in rare classes (67\% recall on class~2), suggests that domain-specific fine-tuning or at least a small amount of labeled data is needed for safety-critical applications.
 
@@ -494,7 +502,7 @@ The Ganymede results reveal a striking finding: all three foundation models subs
 
 This performance gap likely reflects the FMs' pre-training on diverse time-series corpora: production data shares temporal patterns (trends, seasonality, autocorrelation) with the training distributions, enabling effective zero-shot transfer. In contrast, the trained models must learn these patterns from $\sim$25{,}000 samples with considerable well heterogeneity, insufficient for capturing the full dynamics.
 
-XGBoost's negative $R^2_\text{prod}$ at all horizons (best: $-0.031$ at $h{=}7$, worst: $-1.25$ at $h{=}90$) mirrors the MLP's complete failure on 3W classification, providing convergent evidence that \emph{flattened features lose the structural information required for both tasks}. On 3W, the MLP flattened the $(14 \times 27)$ descriptor$\times$sensor matrix into a 378-dim vector and collapsed to single-class prediction; on Ganymede, XGBoost flattens the $(90 \times 63)$ temporal window into a 5{,}670-dim vector and performs worse than a naive mean predictor. Despite XGBoost's well-known strength on tabular data, the 5{,}670 features created by flattening lack the temporal ordering that LSTM, PatchTST, and the foundation models exploit. This consistent failure across both tasks and both flattening baselines strengthens the conclusion that inductive biases preserving temporal or spatial structure are essential for offshore monitoring.
+Notably, the contrast between Random Forest's success on 3W classification and the forecasting results highlights a task-dependent role for feature engineering: on 3W, the statistical descriptors explicitly encode temporal dynamics in a tabular-friendly form, enabling non-sequential models; on Ganymede, no such feature extraction is applied, and models must learn temporal relationships directly from raw sequences---a setting where sequential inductive biases (as in TCN and PatchTST) are expected to confer advantage over tabular approaches.
 
 \subsection{Evaluation Protocol Validation}
 
@@ -502,34 +510,34 @@ The close agreement between inner CV estimates and held-out test performance (wi
 
 \subsection{Statistical Significance}
 
-We apply the Friedman test with Nemenyi post-hoc analysis to the inner CV fold-level metrics (5 folds for 3W, 3 folds for Ganymede). For 3W classification with five models, the Friedman test is significant across all three metrics ($p < 0.002$). Average ranks place PatchTST first (1.4), DeepONet second (2.0--2.2), LSTM third (2.4--2.6), TiRex fourth (4.0), and MLP last (5.0) for accuracy and macro $F_1$---the MLP's consistent last-place rank across all folds confirms its failure is not fold-dependent.
+We apply the Friedman test with Nemenyi post-hoc analysis to the inner CV fold-level metrics (5 folds for 3W, 3 folds for Ganymede). For 3W classification with five models, the Friedman test is significant across all three metrics ($p < 0.002$). Average ranks place Random Forest first (1.0), PatchTST second (2.4), DeepONet third (3.0--3.2), LSTM fourth (3.4--3.6), and TiRex fifth (5.0) for accuracy and macro $F_1$---Random Forest's consistent first-place rank across all folds reinforces that the feature extraction pipeline yields representations well-suited to ensemble tree methods.
 
-Interestingly, on AUC-PR the ranking shifts: TiRex ranks first (1.0) with PatchTST second (2.4), while MLP remains last (5.0), reflecting TiRex's well-calibrated probability estimates from the Random Forest on the high-dimensional embedding space.
+Interestingly, on AUC-PR the ranking shifts: Random Forest ranks first (1.0) with TiRex second (2.0), reflecting strong probability calibration from both tree-ensemble classifiers.
 
 For Ganymede forecasting, MAE reaches significance at $h{=}7$ ($p{=}0.014$), $h{=}14$ ($p{=}0.035$), and $h{=}30$ ($p{=}0.019$), with limited statistical power from 3 inner CV folds.
 
 \subsection{Limitations}
 
-This study has several limitations: (i) hyperparameter optimization was performed for the 3W classification task and for XGBoost on Ganymede forecasting, but not for the remaining trained models on Ganymede, where the large gap between FMs and trained models may partly reflect suboptimal tuning; and (ii) no interpretability analysis (e.g., attention visualization, SHAP values) has been conducted.
+This study has several limitations: (i) hyperparameter optimization was performed for the 3W classification task but not for the trained models on Ganymede forecasting, where the large gap between FMs and trained models may partly reflect suboptimal tuning; (ii) no interpretability analysis (e.g., attention visualization, SHAP values) has been conducted; and (iii) TCN training on Ganymede is pending---its results will be incorporated in the final version.
 
 % ═══════════════════════════════════════════════════════════════════
 \section{Conclusion and Future Work}
 \label{sec:conclusion}
 % ═══════════════════════════════════════════════════════════════════
 
-We benchmarked eight deep learning architectures on offshore fault classification and gas production forecasting using a rigorous nested evaluation protocol. Key findings:
+We benchmarked ten architectures on offshore fault classification and gas production forecasting using a rigorous nested evaluation protocol. Key findings:
 
 \begin{enumerate}
-    \item \textbf{Statistical features enable efficient classification}: Compressing 720-step windows into 14-descriptor matrices yields $>$96.5\% accuracy on 3W fault detection with three of four trained models (after HPO), while reducing training time by $\sim$50$\times$.
-    \item \textbf{Feature matrix structure matters}: The MLP baseline (6.5\% accuracy) demonstrates that the discriminative information in the statistical feature matrix resides in the descriptor$\times$sensor arrangement, not the raw values---even the simplest structured model succeeds where a flat feedforward network fails entirely.
-    \item \textbf{Flattened features fail across tasks and model families}: XGBoost, despite its strength on tabular data, produces negative $R^2_\text{prod}$ at all Ganymede horizons when given the flattened 5{,}670-dim input---converging with MLP's 3W failure to confirm that temporal/spatial structure preservation is essential for offshore monitoring.
+    \item \textbf{Statistical features enable efficient classification}: Compressing 720-step windows into 14-descriptor matrices yields $>$96\% accuracy on 3W fault detection with all four trained models (after HPO), while reducing training time by $\sim$50$\times$.
+    \item \textbf{Feature engineering captures temporal structure}: Random Forest achieves 96.58\% accuracy on the flattened 378-dimensional feature vector, demonstrating that the statistical extraction pipeline encodes discriminative temporal dynamics in a form accessible to non-sequential, tabular learners---the inductive bias advantage is more nuanced than a simple structured-vs-flat distinction.
     \item \textbf{DeepONet leads classification, fails forecasting}: The operator-learning framework achieves the best classification accuracy (96.83\%) with the fewest parameters (209K) but produces negative $R^2$ on all forecasting horizons.
     \item \textbf{PatchTST is the most versatile trained model}: Achieves $R^2_\text{prod}{=}0.56$ at the 7-day horizon (best among trained models) and 96.5\% classification accuracy after HPO.
-    \item \textbf{Foundation models dominate forecasting}: TimesFM, TiRex, and Chronos all achieve $R^2_\text{prod} > 0.7$ at $h{=}7$ without any task-specific training, exceeding the best trained model by 24--40\%. TiRex maintains the strongest performance at long horizons ($R^2_\text{prod}{=}0.57$ at $h{=}90$).
+    \item \textbf{Foundation models dominate forecasting}: TimesFM, TiRex, and Chronos all achieve $R^2_\text{prod} > 0.7$ at $h{=}7$ without any task-specific training, exceeding the best trained model by 24--48\%. TiRex maintains the strongest performance at long horizons ($R^2_\text{prod}{=}0.57$ at $h{=}90$).
     \item \textbf{FMs provide competitive classification baselines}: TiRex achieves 91.2\% zero-shot classification with the highest AUC-PR (0.938), demonstrating the versatility of pre-trained time-series representations for offshore monitoring.
+    \item \textbf{TCN for Ganymede forecasting}: As a sequential architecture with dilated causal convolutions, TCN is expected to bridge the gap between tabular-input trained models and foundation models; results pending.
 \end{enumerate}
 
-Future work includes Ganymede hyperparameter optimization for the remaining trained models, model interpretability analysis, and evaluation of domain-adapted foundation models.
+Future work includes TCN training and evaluation on Ganymede, hyperparameter optimization for the remaining trained models on forecasting, model interpretability analysis, and evaluation of domain-adapted foundation models.
 
 % ═══════════════════════════════════════════════════════════════════
 % References
