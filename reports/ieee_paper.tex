@@ -43,7 +43,7 @@ Rio de Janeiro, Brazil\\
 
 % ═══════════════════════════════════════════════════════════════════
 \begin{abstract}
-Digital monitoring of offshore oil and gas operations demands models capable of detecting equipment faults and forecasting production volumes under challenging conditions: high class imbalance, limited labeled data, multi-well heterogeneity, and long forecast horizons. We present a systematic benchmark of eight architectures---five trained models (Bidirectional LSTM, DeepONet, Random Forest, PatchTST, TCN) and three foundation models (Chronos, TimesFM, TiRex)---evaluated on two real-world offshore datasets using a nested evaluation protocol with held-out test sets and inner cross-validation. For fault classification on the Petrobras 3W dataset (208{,}973 windows, 10 classes), a statistical feature extraction pipeline compresses 720-step windows into 14-descriptor feature matrices; DeepONet achieves the best held-out accuracy of 96.83\% (macro $F_1{=}0.964$), while all four trained models reach $>$96\% after hyperparameter optimization, including Random Forest at 96.58\%---demonstrating that the feature extraction pipeline captures discriminative structure accessible even to non-sequential learners. TiRex provides a competitive zero-shot baseline (91.2\%). For gas production forecasting on the Ganymede dataset (31{,}359 samples, 7 wells), foundation models dominate: TimesFM achieves $R^2_\text{prod}{=}0.83$ at the 7-day horizon, exceeding the best trained model (PatchTST, 0.56) by 48\%. Statistical significance is confirmed via Friedman tests on both tasks ($p < 0.05$).
+Digital monitoring of offshore oil and gas operations demands models capable of detecting equipment faults and forecasting production volumes under challenging conditions: high class imbalance, limited labeled data, multi-well heterogeneity, and long forecast horizons. We present a systematic benchmark of eight architectures---five trained models (Bidirectional LSTM, DeepONet, Random Forest, PatchTST, TCN) and three foundation models (Chronos, TimesFM, TiRex)---evaluated on two real-world offshore datasets using a nested evaluation protocol with held-out test sets and inner cross-validation. For fault classification on the Petrobras 3W dataset (208{,}973 windows, 10 classes), a statistical feature extraction pipeline compresses 720-step windows into 14-descriptor feature matrices; DeepONet achieves the best held-out accuracy of 96.85\% (macro $F_1{=}0.964$), while all four trained models reach $>$96\% after hyperparameter optimization, including Random Forest at 96.58\%---demonstrating that the feature extraction pipeline captures discriminative structure accessible even to non-sequential learners. TiRex provides a competitive zero-shot baseline (91.2\%). For gas production forecasting on the Ganymede dataset (31{,}359 samples, 7 wells), foundation models dominate: TimesFM achieves $R^2_\text{prod}{=}0.83$ at the 7-day horizon, exceeding the best trained model (PatchTST, 0.56) by 48\%. Statistical significance is confirmed via Friedman tests on both tasks ($p < 0.05$).
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -309,7 +309,7 @@ Table~\ref{tab:3w_main} presents the primary results on the held-out test set ($
 \cmidrule(lr){2-5} \cmidrule(lr){6-6}
 \textbf{Model} & \textbf{Acc.} & $\boldsymbol{F_1}$\textbf{m} & $\boldsymbol{F_1}$\textbf{w} & \textbf{AUC-PR} & mean$\pm$std \\
 \midrule
-DeepONet & \textbf{.968} & \textbf{.964} & \textbf{.969} & .934 & .950$\pm$.019 \\
+DeepONet & \textbf{.968} & \textbf{.964} & \textbf{.969} & .934 & .956$\pm$.013 \\
 LSTM     & .968 & .963 & .968 & .933 & .949$\pm$.018 \\
 PatchTST$^\dagger$ & .965 & .962 & .965 & .931 & .964$\pm$.010 \\
 RF       & .966 & .964 & .966 & .985 & .979$\pm$.016 \\
@@ -318,7 +318,7 @@ TiRex (FM) & .912 & .895 & .911 & \textbf{.938} & .899$\pm$.021 \\
 \midrule
 \textit{Majority} & \textit{.174} & \textit{.101} & --- & --- & --- \\
 \bottomrule
-\multicolumn{6}{@{}l}{\scriptsize $^\dagger$After Optuna HPO (30 trials). All others use manually tuned hyperparameters.}
+\multicolumn{6}{@{}l}{\scriptsize $^\dagger$After Optuna HPO (30 trials). DeepONet: 33 trials. All others use manually tuned hyperparameters.}
 \end{tabular}
 \end{table}
 
@@ -353,8 +353,8 @@ Fig.~\ref{fig:recall} shows per-class recall on the held-out test set for all fi
     (5,0.996)(6,0.999)(7,0.959)(8,0.992)(9,0.998)
 };
 \addplot[fill=deeponet, draw=deeponet!80!black] coordinates {
-    (0,0.923)(1,0.934)(2,0.892)(3,0.983)(4,0.946)
-    (5,0.994)(6,1.000)(7,0.959)(8,0.998)(9,0.999)
+    (0,0.922)(1,0.934)(2,0.892)(3,0.986)(4,0.949)
+    (5,0.994)(6,1.000)(7,0.958)(8,0.998)(9,0.999)
 };
 \addplot[fill=patchtst, draw=patchtst!80!black] coordinates {
     (0,0.927)(1,0.926)(2,0.899)(3,0.989)(4,0.956)
@@ -377,7 +377,7 @@ Fig.~\ref{fig:recall} shows per-class recall on the held-out test set for all fi
 
 \subsubsection{Confusion Matrix}
 
-Table~\ref{tab:confusion} presents the confusion matrix for DeepONet (best overall) on the held-out test set. The dominant off-diagonal errors are: class~0$\to$8 (395 normal windows misclassified as slow restriction), class~1$\to$0 (274 abrupt BSW misclassified as normal), and class~7$\to$0 (200 quick restriction misclassified as normal). These confusions are physically plausible---normal operation shares sensor signatures with early-onset restriction and BSW changes.
+Table~\ref{tab:confusion} presents the confusion matrix for DeepONet (best overall) on the held-out test set. The dominant off-diagonal errors are: class~0$\to$8 (396 normal windows misclassified as slow restriction), class~1$\to$0 (275 abrupt BSW misclassified as normal), and class~7$\to$0 (201 quick restriction misclassified as normal). These confusions are physically plausible---normal operation shares sensor signatures with early-onset restriction and BSW changes.
 
 \begin{table}[t]
 \centering
@@ -389,16 +389,16 @@ Table~\ref{tab:confusion} presents the confusion matrix for DeepONet (best overa
 \toprule
  & \textbf{0} & \textbf{1} & \textbf{2} & \textbf{3} & \textbf{4} & \textbf{5} & \textbf{6} & \textbf{7} & \textbf{8} & \textbf{9} \\
 \midrule
-\textbf{0} & \textbf{6054} &  &  &  & 100 &  &  &  & 396 &  \\
-\textbf{1} & 274 & \textbf{4593} &  &  & 39 &  &  &  &  &  \\
-\textbf{2} &  &  & \textbf{355} &  &  &  & 18 &  & 23 &  \\
-\textbf{3} &  & 46 &  & \textbf{2650} &  &  &  &  &  &  \\
-\textbf{4} & 86 &  &  & 10 & \textbf{1811} &  &  &  &  &  \\
-\textbf{5} &  &  &  &  &  & \textbf{7216} & 39 &  &  &  \\
+\textbf{0} & \textbf{6049} &  &  &  & 105 &  &  &  & 396 &  \\
+\textbf{1} & 275 & \textbf{4592} &  &  & 40 &  &  &  &  &  \\
+\textbf{2} &  &  & \textbf{355} &  &  &  & 11 &  & 24 &  \\
+\textbf{3} &  & 37 &  & \textbf{2659} &  &  &  &  &  &  \\
+\textbf{4} & 84 &  &  &  & \textbf{1817} &  &  &  &  &  \\
+\textbf{5} &  &  &  &  &  & \textbf{7215} & 39 &  &  &  \\
 \textbf{6} &  &  &  &  &  &  & \textbf{3159} &  &  &  \\
-\textbf{7} & 203 &  &  &  & 16 &  &  & \textbf{5435} & 16 &  \\
-\textbf{8} &  &  &  &  &  &  &  &  & \textbf{3724} &  \\
-\textbf{9} &  &  &  &  &  &  &  &  &  & \textbf{5204} \\
+\textbf{7} & 201 &  &  &  & 17 &  &  & \textbf{5432} & 17 &  \\
+\textbf{8} &  &  &  &  &  &  &  &  & \textbf{3723} &  \\
+\textbf{9} &  &  &  &  &  &  &  &  &  & \textbf{5205} \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -490,7 +490,7 @@ Fig.~\ref{fig:ganymede} visualizes $R^2_\text{prod}$ across horizons. Foundation
 
 \subsection{Classification: Trained Models vs.\ Foundation Models}
 
-All four trained classification models achieve strong performance ($>$96\% accuracy after HPO), confirming that the statistical feature extraction pipeline captures the essential fault signatures. DeepONet's flat feedforward branch is the most parameter-efficient (209K) while marginally leading in accuracy (96.83\%). Optuna hyperparameter optimization (30 trials per model) improved PatchTST from 95.7\% to 96.5\% by finding a deeper, narrower architecture (4 layers, $d_\text{model}{=}128$), while LSTM and DeepONet showed no improvement---confirming that manual tuning was near-optimal for these architectures.
+All four trained classification models achieve strong performance ($>$96\% accuracy after HPO), confirming that the statistical feature extraction pipeline captures the essential fault signatures. DeepONet's flat feedforward branch is the most parameter-efficient (209K) while marginally leading in accuracy (96.85\%). Optuna hyperparameter optimization (30 trials per model; 33 for DeepONet) improved PatchTST from 95.7\% to 96.5\% by finding a deeper, narrower architecture (4 layers, $d_\text{model}{=}128$), while LSTM and DeepONet showed no improvement---confirming that manual tuning was near-optimal for these architectures.
 
 Random Forest's success at 96.58\% accuracy on the flattened 378-dimensional feature vector is the most illuminating result for the inductive bias debate. Unlike the neural models that process the $(14 \times 27)$ feature matrix as a structured sequence, Random Forest treats the same features as unordered tabular input---yet achieves comparable performance. This demonstrates that the \emph{feature extraction pipeline itself} captures the discriminative structure: the 14 statistical descriptors per sensor encode temporal dynamics (slope, mean absolute change, peaks) in a form that is accessible to any competent learner, regardless of whether it models spatial or sequential relationships among features. The inductive bias argument is therefore more nuanced than a binary structured-vs-flat distinction: when feature engineering explicitly captures temporal structure, even non-sequential models can exploit the resulting representation.
 
@@ -530,7 +530,7 @@ We benchmarked eight architectures on offshore fault classification and gas prod
 \begin{enumerate}
     \item \textbf{Statistical features enable efficient classification}: Compressing 720-step windows into 14-descriptor matrices yields $>$96\% accuracy on 3W fault detection with all four trained models (after HPO), while reducing training time by $\sim$50$\times$.
     \item \textbf{Feature engineering captures temporal structure}: Random Forest achieves 96.58\% accuracy on the flattened 378-dimensional feature vector, demonstrating that the statistical extraction pipeline encodes discriminative temporal dynamics in a form accessible to non-sequential, tabular learners---the inductive bias advantage is more nuanced than a simple structured-vs-flat distinction.
-    \item \textbf{DeepONet leads classification, fails forecasting}: The operator-learning framework achieves the best classification accuracy (96.83\%) with the fewest parameters (209K) but produces negative $R^2$ on all forecasting horizons.
+    \item \textbf{DeepONet leads classification, fails forecasting}: The operator-learning framework achieves the best classification accuracy (96.85\%) with the fewest parameters (209K) but produces negative $R^2$ on all forecasting horizons.
     \item \textbf{PatchTST is the most versatile trained model}: Achieves $R^2_\text{prod}{=}0.56$ at the 7-day horizon (best among trained models) and 96.5\% classification accuracy after HPO.
     \item \textbf{Foundation models dominate forecasting}: TimesFM, TiRex, and Chronos all achieve $R^2_\text{prod} > 0.7$ at $h{=}7$ without any task-specific training, exceeding the best trained model by 24--48\%. TiRex maintains the strongest performance at long horizons ($R^2_\text{prod}{=}0.57$ at $h{=}90$).
     \item \textbf{FMs provide competitive classification baselines}: TiRex achieves 91.2\% zero-shot classification with the highest AUC-PR (0.938), demonstrating the versatility of pre-trained time-series representations for offshore monitoring.
