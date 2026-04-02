@@ -26,7 +26,7 @@ RESULTS_DIR = Path("results")
 REPORT_PATH = Path("reports") / "statistical_tests_nested.json"
 
 # ── 3W classification models ──
-CLS_MODELS = ["lstm", "deeponet", "patchtst", "tirex", "mlp"]
+CLS_MODELS = ["lstm", "deeponet", "patchtst", "tirex", "random_forest"]
 CLS_METRICS = ["accuracy", "f1_macro", "auc_pr"]
 
 # ── CDF anomaly models ──
@@ -34,8 +34,8 @@ CDF_MODELS = ["lstm", "deeponet", "patchtst", "chronos", "timesfm", "tirex"]
 CDF_METRICS = ["error_mean", "error_p50"]
 
 # ── Ganymede forecasting models (trained only for now) ──
-FC_TRAINED = ["lstm", "deeponet", "patchtst"]
-FC_TREE = ["xgboost"]
+FC_TRAINED = ["lstm", "deeponet", "patchtst", "tcn"]
+FC_TREE = []
 FC_FMS = ["chronos", "timesfm", "tirex"]
 FC_METRICS = ["mae", "r2_prod"]
 HORIZONS = [7, 14, 30, 90]

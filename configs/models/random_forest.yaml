@@ -1,0 +1,38 @@
+# ─── Random Forest Model Configuration ───
+# Tree-based baseline for 3W classification on statistical features.
+# Not a BaseModel subclass — uses sklearn-style fit/predict.
+# Flattens (14, 27) → 378-dim feature vector.
+
+model:
+  name: "random_forest"
+
+  architecture:
+    n_estimators: 500
+    max_depth: null        # unlimited depth by default
+    min_samples_split: 2
+    min_samples_leaf: 1
+    max_features: "sqrt"
+    class_weight: "balanced"
+    n_jobs: -1
+    random_state: 42
+
+  optuna_search_space:
+    n_estimators:
+      type: "int"
+      low: 100
+      high: 1000
+    max_depth:
+      type: "int"
+      low: 5
+      high: 50
+    min_samples_split:
+      type: "int"
+      low: 2
+      high: 20
+    min_samples_leaf:
+      type: "int"
+      low: 1
+      high: 10
+    max_features:
+      type: "categorical"
+      choices: ["sqrt", "log2", 0.3, 0.5, 0.7]

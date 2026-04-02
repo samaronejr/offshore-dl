@@ -149,7 +149,7 @@ def _run_model(
         model_kwargs=model_kwargs,
     )
 
-    return runner.run(use_mlflow=False)
+    return runner.run(use_mlflow=True)
 
 
 def main() -> None:

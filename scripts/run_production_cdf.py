@@ -143,7 +143,7 @@ def run_trained_model(
     return runner.run_nested(
         train_pool=train_pool,
         test_indices=test_indices,
-        use_mlflow=False,
+        use_mlflow=True,
     )
 
 

@@ -26,13 +26,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 import numpy as np
 import torch
 from omegaconf import OmegaConf
+from sklearn.ensemble import RandomForestClassifier
 
 from offshore_dl.data.datasets import ThreeWFeatureDataset
 from offshore_dl.data.feature_extractor import N_FEATURES
 from offshore_dl.evaluation.cv import HoldoutSplitter, StratifiedGroupKFoldSKLearn
+from offshore_dl.evaluation.metrics import MetricRegistry
 from offshore_dl.models.deeponet import DeepONetModel
 from offshore_dl.models.lstm import LSTMModel
-from offshore_dl.models.mlp import MLPModel
 from offshore_dl.models.patchtst import PatchTSTModel
 from offshore_dl.training.experiment import ExperimentRunner
 from offshore_dl.utils.config import load_merged_config
@@ -84,16 +85,10 @@ MODELS: dict[str, dict] = {
             "lr": 5e-4,
         },
     },
-    "mlp": {
-        "class": MLPModel,
-        "config": "configs/models/mlp.yaml",
-        "overrides": {
-            "hidden_dims": [256, 128],
-            "dropout": 0.3,
-            "lr": 1e-3,
-        },
-    },
 }
+
+TREE_MODELS = ["random_forest"]
+ALL_MODELS = list(MODELS.keys()) + TREE_MODELS
 
 RESULTS_DIR = Path("results")
 
@@ -115,6 +110,119 @@ def _make_serializable(obj):
     return obj
 
 
+def _run_rf_model(
+    dataset: ThreeWFeatureDataset,
+    labels: np.ndarray,
+    groups: np.ndarray,
+    train_pool: np.ndarray,
+    test_indices: np.ndarray,
+    use_mlflow: bool = True,
+) -> dict:
+    """Run Random Forest with nested CV: inner stratified-group CV → retrain → test.
+
+    Flattens (14, 27) → 378-dim feature vector for sklearn RandomForestClassifier.
+    """
+    set_global_seed(42)
+
+    model_cfg = OmegaConf.load("configs/models/random_forest.yaml")
+    arch = OmegaConf.to_container(model_cfg.model.architecture, resolve=True)
+
+    # Extract numpy arrays: flatten (14, 27) → (378,)
+    n = len(dataset)
+    X_all = np.empty((n, N_FEATURES * 27), dtype=np.float32)
+    Y_all = np.empty(n, dtype=np.int64)
+    for i in range(n):
+        x, y, _ = dataset[i]
+        X_all[i] = x.numpy().reshape(-1)
+        Y_all[i] = int(y)
+
+    X_train_pool, Y_train_pool = X_all[train_pool], Y_all[train_pool]
+    X_test, Y_test = X_all[test_indices], Y_all[test_indices]
+
+    # Inner 5-fold stratified-group CV
+    pool_labels = labels[train_pool]
+    pool_groups = groups[train_pool]
+    inner_cv = StratifiedGroupKFoldSKLearn(
+        n_folds=5, labels=pool_labels, groups=pool_groups, seed=42,
+    )
+    inner_splits = inner_cv.get_splits(len(train_pool))
+    cv_fold_results = []
+
+    # Setup MLflow
+    mlflow = None
+    if use_mlflow:
+        try:
+            import mlflow as _mlflow
+            _mlflow.set_tracking_uri("mlruns")
+            _mlflow.set_experiment("3w-random-forest")
+            mlflow = _mlflow
+        except ImportError:
+            pass
+
+    if mlflow:
+        mlflow.start_run(run_name="random_forest_nested_cv")
+        mlflow.log_params({k: str(v) for k, v in arch.items()})
+
+    for fold_idx, (local_train, local_val) in enumerate(inner_splits):
+        logger.info("  ── random_forest inner fold %d/%d", fold_idx + 1, len(inner_splits))
+        X_tr, Y_tr = X_train_pool[local_train], Y_train_pool[local_train]
+        X_va, Y_va = X_train_pool[local_val], Y_train_pool[local_val]
+
+        clf = RandomForestClassifier(**arch)
+        clf.fit(X_tr, Y_tr)
+        preds = clf.predict(X_va)
+        probs = clf.predict_proba(X_va)
+
+        metrics = MetricRegistry.compute("classification", preds, Y_va, prediction_scores=probs)
+        cv_fold_results.append({"fold_idx": fold_idx, "metrics": metrics})
+        logger.info("    fold %d: accuracy=%.4f, f1_macro=%.4f",
+                     fold_idx, metrics["accuracy"], metrics["f1_macro"])
+        if mlflow:
+            mlflow.log_metric(f"cv_fold_{fold_idx}_accuracy", metrics["accuracy"])
+            mlflow.log_metric(f"cv_fold_{fold_idx}_f1_macro", metrics["f1_macro"])
+
+    # Aggregate CV metrics
+    cv_agg = {}
+    if cv_fold_results:
+        metric_keys = [k for k in cv_fold_results[0]["metrics"] if isinstance(cv_fold_results[0]["metrics"][k], (int, float))]
+        for k in metric_keys:
+            vals = [f["metrics"][k] for f in cv_fold_results]
+            cv_agg[f"{k}_mean"] = float(np.mean(vals))
+            cv_agg[f"{k}_std"] = float(np.std(vals))
+
+    # Retrain on full training pool, evaluate on held-out test
+    logger.info("  ── random_forest: retrain on full train pool (%d samples)", len(train_pool))
+    final_clf = RandomForestClassifier(**arch)
+    final_clf.fit(X_train_pool, Y_train_pool)
+    test_preds = final_clf.predict(X_test)
+    test_probs = final_clf.predict_proba(X_test)
+    test_metrics = MetricRegistry.compute("classification", test_preds, Y_test, prediction_scores=test_probs)
+
+    if mlflow:
+        for k, v in test_metrics.items():
+            if isinstance(v, (int, float)):
+                mlflow.log_metric(f"test_{k}", v)
+        mlflow.end_run()
+
+    result = {
+        "test_metrics": test_metrics,
+        "cv_aggregate": cv_agg,
+        "cv_fold_results": cv_fold_results,
+        "n_train": len(train_pool),
+        "n_test": len(test_indices),
+        "n_cv_folds": len(inner_splits),
+    }
+
+    metric_str = ", ".join(
+        f"{k}={v:.4f}" for k, v in sorted(test_metrics.items())
+        if isinstance(v, (int, float))
+    )
+    print(f"\n  RANDOM FOREST on 3W features")
+    print(f"  TEST: {metric_str}")
+
+    return result
+
+
 def _run_model(
     model_name: str,
     dataset: ThreeWFeatureDataset,
@@ -125,7 +233,7 @@ def _run_model(
     groups: np.ndarray,
     train_pool: np.ndarray,
     test_indices: np.ndarray,
-    use_mlflow: bool = False,
+    use_mlflow: bool = True,
 ) -> dict:
     """Train one model with nested CV: inner CV on train pool → retrain → test."""
     set_global_seed(42)
@@ -200,21 +308,22 @@ def main() -> None:
     parser.add_argument("--device", type=str, default="cuda", help="Compute device")
     parser.add_argument("--max-epochs", type=int, default=100, help="Max training epochs")
     parser.add_argument("--batch-size", type=int, default=256, help="Batch size")
-    parser.add_argument("--use-mlflow", action="store_true", help="Enable MLflow tracking")
+    parser.add_argument("--no-mlflow", action="store_true", help="Disable MLflow tracking")
     parser.add_argument("--models", nargs="+", default=None,
-                        help="Models to run (default: all). Choices: " + ", ".join(MODELS.keys()))
+                        help="Models to run (default: all). Choices: " + ", ".join(ALL_MODELS))
 
     args = parser.parse_args()
 
     # Validate --models filter
+    valid_all = set(ALL_MODELS)
     if args.models:
-        unknown = [m for m in args.models if m not in MODELS]
+        unknown = [m for m in args.models if m not in valid_all]
         if unknown:
-            logger.error("Unknown model(s): %s. Available: %s", unknown, list(MODELS.keys()))
+            logger.error("Unknown model(s): %s. Available: %s", unknown, ALL_MODELS)
             sys.exit(1)
         models_to_run = args.models
     else:
-        models_to_run = list(MODELS.keys())
+        models_to_run = ALL_MODELS
 
     logger.info("═" * 70)
     logger.info("3W FEATURE-BASED TRAINING — nested CV (inner 5-fold + held-out test)")
@@ -255,18 +364,29 @@ def main() -> None:
 
         start = time.time()
         try:
-            results = _run_model(
-                model_name=model_name,
-                dataset=dataset,
-                max_epochs=args.max_epochs,
-                batch_size=args.batch_size,
-                device=args.device,
-                labels=labels,
-                groups=groups,
-                train_pool=train_pool,
-                test_indices=test_indices,
-                use_mlflow=args.use_mlflow,
-            )
+            is_tree = model_name in TREE_MODELS
+            if is_tree:
+                results = _run_rf_model(
+                    dataset=dataset,
+                    labels=labels,
+                    groups=groups,
+                    train_pool=train_pool,
+                    test_indices=test_indices,
+                    use_mlflow=not args.no_mlflow,
+                )
+            else:
+                results = _run_model(
+                    model_name=model_name,
+                    dataset=dataset,
+                    max_epochs=args.max_epochs,
+                    batch_size=args.batch_size,
+                    device=args.device,
+                    labels=labels,
+                    groups=groups,
+                    train_pool=train_pool,
+                    test_indices=test_indices,
+                    use_mlflow=not args.no_mlflow,
+                )
             elapsed = time.time() - start
 
             out_path = RESULTS_DIR / model_name / "3w.json"

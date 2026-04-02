@@ -1,0 +1,38 @@
+# ─── TCN Model Configuration ───
+# Temporal Convolutional Network for Ganymede gas production forecasting.
+# Dilated causal convolutions with exponential dilation.
+# BaseModel subclass — runs through ExperimentRunner.
+
+model:
+  name: "tcn"
+
+  architecture:
+    n_channels: 128
+    n_layers: 6          # dilation = 1,2,4,8,16,32 → RF = 1 + 2*(3-1)*(2^6-1) = 253 > 90
+    kernel_size: 3
+    dropout: 0.2
+
+  training:
+    lr: 0.001
+    weight_decay: 0.0001
+
+  optuna_search_space:
+    n_channels:
+      type: "categorical"
+      choices: [64, 128, 256]
+    n_layers:
+      type: "int"
+      low: 4
+      high: 8
+    kernel_size:
+      type: "categorical"
+      choices: [3, 5, 7]
+    dropout:
+      type: "float"
+      low: 0.05
+      high: 0.5
+    lr:
+      type: "float"
+      low: 0.0001
+      high: 0.01
+      log: true

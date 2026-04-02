@@ -38,9 +38,6 @@ import numpy as np
 import torch
 from omegaconf import OmegaConf
 
-from sklearn.multioutput import MultiOutputRegressor
-from xgboost import XGBRegressor
-
 from offshore_dl.data.datasets import GanymedeDataset
 from offshore_dl.evaluation.cv import ExpandingWindowCV, HoldoutSplitter
 from offshore_dl.evaluation.metrics import MetricRegistry
@@ -58,9 +55,9 @@ logger = logging.getLogger(__name__)
 
 HORIZONS = [7, 14, 30, 90]
 MODES = ["multi_well", "per_well"]
-TRAINED_MODELS = ["lstm", "deeponet", "patchtst"]
+TRAINED_MODELS = ["lstm", "deeponet", "patchtst", "tcn"]
 FM_MODELS = ["chronos", "timesfm", "tirex"]
-TREE_MODELS = ["xgboost"]
+TREE_MODELS: list[str] = []
 ALL_MODELS = TRAINED_MODELS + FM_MODELS + TREE_MODELS
 
 # Wells from configs/data/ganymede.yaml
@@ -170,7 +167,7 @@ def _run_trained_model(
     well: str | None,
     max_epochs: int | None,
     device: str,
-    use_mlflow: bool = False,
+    use_mlflow: bool = True,
 ) -> dict:
     """Run a trained model with nested CV: temporal holdout + inner CV.
 
@@ -367,202 +364,6 @@ def _run_fm_per_well(
 
 
 # ═══════════════════════════════════════════════════════════════════
-# Tree-model sweep (sklearn-style fit/predict)
-# ═══════════════════════════════════════════════════════════════════
-
-
-def _run_xgboost_multi_well(
-    model_name: str,
-    horizon: int,
-    cfg: dict | None = None,
-) -> dict:
-    """Run XGBoost on Ganymede multi_well with temporal holdout + inner CV.
-
-    Protocol:
-      1. Flatten input tensors (90, n_vars) → (90*n_vars,) for tabular input
-      2. Temporal holdout: last 20% → test set
-      3. Inner 3-fold ExpandingWindowCV on the 80% training pool
-      4. For each fold: fit MultiOutputRegressor(XGBRegressor), evaluate
-      5. Retrain on full training pool, evaluate on held-out test
-    """
-    set_global_seed(42)
-
-    # Load config
-    model_cfg = OmegaConf.load("configs/models/xgboost.yaml")
-    arch = OmegaConf.to_container(model_cfg.model.architecture, resolve=True)
-
-    # Load dataset
-    dataset = GanymedeDataset(
-        "configs/data/ganymede.yaml",
-        horizon=horizon,
-        mode="multi_well",
-        filter_shutdowns=True,
-    )
-    n = len(dataset)
-    logger.info("  XGBoost multi_well h%d: %d samples, n_vars=%d", horizon, n, dataset.n_vars)
-
-    # Extract numpy arrays: flatten (90, n_vars) → (90*n_vars,)
-    X_all = np.empty((n, 90 * dataset.n_vars), dtype=np.float32)
-    Y_all = np.empty((n, horizon), dtype=np.float32)
-    for i in range(n):
-        x, y, _ = dataset[i]
-        X_all[i] = x.numpy().reshape(-1)
-        Y_all[i] = y.numpy()
-
-    # Temporal holdout: last 20%
-    holdout = HoldoutSplitter(test_ratio=0.2, mode="temporal")
-    train_pool, test_indices = holdout.split(n)
-
-    X_train_pool, Y_train_pool = X_all[train_pool], Y_all[train_pool]
-    X_test, Y_test = X_all[test_indices], Y_all[test_indices]
-
-    # Inner 3-fold ExpandingWindowCV
-    cv = ExpandingWindowCV(n_splits=3, min_train_ratio=0.5)
-    inner_splits = cv.get_splits(len(train_pool))
-    cv_fold_results = []
-
-    for fold_idx, (local_train, local_val) in enumerate(inner_splits):
-        logger.info("  ── xgboost h%d multi_well inner fold %d/%d", horizon, fold_idx + 1, len(inner_splits))
-        X_tr, Y_tr = X_train_pool[local_train], Y_train_pool[local_train]
-        X_va, Y_va = X_train_pool[local_val], Y_train_pool[local_val]
-
-        model = MultiOutputRegressor(XGBRegressor(**arch, random_state=42))
-        model.fit(X_tr, Y_tr)
-        preds = model.predict(X_va)
-
-        metrics = MetricRegistry.compute("forecasting", preds, Y_va)
-        cv_fold_results.append({"fold_idx": fold_idx, "metrics": metrics})
-        logger.info("    fold %d: MAE=%.4f, R²_prod=%.4f", fold_idx, metrics["mae"], metrics["r2_prod"])
-
-    cv_agg = _aggregate(cv_fold_results)
-
-    # Retrain on full training pool, evaluate on held-out test
-    logger.info("  ── xgboost h%d multi_well: retrain on full train pool (%d samples)", horizon, len(train_pool))
-    final_model = MultiOutputRegressor(XGBRegressor(**arch, random_state=42))
-    final_model.fit(X_train_pool, Y_train_pool)
-    test_preds = final_model.predict(X_test)
-    test_metrics = MetricRegistry.compute("forecasting", test_preds, Y_test)
-
-    result = {
-        "test_metrics": test_metrics,
-        "cv_aggregate": cv_agg,
-        "cv_fold_results": cv_fold_results,
-        "n_train": len(train_pool),
-        "n_test": len(test_indices),
-        "n_cv_folds": len(inner_splits),
-    }
-
-    # Save
-    out_path = RESULTS_DIR / model_name / f"ganymede_h{horizon}_multi_well.json"
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps(_make_serializable(result), indent=2))
-    logger.info("  Saved %s", out_path)
-
-    # Print summary
-    metric_str = ", ".join(
-        f"{k}={v:.4f}" for k, v in sorted(test_metrics.items())
-        if isinstance(v, (int, float))
-    )
-    print(f"\n  XGBOOST on GANYMEDE h{horizon} multi_well")
-    print(f"  TEST: {metric_str}")
-    print(f"  Results saved: {out_path}\n")
-
-    return result
-
-
-def _run_xgboost_per_well(
-    model_name: str,
-    horizon: int,
-    well: str,
-    cfg: dict | None = None,
-) -> dict:
-    """Run XGBoost on a single Ganymede well with temporal holdout + inner CV.
-
-    Same protocol as multi_well but for a single well.
-    Handles empty datasets gracefully (skip + log).
-    """
-    set_global_seed(42)
-    safe = _safe_well(well)
-
-    # Load config
-    model_cfg = OmegaConf.load("configs/models/xgboost.yaml")
-    arch = OmegaConf.to_container(model_cfg.model.architecture, resolve=True)
-
-    # Load per-well dataset
-    dataset = GanymedeDataset(
-        "configs/data/ganymede.yaml",
-        horizon=horizon,
-        mode="per_well",
-        well_name=well,
-        filter_shutdowns=True,
-    )
-    n = len(dataset)
-
-    if n == 0:
-        logger.warning("  ── xgboost h%d per_well %s: empty dataset, skipping", horizon, well)
-        return {"well": well, "status": "skipped", "reason": "empty dataset"}
-
-    logger.info("  XGBoost per_well h%d %s: %d samples, n_vars=%d", horizon, well, n, dataset.n_vars)
-
-    # Extract numpy arrays
-    X_all = np.empty((n, 90 * dataset.n_vars), dtype=np.float32)
-    Y_all = np.empty((n, horizon), dtype=np.float32)
-    for i in range(n):
-        x, y, _ = dataset[i]
-        X_all[i] = x.numpy().reshape(-1)
-        Y_all[i] = y.numpy()
-
-    # Temporal holdout: last 20%
-    holdout = HoldoutSplitter(test_ratio=0.2, mode="temporal")
-    train_pool, test_indices = holdout.split(n)
-
-    X_train_pool, Y_train_pool = X_all[train_pool], Y_all[train_pool]
-    X_test, Y_test = X_all[test_indices], Y_all[test_indices]
-
-    # Inner 3-fold ExpandingWindowCV
-    cv = ExpandingWindowCV(n_splits=3, min_train_ratio=0.5)
-    inner_splits = cv.get_splits(len(train_pool))
-    cv_fold_results = []
-
-    for fold_idx, (local_train, local_val) in enumerate(inner_splits):
-        logger.info("  ── xgboost h%d per_well %s inner fold %d/%d", horizon, well, fold_idx + 1, len(inner_splits))
-        X_tr, Y_tr = X_train_pool[local_train], Y_train_pool[local_train]
-        X_va, Y_va = X_train_pool[local_val], Y_train_pool[local_val]
-
-        model = MultiOutputRegressor(XGBRegressor(**arch, random_state=42))
-        model.fit(X_tr, Y_tr)
-        preds = model.predict(X_va)
-
-        metrics = MetricRegistry.compute("forecasting", preds, Y_va)
-        cv_fold_results.append({"fold_idx": fold_idx, "metrics": metrics})
-
-    cv_agg = _aggregate(cv_fold_results)
-
-    # Retrain on full training pool, evaluate on test
-    final_model = MultiOutputRegressor(XGBRegressor(**arch, random_state=42))
-    final_model.fit(X_train_pool, Y_train_pool)
-    test_preds = final_model.predict(X_test)
-    test_metrics = MetricRegistry.compute("forecasting", test_preds, Y_test)
-
-    result = {
-        "test_metrics": test_metrics,
-        "cv_aggregate": cv_agg,
-        "cv_fold_results": cv_fold_results,
-        "n_train": len(train_pool),
-        "n_test": len(test_indices),
-        "n_cv_folds": len(inner_splits),
-        "well": well,
-    }
-
-    out_path = RESULTS_DIR / model_name / f"ganymede_h{horizon}_per_well_{safe}.json"
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps(_make_serializable(result), indent=2))
-    logger.info("  Saved %s", out_path)
-
-    return result
-
-
-# ═══════════════════════════════════════════════════════════════════
 # Legacy compatibility
 # ═══════════════════════════════════════════════════════════════════
 
@@ -645,7 +446,7 @@ def main() -> None:
     parser.add_argument("--models", nargs="+", default=ALL_MODELS, choices=ALL_MODELS, help="Models to run")
     parser.add_argument("--dry-run", action="store_true", help="Print plan without executing")
     parser.add_argument("--max-samples", type=int, default=None, help="Cap val samples per FM fold (for smoke tests)")
-    parser.add_argument("--use-mlflow", action="store_true", help="Enable MLflow tracking")
+    parser.add_argument("--no-mlflow", action="store_true", help="Disable MLflow tracking")
 
     args = parser.parse_args()
 
@@ -747,23 +548,11 @@ def main() -> None:
                     out_path.write_text(json.dumps(_make_serializable(result), indent=2))
                     logger.info("  Saved %s", out_path)
             elif is_tree:
-                # Tree model (XGBoost) — sklearn-style fit/predict
-                if mode == "multi_well":
-                    result = _run_xgboost_multi_well(model, horizon)
-                else:
-                    result = _run_xgboost_per_well(model, horizon, well)
-                    if result.get("status") == "skipped":
-                        elapsed = time.time() - start
-                        all_status[model].append({
-                            "run": run_label, "status": "skipped",
-                            "reason": result.get("reason", "empty dataset"),
-                            "elapsed": round(elapsed, 1),
-                        })
-                        logger.warning("  Skipped: %s", result.get("reason", "empty dataset"))
-                        continue
+                # Tree model — sklearn-style fit/predict (placeholder for future models)
+                raise NotImplementedError(f"No tree-model runner for {model}")
             else:
                 # Trained model — uses nested CV
-                result = _run_trained_model(model, horizon, mode, well, args.max_epochs, args.device, use_mlflow=args.use_mlflow)
+                result = _run_trained_model(model, horizon, mode, well, args.max_epochs, args.device, use_mlflow=not args.no_mlflow)
 
             # Extract primary metrics (test_metrics for nested, fall back to aggregate)
             tm = result.get("test_metrics", result.get("aggregate", {}))

@@ -32,8 +32,6 @@ import numpy as np
 import optuna
 import torch
 from omegaconf import OmegaConf
-from sklearn.multioutput import MultiOutputRegressor
-from xgboost import XGBRegressor
 
 from offshore_dl.utils.config import load_merged_config
 from offshore_dl.data.datasets import ThreeWFeatureDataset, GanymedeDataset
@@ -62,15 +60,15 @@ def _load_pytorch_deps():
     """
     from offshore_dl.models.deeponet import DeepONetModel
     from offshore_dl.models.lstm import LSTMModel
-    from offshore_dl.models.mlp import MLPModel
     from offshore_dl.models.patchtst import PatchTSTModel
+    from offshore_dl.models.tcn import TCNModel
     from offshore_dl.training.experiment import ExperimentRunner
     from offshore_dl.training.optuna_utils import run_hpo
     return {
         "LSTMModel": LSTMModel,
         "DeepONetModel": DeepONetModel,
         "PatchTSTModel": PatchTSTModel,
-        "MLPModel": MLPModel,
+        "TCNModel": TCNModel,
         "ExperimentRunner": ExperimentRunner,
         "run_hpo": run_hpo,
     }
@@ -125,18 +123,6 @@ def _get_3w_models():
                 "dropout": 0.15,
             },
         },
-        "mlp": {
-            "class": deps["MLPModel"],
-            "config": "configs/models/mlp.yaml",
-            "kwargs": {
-                "task": "classification",
-                "n_vars": 27,
-                "window_size": 14,
-                "n_classes": 10,
-                "hidden_dims": [256, 128],
-                "dropout": 0.3,
-            },
-        },
     }
 
 
@@ -184,6 +170,19 @@ def _get_ganymede_models():
                 "patch_len": 8,
                 "stride": 4,
                 "dropout": 0.15,
+            },
+        },
+        "tcn": {
+            "class": deps["TCNModel"],
+            "config": "configs/models/tcn.yaml",
+            "kwargs": {
+                "task": "forecasting",
+                "n_vars": 63,
+                "window_size": 90,
+                "n_channels": 128,
+                "n_layers": 6,
+                "kernel_size": 3,
+                "dropout": 0.2,
             },
         },
     }
@@ -289,7 +288,7 @@ def run_3w_hpo(model_name: str, n_trials: int, device: str) -> dict:
     nested_result = runner.run_nested(
         train_pool=train_pool,
         test_indices=test_indices,
-        use_mlflow=False,
+        use_mlflow=True,
     )
 
     return {
@@ -393,7 +392,7 @@ def run_ganymede_hpo(
     nested_result = runner.run_nested(
         train_pool=train_pool,
         test_indices=test_indices,
-        use_mlflow=False,
+        use_mlflow=True,
     )
 
     return {
@@ -406,161 +405,6 @@ def run_ganymede_hpo(
         "cv_aggregate": nested_result["cv_aggregate"],
         "baseline_kwargs": entry["kwargs"],
         "best_kwargs": best_kwargs,
-    }
-
-
-# ═══════════════════════════════════════════════════════════════════
-# GANYMEDE XGBOOST (sklearn-style — cannot reuse PyTorch OptunaObjective)
-# ═══════════════════════════════════════════════════════════════════
-
-
-def _sample_xgboost_params(trial: "optuna.Trial", search_space: dict) -> dict:
-    """Sample XGBoost hyperparameters from YAML search space using Optuna."""
-    params = {}
-    for name, spec in search_space.items():
-        if spec["type"] == "int":
-            params[name] = trial.suggest_int(name, spec["low"], spec["high"])
-        elif spec["type"] == "float":
-            log = spec.get("log", False)
-            params[name] = trial.suggest_float(name, spec["low"], spec["high"], log=log)
-        else:
-            raise ValueError(f"Unknown search space type: {spec['type']} for {name}")
-    return params
-
-
-def run_ganymede_xgboost_hpo(
-    horizon: str, n_trials: int, device: str,
-) -> dict:
-    """Run Optuna HPO for XGBoost on Ganymede forecasting.
-
-    Custom objective because XGBoost is sklearn-style (fit/predict),
-    not PyTorch. Mirrors the data pipeline from _run_xgboost_multi_well()
-    in run_production_ganymede.py.
-    """
-    set_global_seed(42)
-
-    # Load search space from YAML
-    model_cfg = OmegaConf.load("configs/models/xgboost.yaml")
-    search_space = OmegaConf.to_container(
-        model_cfg.model.optuna_search_space, resolve=True
-    )
-    arch_defaults = OmegaConf.to_container(
-        model_cfg.model.architecture, resolve=True
-    )
-    logger.info("  XGBoost search space: %s", list(search_space.keys()))
-
-    # Load dataset and flatten to tabular
-    horizon_days = int(horizon.replace("h", ""))
-    dataset = GanymedeDataset(
-        "configs/data/ganymede.yaml",
-        horizon=horizon_days,
-        mode="multi_well",
-        filter_shutdowns=True,
-    )
-    n = len(dataset)
-    logger.info("  Ganymede XGBoost %s: %d samples, n_vars=%d", horizon, n, dataset.n_vars)
-
-    X_all = np.empty((n, 90 * dataset.n_vars), dtype=np.float32)
-    Y_all = np.empty((n, horizon_days), dtype=np.float32)
-    for i in range(n):
-        x, y, _ = dataset[i]
-        X_all[i] = x.numpy().reshape(-1)
-        Y_all[i] = y.numpy()
-
-    # Temporal holdout: last 20% → test set
-    holdout = HoldoutSplitter(test_ratio=0.2, mode="temporal")
-    train_pool, test_indices = holdout.split(n)
-    X_train_pool, Y_train_pool = X_all[train_pool], Y_all[train_pool]
-    X_test, Y_test = X_all[test_indices], Y_all[test_indices]
-    logger.info("  Holdout: train=%d, test=%d", len(train_pool), len(test_indices))
-
-    # Inner CV for HPO trials
-    cv = ExpandingWindowCV(n_splits=3, min_train_ratio=0.5)
-    inner_splits = cv.get_splits(len(train_pool))
-
-    # Fixed params not in search space
-    fixed_params = {
-        "tree_method": arch_defaults.get("tree_method", "hist"),
-        "n_jobs": arch_defaults.get("n_jobs", -1),
-        "random_state": 42,
-    }
-
-    def objective(trial: optuna.Trial) -> float:
-        """Optuna objective: 3-fold ExpandingWindowCV MAE."""
-        sampled = _sample_xgboost_params(trial, search_space)
-        xgb_params = {**sampled, **fixed_params}
-
-        fold_maes = []
-        for fold_idx, (local_train, local_val) in enumerate(inner_splits):
-            X_tr, Y_tr = X_train_pool[local_train], Y_train_pool[local_train]
-            X_va, Y_va = X_train_pool[local_val], Y_train_pool[local_val]
-
-            model = MultiOutputRegressor(XGBRegressor(**xgb_params))
-            model.fit(X_tr, Y_tr)
-            preds = model.predict(X_va)
-
-            metrics = MetricRegistry.compute("forecasting", preds, Y_va)
-            fold_maes.append(metrics["mae"])
-
-        return float(np.mean(fold_maes))
-
-    # Run Optuna study
-    study = optuna.create_study(
-        study_name=f"ganymede_xgboost_{horizon}",
-        direction="minimize",
-    )
-    study.optimize(objective, n_trials=n_trials, show_progress_bar=True)
-
-    best_params = study.best_trial.params
-    best_value = study.best_value
-    n_trials_completed = len(study.trials)
-
-    logger.info("  Best params: %s (MAE=%.4f, %d trials)",
-                best_params, best_value, n_trials_completed)
-
-    # ── Final evaluation: retrain on full training pool with best params ──
-    final_xgb_params = {**best_params, **fixed_params}
-    final_model = MultiOutputRegressor(XGBRegressor(**final_xgb_params))
-    final_model.fit(X_train_pool, Y_train_pool)
-    test_preds = final_model.predict(X_test)
-    test_metrics = MetricRegistry.compute("forecasting", test_preds, Y_test)
-
-    # Inner CV with best params for cv_aggregate
-    cv_fold_results = []
-    for fold_idx, (local_train, local_val) in enumerate(inner_splits):
-        X_tr, Y_tr = X_train_pool[local_train], Y_train_pool[local_train]
-        X_va, Y_va = X_train_pool[local_val], Y_train_pool[local_val]
-
-        model = MultiOutputRegressor(XGBRegressor(**final_xgb_params))
-        model.fit(X_tr, Y_tr)
-        preds = model.predict(X_va)
-        metrics = MetricRegistry.compute("forecasting", preds, Y_va)
-        cv_fold_results.append({"fold_idx": fold_idx, "metrics": metrics})
-
-    # Aggregate CV metrics
-    cv_agg = {}
-    if cv_fold_results:
-        metric_keys = cv_fold_results[0]["metrics"].keys()
-        for k in metric_keys:
-            vals = [f["metrics"][k] for f in cv_fold_results if isinstance(f["metrics"][k], (int, float))]
-            if vals:
-                cv_agg[k] = {"mean": float(np.mean(vals)), "std": float(np.std(vals))}
-
-    logger.info("  Test: MAE=%.4f, R²_prod=%.4f",
-                test_metrics.get("mae", 0), test_metrics.get("r2_prod", 0))
-
-    return {
-        "hpo": {
-            "best_params": best_params,
-            "best_value": best_value,
-            "n_trials": n_trials_completed,
-        },
-        "test_metrics": test_metrics,
-        "cv_aggregate": cv_agg,
-        "cv_fold_results": cv_fold_results,
-        "baseline_architecture": arch_defaults,
-        "n_train": len(train_pool),
-        "n_test": len(test_indices),
     }
 
 
@@ -597,12 +441,12 @@ def main():
 
     if args.dataset == "3w":
         # Valid 3W models — names only for validation (lazy import of PyTorch deps)
-        valid_models = {"lstm", "deeponet", "patchtst", "mlp"}
-        default_models = ["lstm", "deeponet", "patchtst", "mlp"]
+        valid_models = {"lstm", "deeponet", "patchtst"}
+        default_models = ["lstm", "deeponet", "patchtst"]
     else:
-        # Valid Ganymede models — includes xgboost (separate path)
-        valid_models = {"lstm", "deeponet", "patchtst", "xgboost"}
-        default_models = ["lstm", "deeponet", "patchtst", "xgboost"]
+        # Valid Ganymede models
+        valid_models = {"lstm", "deeponet", "patchtst", "tcn"}
+        default_models = ["lstm", "deeponet", "patchtst", "tcn"]
 
     models = args.models or default_models
 
@@ -613,9 +457,6 @@ def main():
 
     summary = {}
     for model_name in models:
-        # XGBoost uses a custom HPO path (sklearn-style, not PyTorch)
-        is_xgboost_ganymede = (model_name == "xgboost" and args.dataset == "ganymede")
-
         if model_name not in valid_models:
             logger.warning("Unknown model: %s (skipping)", model_name)
             continue
@@ -627,8 +468,6 @@ def main():
         try:
             if args.dataset == "3w":
                 result = run_3w_hpo(model_name, args.n_trials, args.device)
-            elif is_xgboost_ganymede:
-                result = run_ganymede_xgboost_hpo(args.horizon, args.n_trials, args.device)
             else:
                 result = run_ganymede_hpo(model_name, args.horizon, args.n_trials, args.device)
 

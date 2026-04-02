@@ -5,8 +5,7 @@ from offshore_dl.models.chronos_wrapper import ChronosWrapper
 from offshore_dl.models.deeponet import DeepONetModel
 from offshore_dl.models.dummy import DummyModel
 from offshore_dl.models.lstm import LSTMModel
-from offshore_dl.models.mlp import MLPModel
-from offshore_dl.models.patchtst import PatchTSTModel
+from offshore_dl.models.tcn import TCNModel
 
 __all__ = [
     "BaseModel",
@@ -14,10 +13,17 @@ __all__ = [
     "DeepONetModel",
     "DummyModel",
     "LSTMModel",
-    "MLPModel",
-    "PatchTSTModel",
+    "TCNModel",
     "model_summary",
 ]
+
+# Optional imports — these require extra dependencies
+try:
+    from offshore_dl.models.patchtst import PatchTSTModel
+
+    __all__.append("PatchTSTModel")
+except (ImportError, ModuleNotFoundError, RuntimeError):
+    pass
 
 # Optional imports — these require extra dependencies
 try:
