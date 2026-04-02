@@ -43,7 +43,7 @@ Rio de Janeiro, Brazil\\
 
 % ═══════════════════════════════════════════════════════════════════
 \begin{abstract}
-Digital monitoring of offshore oil and gas operations demands models capable of detecting equipment faults and forecasting production volumes under challenging conditions: high class imbalance, limited labeled data, multi-well heterogeneity, and long forecast horizons. We present a systematic benchmark of ten architectures---five trained models (Bidirectional LSTM, DeepONet, Random Forest, PatchTST, TCN) and three foundation models (Chronos, TimesFM, TiRex)---evaluated on two real-world offshore datasets using a nested evaluation protocol with held-out test sets and inner cross-validation. For fault classification on the Petrobras 3W dataset (208{,}973 windows, 10 classes), a statistical feature extraction pipeline compresses 720-step windows into 14-descriptor feature matrices; DeepONet achieves the best held-out accuracy of 96.83\% (macro $F_1{=}0.964$), while all four trained models reach $>$96\% after hyperparameter optimization, including Random Forest at 96.58\%---demonstrating that the feature extraction pipeline captures discriminative structure accessible even to non-sequential learners. TiRex provides a competitive zero-shot baseline (91.2\%). For gas production forecasting on the Ganymede dataset (31{,}359 samples, 7 wells), foundation models dominate: TimesFM achieves $R^2_\text{prod}{=}0.83$ at the 7-day horizon, exceeding the best trained model (PatchTST, 0.56) by 48\%. Statistical significance is confirmed via Friedman tests on both tasks ($p < 0.05$).
+Digital monitoring of offshore oil and gas operations demands models capable of detecting equipment faults and forecasting production volumes under challenging conditions: high class imbalance, limited labeled data, multi-well heterogeneity, and long forecast horizons. We present a systematic benchmark of eight architectures---five trained models (Bidirectional LSTM, DeepONet, Random Forest, PatchTST, TCN) and three foundation models (Chronos, TimesFM, TiRex)---evaluated on two real-world offshore datasets using a nested evaluation protocol with held-out test sets and inner cross-validation. For fault classification on the Petrobras 3W dataset (208{,}973 windows, 10 classes), a statistical feature extraction pipeline compresses 720-step windows into 14-descriptor feature matrices; DeepONet achieves the best held-out accuracy of 96.83\% (macro $F_1{=}0.964$), while all four trained models reach $>$96\% after hyperparameter optimization, including Random Forest at 96.58\%---demonstrating that the feature extraction pipeline captures discriminative structure accessible even to non-sequential learners. TiRex provides a competitive zero-shot baseline (91.2\%). For gas production forecasting on the Ganymede dataset (31{,}359 samples, 7 wells), foundation models dominate: TimesFM achieves $R^2_\text{prod}{=}0.83$ at the 7-day horizon, exceeding the best trained model (PatchTST, 0.56) by 48\%. Statistical significance is confirmed via Friedman tests on both tasks ($p < 0.05$).
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -66,7 +66,7 @@ Recent advances in foundation models (FMs) for time series \cite{chronos, timesf
 We make the following contributions:
 
 \begin{enumerate}
-    \item A \textbf{systematic benchmark} of ten architectures---five trained (LSTM, DeepONet, Random Forest, PatchTST, TCN) and three foundation models (Chronos, TimesFM, TiRex)---across two real-world offshore datasets covering fault classification and production forecasting.
+    \item A \textbf{systematic benchmark} of eight architectures---five trained (LSTM, DeepONet, Random Forest, PatchTST, TCN) and three foundation models (Chronos, TimesFM, TiRex)---across two real-world offshore datasets covering fault classification and production forecasting.
     \item A \textbf{statistical feature extraction pipeline} that compresses raw 720-timestep sensor windows into compact 14-descriptor matrices, reducing computation by $\sim$50$\times$ while preserving discriminative information.
     \item A \textbf{nested evaluation protocol} with held-out test sets and inner cross-validation that provides both unbiased performance estimates and variance diagnostics, following best practices for ML evaluation \cite{cawley2010over}.
     \item A \textbf{multi-horizon analysis} comparing trained models and foundation models across 7, 14, 30, and 90-day forecasting horizons with per-well granularity.
@@ -185,7 +185,7 @@ As a non-sequential baseline for 3W classification, we train a scikit-learn \tex
 
 \subsubsection{Temporal Convolutional Network (TCN)}
 
-For Ganymede forecasting, we employ a Temporal Convolutional Network (TCN) that applies stacked dilated causal 1D convolutions with residual connections. Dilation factors grow exponentially ($d_i = 2^i$), giving the network a receptive field that covers the full 90-timestep input window with only $\mathcal{O}(\log T)$ layers. Each residual block consists of two dilated convolutions with weight normalization, GELU activations, and spatial dropout. A final linear projection maps the last temporal output to multi-step forecasts at horizons $h \in \{7, 14, 30, 90\}$. Unlike RNNs, the TCN processes the entire sequence in parallel, enabling efficient training while preserving strict causal ordering. % TODO: S04 will fill final hyperparameters and results after TCN training.
+For Ganymede forecasting, we employ a Temporal Convolutional Network (TCN) that applies stacked dilated causal 1D convolutions with residual connections. Dilation factors grow exponentially ($d_i = 2^i$), giving the network a receptive field that covers the full 90-timestep input window with only $\mathcal{O}(\log T)$ layers. Each residual block consists of two dilated convolutions with weight normalization, GELU activations, and spatial dropout. A final linear projection maps the last temporal output to multi-step forecasts at horizons $h \in \{7, 14, 30, 90\}$. Unlike RNNs, the TCN processes the entire sequence in parallel, enabling efficient training while preserving strict causal ordering. We configure 128 channels, 6 layers (dilation $1, 2, \ldots, 32$, yielding a receptive field of 253 timesteps), kernel size~3, dropout~0.2, learning rate $10^{-3}$ with weight decay $10^{-4}$.
 
 \subsubsection{Foundation Models}
 
@@ -405,7 +405,7 @@ Table~\ref{tab:confusion} presents the confusion matrix for DeepONet (best overa
 
 \subsection{Ganymede Gas Production Forecasting}
 
-Table~\ref{tab:ganymede} presents multi-horizon forecasting results on the Ganymede multi-well setting, with gas production measured in MMSCF (million standard cubic feet). All three foundation models achieve positive $R^2_\text{prod}$ across all four horizons, with TiRex leading at longer horizons ($h{=}30$: 0.70, $h{=}90$: 0.57) and TimesFM at the shortest ($h{=}7$: 0.83). Among trained models, PatchTST and LSTM achieve positive $R^2_\text{prod}$ at most horizons, while DeepONet yields consistently negative $R^2$. TCN results are pending (see Section~\ref{sec:conclusion}).
+Table~\ref{tab:ganymede} presents multi-horizon forecasting results on the Ganymede multi-well setting, with gas production measured in MMSCF (million standard cubic feet). All three foundation models achieve positive $R^2_\text{prod}$ across all four horizons, with TiRex leading at longer horizons ($h{=}30$: 0.70, $h{=}90$: 0.57) and TimesFM at the shortest ($h{=}7$: 0.83). Among trained models, PatchTST and LSTM achieve positive $R^2_\text{prod}$ at most horizons, while DeepONet yields consistently negative $R^2$. TCN achieves marginally positive $R^2_\text{prod}$ at $h{=}14$ (0.11) and $h{=}30$ (0.06) but yields strongly negative values at $h{=}7$ ($-4.51$) and $h{=}90$ ($-0.04$), ranking below both PatchTST and LSTM.
 
 \begin{table}[t]
 \centering
@@ -441,15 +441,15 @@ Table~\ref{tab:ganymede} presents multi-horizon forecasting results on the Ganym
  & $R^2_\text{prod}$ & $-$40.1 & $-$4.35 & $-$5.01 & $-$4.32 \\
  & MAE              & 9.53 & 4.12 & 4.51 & 3.84 \\
 \midrule
-% TODO: S04 will fill TCN results after training
+% TCN results filled from production runs
 \multirow{2}{*}{TCN}
- & $R^2_\text{prod}$ & -- & -- & -- & -- \\
- & MAE              & -- & -- & -- & -- \\
+ & $R^2_\text{prod}$ & $-$4.51 & .108 & .060 & $-$.044 \\
+ & MAE              & 3.98 & 2.37 & 2.62 & 2.34 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Fig.~\ref{fig:ganymede} visualizes $R^2_\text{prod}$ across horizons. Foundation models maintain positive $R^2_\text{prod}$ at all horizons, with TiRex showing the most graceful degradation (0.82$\to$0.57). Among trained models, PatchTST degrades from 0.56 ($h{=}7$) to $-0.38$ ($h{=}90$). LSTM shows an unusual pattern: low $R^2_\text{prod}$ at $h{=}7$ (0.20) but peaking at $h{=}14$ (0.53), possibly reflecting how its recurrent architecture captures medium-term trends while struggling with short-term variability. DeepONet consistently fails ($R^2 < -4$), confirming that its operator-learning formulation is poorly suited for autoregressive production forecasting. TCN, a sequential architecture designed for temporal modeling, is expected to bridge the gap between the non-sequential trained models and foundation models; results will be reported upon completion of training (Section~\ref{sec:conclusion}).
+Fig.~\ref{fig:ganymede} visualizes $R^2_\text{prod}$ across horizons. Foundation models maintain positive $R^2_\text{prod}$ at all horizons, with TiRex showing the most graceful degradation (0.82$\to$0.57). Among trained models, PatchTST degrades from 0.56 ($h{=}7$) to $-0.38$ ($h{=}90$). LSTM shows an unusual pattern: low $R^2_\text{prod}$ at $h{=}7$ (0.20) but peaking at $h{=}14$ (0.53), possibly reflecting how its recurrent architecture captures medium-term trends while struggling with short-term variability. DeepONet consistently fails ($R^2 < -4$), confirming that its operator-learning formulation is poorly suited for autoregressive production forecasting. TCN, despite its causal convolutional architecture designed for temporal modeling, underperforms both PatchTST and LSTM: its strongly negative $R^2_\text{prod}$ at $h{=}7$ ($-4.51$) suggests overfitting or poor generalization on the shortest horizon, while its marginal results at $h{=}14$ and $h{=}30$ ($R^2_\text{prod} \approx 0.1$) indicate that dilated causal convolutions alone do not confer sufficient inductive bias for this multi-well forecasting setting.
 
 \begin{figure}[t]
 \centering
@@ -474,12 +474,12 @@ Fig.~\ref{fig:ganymede} visualizes $R^2_\text{prod}$ across horizons. Foundation
 \addplot[color=orange!80!black, mark=pentagon*, mark size=2.5pt, line width=1.2pt] coordinates {(7,0.734)(14,0.668)(30,0.584)(90,0.361)};
 \addplot[color=patchtst, mark=triangle*, mark size=3pt, line width=1.2pt] coordinates {(7,0.556)(14,0.466)(30,0.211)(90,-0.382)};
 \addplot[color=lstm, mark=o, mark size=2.5pt, line width=1.2pt] coordinates {(7,0.195)(14,0.534)(30,0.303)(90,0.020)};
-% TODO: TCN plot coordinates pending S04 training
+\addplot[color=tcn, mark=square*, mark size=2.5pt, line width=1.2pt] coordinates {(7,-4.509)(14,0.108)(30,0.060)(90,-0.044)};
 \addplot[dashed, gray, domain=0:95] {0};
-\legend{TimesFM, TiRex, Chronos, PatchTST, LSTM}
+\legend{TimesFM, TiRex, Chronos, PatchTST, LSTM, TCN}
 \end{axis}
 \end{tikzpicture}
-\caption{$R^2_\text{prod}$ vs.\ forecast horizon (Ganymede, held-out test, multi-well). Foundation models (top 3 curves) consistently outperform trained models. DeepONet omitted ($R^2 < -5$). TCN results pending (S04). Dashed line: $R^2{=}0$ (naive baseline).}
+\caption{$R^2_\text{prod}$ vs.\ forecast horizon (Ganymede, held-out test, multi-well). Foundation models (top 3 curves) consistently outperform trained models. DeepONet omitted ($R^2 < -5$). TCN omitted from y-axis range due to $R^2_\text{prod}{=}-4.51$ at $h{=}7$. Dashed line: $R^2{=}0$ (naive baseline).}
 \label{fig:ganymede}
 \end{figure}
 
@@ -502,7 +502,7 @@ The Ganymede results reveal a striking finding: all three foundation models subs
 
 This performance gap likely reflects the FMs' pre-training on diverse time-series corpora: production data shares temporal patterns (trends, seasonality, autocorrelation) with the training distributions, enabling effective zero-shot transfer. In contrast, the trained models must learn these patterns from $\sim$25{,}000 samples with considerable well heterogeneity, insufficient for capturing the full dynamics.
 
-Notably, the contrast between Random Forest's success on 3W classification and the forecasting results highlights a task-dependent role for feature engineering: on 3W, the statistical descriptors explicitly encode temporal dynamics in a tabular-friendly form, enabling non-sequential models; on Ganymede, no such feature extraction is applied, and models must learn temporal relationships directly from raw sequences---a setting where sequential inductive biases (as in TCN and PatchTST) are expected to confer advantage over tabular approaches.
+Notably, the contrast between Random Forest's success on 3W classification and the forecasting results highlights a task-dependent role for feature engineering: on 3W, the statistical descriptors explicitly encode temporal dynamics in a tabular-friendly form, enabling non-sequential models; on Ganymede, no such feature extraction is applied, and models must learn temporal relationships directly from raw sequences---a setting where sequential inductive biases were expected to confer advantage. However, TCN's poor performance ($R^2_\text{prod} \leq 0.11$ across horizons) demonstrates that causal convolutions alone are insufficient: the attention-based PatchTST ($R^2_\text{prod}{=}0.56$ at $h{=}7$) substantially outperforms the purely convolutional TCN, suggesting that global attention over patched subsequences provides a more effective inductive bias than local dilated convolutions for multi-well production forecasting.
 
 \subsection{Evaluation Protocol Validation}
 
@@ -514,18 +514,18 @@ We apply the Friedman test with Nemenyi post-hoc analysis to the inner CV fold-l
 
 Interestingly, on AUC-PR the ranking shifts: Random Forest ranks first (1.0) with TiRex second (2.0), reflecting strong probability calibration from both tree-ensemble classifiers.
 
-For Ganymede forecasting, MAE reaches significance at $h{=}7$ ($p{=}0.014$), $h{=}14$ ($p{=}0.035$), and $h{=}30$ ($p{=}0.019$), with limited statistical power from 3 inner CV folds.
+For Ganymede forecasting with seven models (including TCN), MAE reaches significance at $h{=}7$ ($p{=}0.009$), $h{=}14$ ($p{=}0.017$), and $h{=}30$ ($p{=}0.037$), with limited statistical power from 3 inner CV folds. Average MAE ranks at $h{=}7$ place TiRex first (1.0), Chronos second (2.3), TimesFM third (3.0), LSTM fourth (3.7), PatchTST fifth (5.0), DeepONet sixth (6.3), and TCN last (6.7)---confirming that TCN's causal convolutional architecture does not confer a competitive advantage on this multi-well forecasting task.
 
 \subsection{Limitations}
 
-This study has several limitations: (i) hyperparameter optimization was performed for the 3W classification task but not for the trained models on Ganymede forecasting, where the large gap between FMs and trained models may partly reflect suboptimal tuning; (ii) no interpretability analysis (e.g., attention visualization, SHAP values) has been conducted; and (iii) TCN training on Ganymede is pending---its results will be incorporated in the final version.
+This study has several limitations: (i) hyperparameter optimization was performed for the 3W classification task but not for the trained models on Ganymede forecasting, where the large gap between FMs and trained models may partly reflect suboptimal tuning; and (ii) no interpretability analysis (e.g., attention visualization, SHAP values) has been conducted.
 
 % ═══════════════════════════════════════════════════════════════════
 \section{Conclusion and Future Work}
 \label{sec:conclusion}
 % ═══════════════════════════════════════════════════════════════════
 
-We benchmarked ten architectures on offshore fault classification and gas production forecasting using a rigorous nested evaluation protocol. Key findings:
+We benchmarked eight architectures on offshore fault classification and gas production forecasting using a rigorous nested evaluation protocol. Key findings:
 
 \begin{enumerate}
     \item \textbf{Statistical features enable efficient classification}: Compressing 720-step windows into 14-descriptor matrices yields $>$96\% accuracy on 3W fault detection with all four trained models (after HPO), while reducing training time by $\sim$50$\times$.
@@ -534,10 +534,10 @@ We benchmarked ten architectures on offshore fault classification and gas produc
     \item \textbf{PatchTST is the most versatile trained model}: Achieves $R^2_\text{prod}{=}0.56$ at the 7-day horizon (best among trained models) and 96.5\% classification accuracy after HPO.
     \item \textbf{Foundation models dominate forecasting}: TimesFM, TiRex, and Chronos all achieve $R^2_\text{prod} > 0.7$ at $h{=}7$ without any task-specific training, exceeding the best trained model by 24--48\%. TiRex maintains the strongest performance at long horizons ($R^2_\text{prod}{=}0.57$ at $h{=}90$).
     \item \textbf{FMs provide competitive classification baselines}: TiRex achieves 91.2\% zero-shot classification with the highest AUC-PR (0.938), demonstrating the versatility of pre-trained time-series representations for offshore monitoring.
-    \item \textbf{TCN for Ganymede forecasting}: As a sequential architecture with dilated causal convolutions, TCN is expected to bridge the gap between tabular-input trained models and foundation models; results pending.
+    \item \textbf{TCN underperforms on Ganymede forecasting}: Despite its causal convolutional architecture and receptive field covering the full input window, TCN achieves $R^2_\text{prod} \leq 0.11$ across all horizons---substantially below PatchTST (0.56 at $h{=}7$) and LSTM (0.53 at $h{=}14$)---indicating that dilated causal convolutions alone are insufficient for multi-well production forecasting without task-specific feature engineering or attention mechanisms.
 \end{enumerate}
 
-Future work includes TCN training and evaluation on Ganymede, hyperparameter optimization for the remaining trained models on forecasting, model interpretability analysis, and evaluation of domain-adapted foundation models.
+Future work includes hyperparameter optimization for the remaining trained models on forecasting, model interpretability analysis, and evaluation of domain-adapted foundation models.
 
 % ═══════════════════════════════════════════════════════════════════
 % References
