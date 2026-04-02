@@ -7,7 +7,8 @@
       "branch_width": 64
     },
     "best_value": 0.9414214980777578,
-    "n_trials": 30
+    "n_trials": 33,
+    "note": "Expanded 50-trial/7-param search completed only 3/50 trials (~14h/trial); best new trial f1=0.027 (degenerate conv1d configs). Original 30-trial/4-param baseline (f1=0.941) retained as optimal."
   },
   "test_metrics": {
     "f1_macro": 0.9635969377192681,

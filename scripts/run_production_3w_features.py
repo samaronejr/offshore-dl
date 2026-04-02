@@ -66,9 +66,10 @@ MODELS: dict[str, dict] = {
         "class": DeepONetModel,
         "config": "configs/models/deeponet.yaml",
         "overrides": {
-            "rank": 128,
-            "dropout": 0.2,
-            "lr": 1e-3,
+            "rank": 64,
+            "dropout": 0.077,
+            "lr": 0.00135,
+            "branch_hidden": [64, 64],
         },
     },
     "patchtst": {
