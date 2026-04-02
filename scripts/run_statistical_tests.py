@@ -199,6 +199,7 @@ def _run_3w_tests() -> dict:
         wilcoxon = _wilcoxon_pairwise(scores)
 
         metric_result = {
+            "models": sorted(scores.keys()),
             "friedman": friedman,
             "average_ranks": ranks,
             "wilcoxon_pairwise": wilcoxon,
@@ -265,6 +266,7 @@ def _run_ganymede_tests() -> dict:
             wilcoxon = _wilcoxon_pairwise(scores)
 
             metric_result = {
+                "models": sorted(scores.keys()),
                 "friedman": friedman,
                 "average_ranks": ranks,
                 "wilcoxon_pairwise": wilcoxon,
@@ -341,6 +343,7 @@ def _run_cdf_tests() -> dict:
         wilcoxon = _wilcoxon_pairwise(scores)
 
         metric_result = {
+            "models": sorted(scores.keys()),
             "friedman": friedman,
             "average_ranks": ranks,
             "wilcoxon_pairwise": wilcoxon,
