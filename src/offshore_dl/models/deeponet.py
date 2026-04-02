@@ -238,6 +238,9 @@ class DeepONetModel(BaseModel):
             ``window_size > 30`` (always uses CNNBranch).
         lr: Learning rate for AdamW.
         weight_decay: Weight decay for AdamW.
+        loss_type: Loss function for classification — ``"ce"`` or ``"focal"``.
+        focal_gamma: Focusing exponent for focal loss (only used when
+            ``loss_type="focal"``).
     """
 
     _VALID_BRANCH_TYPES = {"mlp", "conv1d", "attention"}
@@ -257,8 +260,10 @@ class DeepONetModel(BaseModel):
         branch_type: str = "mlp",
         lr: float = 0.0005,
         weight_decay: float = 0.0001,
+        loss_type: str = "ce",
+        focal_gamma: float = 2.0,
     ) -> None:
-        super().__init__(task=task, n_vars=n_vars)
+        super().__init__(task=task, n_vars=n_vars, loss_type=loss_type, focal_gamma=focal_gamma)
         self.rank = rank
         self.n_classes = n_classes
         self.horizon = horizon

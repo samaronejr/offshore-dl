@@ -17,8 +17,61 @@ from abc import ABC, abstractmethod
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 logger = logging.getLogger(__name__)
+
+
+class FocalLoss(nn.Module):
+    """Multi-class focal loss (Lin et al., 2017).
+
+    Down-weights well-classified examples so the model focuses on hard ones.
+    When ``gamma=0`` this reduces exactly to standard cross-entropy.
+
+    Args:
+        gamma: Focusing exponent.  Higher values increase focus on hard examples.
+        weight: Optional per-class weight tensor (same semantics as
+            :class:`torch.nn.CrossEntropyLoss` *weight*).
+        reduction: ``"mean"`` (default) or ``"sum"``.
+    """
+
+    def __init__(
+        self,
+        gamma: float = 2.0,
+        weight: torch.Tensor | None = None,
+        reduction: str = "mean",
+    ) -> None:
+        super().__init__()
+        self.gamma = gamma
+        self.reduction = reduction
+        # Register as buffer so it moves with .to(device) automatically
+        if weight is not None:
+            self.register_buffer("weight", weight)
+        else:
+            self.weight: torch.Tensor | None = None
+
+    def forward(self, logits: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+        """Compute focal loss.
+
+        Args:
+            logits: ``(batch, n_classes)`` raw logits.
+            targets: ``(batch,)`` integer class labels.
+
+        Returns:
+            Scalar loss.
+        """
+        # Per-sample CE (unreduced) — already incorporates class weights
+        ce_loss = F.cross_entropy(logits, targets, weight=self.weight, reduction="none")
+        # p_t = probability assigned to the true class
+        p_t = torch.exp(-ce_loss)
+        focal_weight = (1.0 - p_t).pow(self.gamma)
+        loss = focal_weight * ce_loss
+
+        if self.reduction == "mean":
+            return loss.mean()
+        elif self.reduction == "sum":
+            return loss.sum()
+        return loss
 
 
 class BaseModel(nn.Module, ABC):
@@ -27,13 +80,26 @@ class BaseModel(nn.Module, ABC):
     Args:
         task: One of ``"classification"``, ``"forecasting"``, ``"anomaly"``.
         n_vars: Number of input variables (sensor columns).
+        loss_type: Loss function for classification — ``"ce"`` (cross-entropy,
+            default) or ``"focal"`` (focal loss).  Ignored for other tasks.
+        focal_gamma: Focusing exponent for focal loss.  Only used when
+            ``loss_type="focal"``.  Default ``2.0``.
         **kwargs: Passed to nn.Module.
     """
 
-    def __init__(self, task: str, n_vars: int, **kwargs) -> None:
+    def __init__(
+        self,
+        task: str,
+        n_vars: int,
+        loss_type: str = "ce",
+        focal_gamma: float = 2.0,
+        **kwargs,
+    ) -> None:
         super().__init__(**kwargs)
         self.task = task
         self.n_vars = n_vars
+        self.loss_type = loss_type
+        self.focal_gamma = focal_gamma
         self._loss_fn = self._build_loss_fn()
 
     def _build_loss_fn(self, class_weights: torch.Tensor | None = None) -> nn.Module:
@@ -46,7 +112,13 @@ class BaseModel(nn.Module, ABC):
             Loss module.
         """
         if self.task == "classification":
-            return nn.CrossEntropyLoss(weight=class_weights)
+            if self.loss_type == "ce":
+                return nn.CrossEntropyLoss(weight=class_weights)
+            elif self.loss_type == "focal":
+                return FocalLoss(gamma=self.focal_gamma, weight=class_weights)
+            else:
+                msg = f"Unknown loss_type: {self.loss_type!r}. Must be 'ce' or 'focal'."
+                raise ValueError(msg)
         elif self.task in ("forecasting", "anomaly"):
             return nn.MSELoss()
         else:
@@ -60,7 +132,7 @@ class BaseModel(nn.Module, ABC):
             weights: Tensor of per-class weights.
         """
         if self.task == "classification":
-            self._loss_fn = nn.CrossEntropyLoss(weight=weights.to(next(self.parameters()).device))
+            self._loss_fn = self._build_loss_fn(class_weights=weights.to(next(self.parameters()).device))
 
     @abstractmethod
     def forward(self, x: torch.Tensor) -> torch.Tensor:
