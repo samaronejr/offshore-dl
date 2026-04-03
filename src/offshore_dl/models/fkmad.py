@@ -294,6 +294,20 @@ class FKMADModel(BaseModel):
         Returns:
             ``(B, n_classes)`` classification logits.
         """
+        # ── Instance normalization (per-sample z-score) ──
+        # Raw sensor data can span [0, 1e7] across variables.  Without
+        # normalization the Fourier basis overflows and losses go NaN.
+        # Per-instance z-score is model-internal so it doesn't leak across
+        # CV folds (no global statistics needed).
+        eps = 1e-5
+        mean = x.mean(dim=1, keepdim=True)  # (B, 1, n_vars)
+        std = x.std(dim=1, keepdim=True).clamp(min=eps)  # (B, 1, n_vars)
+        x = (x - mean) / std
+
+        # Clamp normalized values to prevent extreme z-scores from
+        # destabilising the Fourier basis and Mamba layers.
+        x = x.clamp(-10.0, 10.0)
+
         # Input projection (linear + Fourier)
         h = self.projection(x)  # (B, L, d_model)
         h = self.post_proj_norm(h)

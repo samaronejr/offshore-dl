@@ -193,6 +193,14 @@ class Trainer:
                     batch = self._to_device(batch)
                     optimizer.zero_grad()
                     loss = model.training_step(batch)
+
+                    # Skip NaN batches — Mamba layers can produce rare
+                    # NaN losses from specific input/weight combinations.
+                    # Skipping prevents corrupting the entire model.
+                    if torch.isnan(loss) or torch.isinf(loss):
+                        optimizer.zero_grad()
+                        continue
+
                     loss.backward()
 
                     if gradient_clip_val > 0:
@@ -206,7 +214,7 @@ class Trainer:
 
                     train_losses.append(loss.item())
 
-                avg_train_loss = float(np.mean(train_losses))
+                avg_train_loss = float(np.mean(train_losses)) if train_losses else float('nan')
 
                 # ── Validate ──
                 model.eval()
@@ -214,14 +222,17 @@ class Trainer:
                 for batch in val_loader:
                     batch = self._to_device(batch)
                     result = model.validation_step(batch)
-                    val_losses.append(result["loss"].item())
+                    val_loss_item = result["loss"].item()
+                    if not (np.isnan(val_loss_item) or np.isinf(val_loss_item)):
+                        val_losses.append(val_loss_item)
 
-                avg_val_loss = float(np.mean(val_losses))
+                avg_val_loss = float(np.mean(val_losses)) if val_losses else float('nan')
 
                 # Step per-epoch schedulers
                 if scheduler and not scheduler_per_batch:
                     if scheduler_name == "reduce_on_plateau":
-                        scheduler.step(avg_val_loss)
+                        if not np.isnan(avg_val_loss):
+                            scheduler.step(avg_val_loss)
                     else:
                         scheduler.step()
 
@@ -234,8 +245,8 @@ class Trainer:
                     epoch + 1, max_epochs, avg_train_loss, avg_val_loss, current_lr,
                 )
 
-                # ── Checkpoint best ──
-                if avg_val_loss <= early_stopping.best_loss:
+                # ── Checkpoint best (skip if val loss is NaN) ──
+                if not np.isnan(avg_val_loss) and avg_val_loss <= early_stopping.best_loss:
                     best_state = copy.deepcopy(model.state_dict())
                     if checkpoint_dir:
                         self.save_checkpoint(model, optimizer, epoch, checkpoint_dir)

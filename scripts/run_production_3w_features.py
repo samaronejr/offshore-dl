@@ -343,20 +343,38 @@ def main() -> None:
     else:
         models_to_run = ALL_MODELS
 
+    # ── Detect whether any non-raw models are requested ──
+    needs_feature_dataset = any(m not in RAW_MODELS for m in models_to_run)
+
     logger.info("═" * 70)
     logger.info("3W FEATURE-BASED TRAINING — nested CV (inner 5-fold + held-out test)")
     logger.info("  device=%s  max_epochs=%d  batch_size=%d", args.device, args.max_epochs, args.batch_size)
     logger.info("  Features: (720, 27) → (%d, 27) statistical descriptors", N_FEATURES)
     logger.info("═" * 70)
 
-    logger.info("Loading 3W dataset with feature extraction …")
-    ds_start = time.time()
-    dataset = ThreeWFeatureDataset("configs/data/3w.yaml")
-    logger.info("  3W loaded: %d samples (%.1fs)", len(dataset), time.time() - ds_start)
+    if needs_feature_dataset:
+        logger.info("Loading 3W dataset with feature extraction …")
+        ds_start = time.time()
+        dataset = ThreeWFeatureDataset("configs/data/3w.yaml")
+        logger.info("  3W loaded: %d samples (%.1fs)", len(dataset), time.time() - ds_start)
 
-    # ── Compute labels and groups once for all models ──
-    labels = np.array([dataset[i][1] for i in range(len(dataset))])
-    groups = np.array([dataset[i][2]["instance_id"] for i in range(len(dataset))])
+        # ── Compute labels and groups once for all feature models ──
+        labels = np.array([dataset[i][1] for i in range(len(dataset))])
+        groups = np.array([dataset[i][2]["instance_id"] for i in range(len(dataset))])
+        _raw_ds_shared = None  # no pre-loaded raw dataset
+    else:
+        # Raw-only mode: load ThreeWDataset with cache_in_memory=False
+        # (caches feature arrays ~8 GB but NOT DataFrames ~17 GB).
+        # This dataset is reused directly by the fkmad_raw block below.
+        logger.info("Raw-only mode — loading 3W dataset for holdout + training …")
+        ds_start = time.time()
+        from offshore_dl.data.datasets import ThreeWDataset as _ThreeWDataset
+        _raw_ds_shared = _ThreeWDataset("configs/data/3w.yaml", cache_in_memory=False)
+        logger.info("  3W loaded: %d samples (%.1fs)", len(_raw_ds_shared), time.time() - ds_start)
+
+        labels = np.array([w["label"] for w in _raw_ds_shared._windows])
+        groups = np.array([w["instance_id"] for w in _raw_ds_shared._windows])
+        dataset = None  # no feature dataset
 
     # ── Outer holdout split: 80% train pool, 20% held-out test ──
     holdout = HoldoutSplitter(
@@ -366,7 +384,7 @@ def main() -> None:
         groups=groups,
         seed=42,
     )
-    train_pool, test_indices = holdout.split(len(dataset))
+    train_pool, test_indices = holdout.split(len(labels))  # works for both feature and raw-only
     logger.info(
         "Holdout split: train_pool=%d, test=%d",
         len(train_pool), len(test_indices),
@@ -475,13 +493,26 @@ def main() -> None:
         logger.info("FKMAD_RAW CLASSIFICATION (720×27 raw windows)")
         logger.info("─" * 60)
         try:
+            # ── Free feature dataset to reclaim memory before loading raw ──
+            if dataset is not None:
+                del dataset
+            import gc; gc.collect()
+
             from offshore_dl.data.datasets import ThreeWDataset
 
-            raw_dataset = ThreeWDataset("configs/data/3w.yaml")
-            logger.info("  Raw 3W loaded: %d samples", len(raw_dataset))
+            # Reuse raw dataset from raw-only mode if available,
+            # otherwise load fresh with cache_in_memory=False to avoid
+            # the ~17 GB DataFrame cache that caused OOM on 30 GB RAM.
+            if _raw_ds_shared is not None:
+                raw_dataset = _raw_ds_shared
+                logger.info("  Reusing raw dataset from holdout phase: %d samples", len(raw_dataset))
+            else:
+                raw_dataset = ThreeWDataset("configs/data/3w.yaml", cache_in_memory=False)
+                logger.info("  Raw 3W loaded: %d samples (cache_in_memory=False)", len(raw_dataset))
 
-            raw_labels = np.array([int(raw_dataset[i][1]) for i in range(len(raw_dataset))])
-            raw_groups = np.array([raw_dataset[i][2]["instance_id"] for i in range(len(raw_dataset))])
+            # Extract labels/groups from _windows metadata (zero-copy, no __getitem__)
+            raw_labels = np.array([w["label"] for w in raw_dataset._windows])
+            raw_groups = np.array([w["instance_id"] for w in raw_dataset._windows])
 
             # Inner CV within train_pool (reuse same holdout split)
             pool_labels_raw = raw_labels[train_pool]
@@ -587,8 +618,8 @@ def main() -> None:
                     confusion_matrix as sk_confusion_matrix,
                 )
     
-                raw_dataset = ThreeWDataset("configs/data/3w.yaml")
-                logger.info("  Raw 3W loaded: %d samples", len(raw_dataset))
+                raw_dataset = ThreeWDataset("configs/data/3w.yaml", cache_in_memory=False)
+                logger.info("  Raw 3W loaded: %d samples (cache_in_memory=False)", len(raw_dataset))
     
                 # Extract ALL embeddings once using a single TiRex instance
                 n = len(raw_dataset)
@@ -606,8 +637,8 @@ def main() -> None:
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()
     
-                # Get groups for SGKF (raw dataset, same order as feature dataset)
-                tirex_groups = np.array([raw_dataset[i][2]["instance_id"] for i in range(n)])
+                # Get groups from _windows metadata (zero-copy, no __getitem__)
+                tirex_groups = np.array([w["instance_id"] for w in raw_dataset._windows])
     
                 # ── Use same holdout split as trained models ──
                 # The holdout was computed on the feature dataset with the same

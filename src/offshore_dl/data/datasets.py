@@ -133,9 +133,16 @@ class ThreeWDataset(BaseDataset):
 
                 self._windows.extend(windows)
 
-                # Cache if enabled
+                # Cache strategy: feature arrays are always needed for
+                # __getitem__ window slicing.
+                # - cache_in_memory=True: cache DataFrames (legacy) — feature
+                #   cache populated lazily on first __getitem__ hit.
+                # - cache_in_memory=False: cache feature arrays eagerly here
+                #   (~8 GB vs ~17 GB DataFrames), skip DataFrame cache.
                 if self._cache_in_memory:
                     self._data_cache[str(pf)] = df
+                else:
+                    self._feature_cache[str(pf)] = values
 
         logger.info(
             "ThreeWDataset: %d windows from %d class directories, w=%d, s=%d",
