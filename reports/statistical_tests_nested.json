@@ -7,24 +7,28 @@
   ],
   "alpha": 0.05,
   "3w": {
-    "n_models": 5,
+    "n_models": 7,
     "metrics": {
       "accuracy": {
         "models": [
           "deeponet",
+          "fkmad",
+          "fkmad_raw",
           "lstm",
           "patchtst",
           "random_forest",
           "tirex"
         ],
         "friedman": {
-          "statistic": 17.120000000000005,
-          "p_value": 0.0018318804472027671,
+          "statistic": 23.314285714285717,
+          "p_value": 0.0006977679560973499,
           "significant": true,
-          "n_models": 5,
+          "n_models": 7,
           "n_folds": 5,
           "models": [
             "deeponet",
+            "fkmad",
+            "fkmad_raw",
             "lstm",
             "patchtst",
             "random_forest",
@@ -32,13 +36,29 @@
           ]
         },
         "average_ranks": {
-          "deeponet": 3.2,
-          "lstm": 3.4,
-          "patchtst": 2.4,
+          "deeponet": 3.6,
+          "fkmad": 3.8,
+          "fkmad_raw": 5.6,
+          "lstm": 4.0,
+          "patchtst": 3.0,
           "random_forest": 1.0,
-          "tirex": 5.0
+          "tirex": 7.0
         },
         "wilcoxon_pairwise": [
+          {
+            "model_a": "deeponet",
+            "model_b": "fkmad",
+            "statistic": 5.0,
+            "p_value": 0.625,
+            "significant": false
+          },
+          {
+            "model_a": "deeponet",
+            "model_b": "fkmad_raw",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
           {
             "model_a": "deeponet",
             "model_b": "lstm",
@@ -62,6 +82,69 @@
           },
           {
             "model_a": "deeponet",
+            "model_b": "tirex",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad",
+            "model_b": "fkmad_raw",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad",
+            "model_b": "lstm",
+            "statistic": 6.0,
+            "p_value": 0.8125,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad",
+            "model_b": "patchtst",
+            "statistic": 7.0,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad",
+            "model_b": "random_forest",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad",
+            "model_b": "tirex",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad_raw",
+            "model_b": "lstm",
+            "statistic": 1.0,
+            "p_value": 0.125,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad_raw",
+            "model_b": "patchtst",
+            "statistic": 1.0,
+            "p_value": 0.125,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad_raw",
+            "model_b": "random_forest",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad_raw",
             "model_b": "tirex",
             "statistic": 0.0,
             "p_value": 0.0625,
@@ -110,31 +193,40 @@
             "significant": false
           }
         ],
-        "nemenyi_cd": 2.728,
+        "nemenyi_cd": 4.029101041175314,
         "nemenyi_significant_pairs": [
+          {
+            "model_a": "fkmad_raw",
+            "model_b": "random_forest",
+            "rank_diff": 4.6
+          },
           {
             "model_a": "random_forest",
             "model_b": "tirex",
-            "rank_diff": 4.0
+            "rank_diff": 6.0
           }
         ]
       },
       "f1_macro": {
         "models": [
           "deeponet",
+          "fkmad",
+          "fkmad_raw",
           "lstm",
           "patchtst",
           "random_forest",
           "tirex"
         ],
         "friedman": {
-          "statistic": 17.439999999999998,
-          "p_value": 0.0015871514957599775,
+          "statistic": 25.457142857142856,
+          "p_value": 0.0002809121641634661,
           "significant": true,
-          "n_models": 5,
+          "n_models": 7,
           "n_folds": 5,
           "models": [
             "deeponet",
+            "fkmad",
+            "fkmad_raw",
             "lstm",
             "patchtst",
             "random_forest",
@@ -142,13 +234,29 @@
           ]
         },
         "average_ranks": {
-          "deeponet": 3.0,
-          "lstm": 3.6,
-          "patchtst": 2.4,
+          "deeponet": 3.4,
+          "fkmad": 3.8,
+          "fkmad_raw": 5.8,
+          "lstm": 4.4,
+          "patchtst": 2.6,
           "random_forest": 1.0,
-          "tirex": 5.0
+          "tirex": 7.0
         },
         "wilcoxon_pairwise": [
+          {
+            "model_a": "deeponet",
+            "model_b": "fkmad",
+            "statistic": 5.0,
+            "p_value": 0.625,
+            "significant": false
+          },
+          {
+            "model_a": "deeponet",
+            "model_b": "fkmad_raw",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
           {
             "model_a": "deeponet",
             "model_b": "lstm",
@@ -172,6 +280,69 @@
           },
           {
             "model_a": "deeponet",
+            "model_b": "tirex",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad",
+            "model_b": "fkmad_raw",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad",
+            "model_b": "lstm",
+            "statistic": 5.0,
+            "p_value": 0.625,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad",
+            "model_b": "patchtst",
+            "statistic": 3.0,
+            "p_value": 0.3125,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad",
+            "model_b": "random_forest",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad",
+            "model_b": "tirex",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad_raw",
+            "model_b": "lstm",
+            "statistic": 2.0,
+            "p_value": 0.1875,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad_raw",
+            "model_b": "patchtst",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad_raw",
+            "model_b": "random_forest",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad_raw",
             "model_b": "tirex",
             "statistic": 0.0,
             "p_value": 0.0625,
@@ -220,31 +391,45 @@
             "significant": false
           }
         ],
-        "nemenyi_cd": 2.728,
+        "nemenyi_cd": 4.029101041175314,
         "nemenyi_significant_pairs": [
+          {
+            "model_a": "fkmad_raw",
+            "model_b": "random_forest",
+            "rank_diff": 4.8
+          },
+          {
+            "model_a": "patchtst",
+            "model_b": "tirex",
+            "rank_diff": 4.4
+          },
           {
             "model_a": "random_forest",
             "model_b": "tirex",
-            "rank_diff": 4.0
+            "rank_diff": 6.0
           }
         ]
       },
       "auc_pr": {
         "models": [
           "deeponet",
+          "fkmad",
+          "fkmad_raw",
           "lstm",
           "patchtst",
           "random_forest",
           "tirex"
         ],
         "friedman": {
-          "statistic": 17.120000000000005,
-          "p_value": 0.0018318804472027671,
+          "statistic": 25.02857142857144,
+          "p_value": 0.00033732024330017954,
           "significant": true,
-          "n_models": 5,
+          "n_models": 7,
           "n_folds": 5,
           "models": [
             "deeponet",
+            "fkmad",
+            "fkmad_raw",
             "lstm",
             "patchtst",
             "random_forest",
@@ -252,13 +437,29 @@
           ]
         },
         "average_ranks": {
-          "deeponet": 4.2,
-          "lstm": 4.4,
-          "patchtst": 3.4,
+          "deeponet": 4.6,
+          "fkmad": 5.0,
+          "fkmad_raw": 6.8,
+          "lstm": 5.0,
+          "patchtst": 3.6,
           "random_forest": 1.0,
           "tirex": 2.0
         },
         "wilcoxon_pairwise": [
+          {
+            "model_a": "deeponet",
+            "model_b": "fkmad",
+            "statistic": 5.0,
+            "p_value": 0.625,
+            "significant": false
+          },
+          {
+            "model_a": "deeponet",
+            "model_b": "fkmad_raw",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
           {
             "model_a": "deeponet",
             "model_b": "lstm",
@@ -282,6 +483,69 @@
           },
           {
             "model_a": "deeponet",
+            "model_b": "tirex",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad",
+            "model_b": "fkmad_raw",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad",
+            "model_b": "lstm",
+            "statistic": 6.0,
+            "p_value": 0.8125,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad",
+            "model_b": "patchtst",
+            "statistic": 3.0,
+            "p_value": 0.3125,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad",
+            "model_b": "random_forest",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad",
+            "model_b": "tirex",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad_raw",
+            "model_b": "lstm",
+            "statistic": 1.0,
+            "p_value": 0.125,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad_raw",
+            "model_b": "patchtst",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad_raw",
+            "model_b": "random_forest",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad_raw",
             "model_b": "tirex",
             "statistic": 0.0,
             "p_value": 0.0625,
@@ -330,17 +594,17 @@
             "significant": false
           }
         ],
-        "nemenyi_cd": 2.728,
+        "nemenyi_cd": 4.029101041175314,
         "nemenyi_significant_pairs": [
           {
-            "model_a": "deeponet",
+            "model_a": "fkmad_raw",
             "model_b": "random_forest",
-            "rank_diff": 3.2
+            "rank_diff": 5.8
           },
           {
-            "model_a": "lstm",
-            "model_b": "random_forest",
-            "rank_diff": 3.4000000000000004
+            "model_a": "fkmad_raw",
+            "model_b": "tirex",
+            "rank_diff": 4.8
           }
         ]
       }
