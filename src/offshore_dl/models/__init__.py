@@ -48,7 +48,7 @@ except (ImportError, ModuleNotFoundError, RuntimeError):
     pass
 
 try:
-    from offshore_dl.models.mambasl import MambaSLModel
+    from .mambasl import MambaSLModel
 
     __all__.append("MambaSLModel")
 except (ImportError, ModuleNotFoundError, RuntimeError):
