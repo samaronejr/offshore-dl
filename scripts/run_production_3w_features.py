@@ -44,6 +44,11 @@ try:
 except (ImportError, ModuleNotFoundError, RuntimeError):
     FKMADModel = None
 
+try:
+    from offshore_dl.models.mambasl import MambaSLModel
+except (ImportError, ModuleNotFoundError, RuntimeError):
+    MambaSLModel = None
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
@@ -108,9 +113,19 @@ if FKMADModel is not None:
         },
     }
 
+if MambaSLModel is not None:
+    MODELS["mambasl"] = {
+        "class": MambaSLModel,
+        "config": "configs/models/mambasl.yaml",
+        "overrides": {},
+    }
+
 TREE_MODELS = ["random_forest"]
-RAW_MODELS = ["fkmad_raw"]
-ALL_MODELS = list(MODELS.keys()) + TREE_MODELS + RAW_MODELS
+RAW_MODELS = ["fkmad_raw", "mambasl_raw"]
+# ALL_MODELS includes all known model names (even optional ones) so --models
+# validation accepts them regardless of whether CUDA imports succeeded.
+_OPTIONAL_FEATURE_MODELS = [m for m in ["fkmad", "mambasl"] if m not in MODELS]
+ALL_MODELS = list(MODELS.keys()) + _OPTIONAL_FEATURE_MODELS + TREE_MODELS + RAW_MODELS
 
 RESULTS_DIR = Path("results")
 
@@ -598,6 +613,125 @@ def main() -> None:
     elif run_fkmad_raw and FKMADModel is None:
         logger.warning("FKMADModel not available (CUDA required) — skipping fkmad_raw")
         summary["fkmad_raw"] = {"status": "skipped", "error": "FKMADModel import failed (CUDA required)"}
+        summary_path.write_text(json.dumps(_make_serializable(summary), indent=2))
+
+    # ── MambaSL Raw Classification (720×27 windows, single-layer Mamba) ──
+    # Uses raw 3W windows instead of feature-extracted data.
+    # Reuses the same holdout split (train_pool/test_indices) from the
+    # feature dataset — sample ordering is identical.
+    run_mambasl_raw = (args.models is None) or ("mambasl_raw" in args.models)
+    if run_mambasl_raw and MambaSLModel is not None:
+        logger.info("─" * 60)
+        logger.info("MAMBASL_RAW CLASSIFICATION (720×27 raw windows)")
+        logger.info("─" * 60)
+        try:
+            # ── Free feature dataset to reclaim memory before loading raw ──
+            if dataset is not None:
+                del dataset
+                dataset = None
+            import gc; gc.collect()
+
+            from offshore_dl.data.datasets import ThreeWDataset
+
+            # Reuse raw dataset from holdout phase or fkmad_raw if available,
+            # otherwise load fresh with cache_in_memory=False to avoid
+            # the ~17 GB DataFrame cache that caused OOM on 30 GB RAM.
+            if _raw_ds_shared is not None:
+                raw_dataset_sl = _raw_ds_shared
+                logger.info("  Reusing raw dataset from holdout phase: %d samples", len(raw_dataset_sl))
+            else:
+                # Try to reuse the ThreeWDataset that fkmad_raw may have created
+                try:
+                    raw_dataset_sl = raw_dataset  # type: ignore[name-defined]
+                    logger.info("  Reusing raw dataset from fkmad_raw: %d samples", len(raw_dataset_sl))
+                except NameError:
+                    raw_dataset_sl = ThreeWDataset("configs/data/3w.yaml", cache_in_memory=False)
+                    logger.info("  Raw 3W loaded: %d samples (cache_in_memory=False)", len(raw_dataset_sl))
+
+            # Extract labels/groups from _windows metadata (zero-copy)
+            sl_raw_labels = np.array([w["label"] for w in raw_dataset_sl._windows])
+            sl_raw_groups = np.array([w["instance_id"] for w in raw_dataset_sl._windows])
+
+            # Inner CV within train_pool (reuse same holdout split)
+            pool_labels_sl = sl_raw_labels[train_pool]
+            pool_groups_sl = sl_raw_groups[train_pool]
+            inner_cv_sl = StratifiedGroupKFoldSKLearn(
+                n_folds=5, labels=pool_labels_sl, groups=pool_groups_sl, seed=42,
+            )
+
+            cfg_sl = load_merged_config(
+                "configs/base.yaml", "configs/data/3w.yaml", "configs/models/mambasl.yaml",
+            )
+            cfg_sl.training.max_epochs = args.max_epochs
+            cfg_sl.training.batch_size = 32  # reduced for 720-length sequences — VRAM safety
+            cfg_sl.device = args.device
+            cfg_sl.training.scheduler = "cosine"
+
+            model_kwargs_sl = {
+                "task": "classification",
+                "n_vars": 27,
+                "n_classes": cfg_sl.data.n_classes,
+                "window_size": 720,
+            }
+
+            # Merge architecture params from model config
+            if hasattr(cfg_sl, "model") and hasattr(cfg_sl.model, "architecture"):
+                arch_sl = OmegaConf.to_container(cfg_sl.model.architecture, resolve=True)
+                model_kwargs_sl.update(arch_sl)
+
+            # Merge training LR/weight_decay
+            if hasattr(cfg_sl, "model") and hasattr(cfg_sl.model, "training"):
+                model_kwargs_sl["lr"] = cfg_sl.model.training.lr
+                model_kwargs_sl["weight_decay"] = cfg_sl.model.training.weight_decay
+
+            mambasl_raw_start = time.time()
+            runner_sl_raw = ExperimentRunner(
+                model_class=MambaSLModel,
+                dataset=raw_dataset_sl,
+                cv_strategy=inner_cv_sl,
+                cfg=cfg_sl,
+                model_kwargs=model_kwargs_sl,
+            )
+
+            mambasl_raw_results = runner_sl_raw.run_nested(
+                train_pool=train_pool,
+                test_indices=test_indices,
+                use_mlflow=not args.no_mlflow,
+            )
+            mambasl_raw_elapsed = time.time() - mambasl_raw_start
+
+            out_path_sl_raw = RESULTS_DIR / "mambasl_raw" / "3w.json"
+            out_path_sl_raw.parent.mkdir(parents=True, exist_ok=True)
+            out_path_sl_raw.write_text(json.dumps(_make_serializable(mambasl_raw_results), indent=2))
+            logger.info("  Results saved: %s", out_path_sl_raw)
+
+            agg_sl_raw = mambasl_raw_results.get("test_metrics", {})
+            metric_str_sl_raw = ", ".join(
+                f"{k}={v:.4f}" for k, v in sorted(agg_sl_raw.items())
+                if isinstance(v, (int, float))
+            )
+            summary["mambasl_raw"] = {
+                "status": "ok",
+                "elapsed": round(mambasl_raw_elapsed, 1),
+                "test_metrics": mambasl_raw_results.get("test_metrics", {}),
+                "cv_aggregate": mambasl_raw_results.get("cv_aggregate", {}),
+                "n_train": mambasl_raw_results.get("n_train", 0),
+                "n_test": mambasl_raw_results.get("n_test", 0),
+                "n_cv_folds": mambasl_raw_results.get("n_cv_folds", 0),
+            }
+            logger.info("✓ mambasl_raw: %s (%.1fs)", metric_str_sl_raw, mambasl_raw_elapsed)
+
+            # Re-save summary with mambasl_raw
+            summary_path.write_text(json.dumps(_make_serializable(summary), indent=2))
+
+        except Exception as e:
+            logger.error("✗ mambasl_raw failed: %s", e)
+            traceback.print_exc()
+            summary["mambasl_raw"] = {"status": "error", "error": str(e)}
+            summary_path.write_text(json.dumps(_make_serializable(summary), indent=2))
+    elif run_mambasl_raw and MambaSLModel is None:
+        logger.warning("MambaSLModel not available (CUDA required) — skipping mambasl_raw")
+        summary["mambasl_raw"] = {"status": "skipped", "error": "MambaSLModel import failed (CUDA required)"}
         summary_path.write_text(json.dumps(_make_serializable(summary), indent=2))
 
     # ── TiRex Classification (embedding + RF) ──
