@@ -46,3 +46,10 @@ try:
     __all__.append("FKMADModel")
 except (ImportError, ModuleNotFoundError, RuntimeError):
     pass
+
+try:
+    from offshore_dl.models.mambasl import MambaSLModel
+
+    __all__.append("MambaSLModel")
+except (ImportError, ModuleNotFoundError, RuntimeError):
+    pass
