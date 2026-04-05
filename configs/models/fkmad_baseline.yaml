@@ -1,25 +1,25 @@
-# ─── FKM-AD Model Configuration ───
+# ─── FKM-AD Model Configuration (BASELINE for raw path) ───
 # Fourier-KAN → Mamba → GatedSharpening → AttentionPooling
 # Wang et al. (2025, arXiv:2511.15083) adapted for 3W classification
 # CUDA required (mamba_ssm)
-# HPO-optimal params applied from trial 25 (accuracy=0.9459)
+# BASELINE params — used for fkmad_raw (720x27) since HPO was feature-path only
 
 model:
   name: "fkmad"
   architecture:
-    d_model: 256
-    d_state: 32
+    d_model: 128
+    d_state: 16
     d_conv: 4
     expand: 2
-    n_fourier_freqs: 15
+    n_fourier_freqs: 8
     fourier_rank: 32
     fourier_scale: 1.0
-    gamma_z_init: 2.6634386107304193
+    gamma_z_init: 1.0
     n_mamba_layers: 2
-    dropout: 0.39228800977342004
+    dropout: 0.1
 
   training:
-    lr: 0.0015538462556350264
+    lr: 0.0005
     weight_decay: 0.0001
     scheduler: "cosine"
     warmup_epochs: 5

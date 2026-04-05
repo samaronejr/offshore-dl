@@ -98,9 +98,13 @@ if FKMADModel is not None:
         "class": FKMADModel,
         "config": "configs/models/fkmad.yaml",
         "overrides": {
-            "d_model": 128,
+            "d_model": 256,
             "n_mamba_layers": 2,
-            "dropout": 0.2,
+            "dropout": 0.39228800977342004,
+            "d_state": 32,
+            "n_fourier_freqs": 15,
+            "fourier_rank": 32,
+            "gamma_z_init": 2.6634386107304193,
         },
     }
 

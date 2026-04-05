@@ -1,0 +1,29 @@
+{
+  "hpo": {
+    "best_params": {
+      "d_model": 256,
+      "d_state": 32,
+      "n_fourier_freqs": 15,
+      "fourier_rank": 32,
+      "n_mamba_layers": 2,
+      "dropout": 0.39228800977342004,
+      "lr": 0.0015538462556350264,
+      "gamma_z_init": 2.6634386107304193
+    },
+    "best_value": 0.9458972176555897,
+    "n_trials": 30
+  },
+  "test_metrics": {},
+  "cv_aggregate": {},
+  "baseline_kwargs": {},
+  "best_kwargs": {
+    "d_model": 256,
+    "d_state": 32,
+    "n_fourier_freqs": 15,
+    "fourier_rank": 32,
+    "n_mamba_layers": 2,
+    "dropout": 0.39228800977342004,
+    "lr": 0.0015538462556350264,
+    "gamma_z_init": 2.6634386107304193
+  }
+}

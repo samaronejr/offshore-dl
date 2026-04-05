@@ -1,0 +1,59 @@
+# ─── MambaSL Model Configuration ───
+# Single-Layer Mamba with time-variant SSM parameters
+# Jung & Kim (ICLR 2026, OpenReview: YDl4vqQqGP)
+# CUDA required (mamba_ssm selective_scan_fn)
+#
+# All time-variant flags fixed to True per D017 (paper's best configuration).
+# HPO: feature-path only per D018.
+
+model:
+  name: "mambasl"
+  architecture:
+    d_model: 128
+    d_state: 16
+    d_conv: 4
+    expand: 2
+    d_ff: 256
+    n_heads: 4
+    n_classes: 10
+    # Time-variant SSM flags — all True per D017 (paper best config)
+    tv_dt: true
+    tv_B: true
+    tv_C: true
+    use_D: true
+    dropout: 0.1
+
+  training:
+    lr: 0.001
+    weight_decay: 0.0001
+    scheduler: "cosine"
+    warmup_epochs: 5
+
+  optuna_search_space:
+    d_model:
+      type: "categorical"
+      choices: [64, 128, 256]
+    d_state:
+      type: "categorical"
+      choices: [8, 16, 32]
+    d_ff:
+      type: "categorical"
+      choices: [128, 256, 512]
+    d_conv:
+      type: "categorical"
+      choices: [2, 4, 8]
+    expand:
+      type: "categorical"
+      choices: [1, 2, 4]
+    n_heads:
+      type: "categorical"
+      choices: [1, 2, 4, 8]
+    dropout:
+      type: "float"
+      low: 0.05
+      high: 0.4
+    lr:
+      type: "float"
+      low: 0.00001
+      high: 0.005
+      log: true

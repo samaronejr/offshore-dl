@@ -20,8 +20,8 @@
           "tirex"
         ],
         "friedman": {
-          "statistic": 23.314285714285717,
-          "p_value": 0.0006977679560973499,
+          "statistic": 26.91428571428571,
+          "p_value": 0.00015026055342135214,
           "significant": true,
           "n_models": 7,
           "n_folds": 5,
@@ -36,10 +36,10 @@
           ]
         },
         "average_ranks": {
-          "deeponet": 3.6,
-          "fkmad": 3.8,
-          "fkmad_raw": 5.6,
-          "lstm": 4.0,
+          "deeponet": 4.0,
+          "fkmad": 2.6,
+          "fkmad_raw": 6.0,
+          "lstm": 4.4,
           "patchtst": 3.0,
           "random_forest": 1.0,
           "tirex": 7.0
@@ -48,8 +48,8 @@
           {
             "model_a": "deeponet",
             "model_b": "fkmad",
-            "statistic": 5.0,
-            "p_value": 0.625,
+            "statistic": 2.0,
+            "p_value": 0.1875,
             "significant": false
           },
           {
@@ -97,15 +97,15 @@
           {
             "model_a": "fkmad",
             "model_b": "lstm",
-            "statistic": 6.0,
-            "p_value": 0.8125,
+            "statistic": 0.0,
+            "p_value": 0.0625,
             "significant": false
           },
           {
             "model_a": "fkmad",
             "model_b": "patchtst",
-            "statistic": 7.0,
-            "p_value": 1.0,
+            "statistic": 6.0,
+            "p_value": 0.8125,
             "significant": false
           },
           {
@@ -125,15 +125,15 @@
           {
             "model_a": "fkmad_raw",
             "model_b": "lstm",
-            "statistic": 1.0,
-            "p_value": 0.125,
+            "statistic": 0.0,
+            "p_value": 0.0625,
             "significant": false
           },
           {
             "model_a": "fkmad_raw",
             "model_b": "patchtst",
-            "statistic": 1.0,
-            "p_value": 0.125,
+            "statistic": 0.0,
+            "p_value": 0.0625,
             "significant": false
           },
           {
@@ -196,9 +196,14 @@
         "nemenyi_cd": 4.029101041175314,
         "nemenyi_significant_pairs": [
           {
+            "model_a": "fkmad",
+            "model_b": "tirex",
+            "rank_diff": 4.4
+          },
+          {
             "model_a": "fkmad_raw",
             "model_b": "random_forest",
-            "rank_diff": 4.6
+            "rank_diff": 5.0
           },
           {
             "model_a": "random_forest",
@@ -218,8 +223,8 @@
           "tirex"
         ],
         "friedman": {
-          "statistic": 25.457142857142856,
-          "p_value": 0.0002809121641634661,
+          "statistic": 25.542857142857144,
+          "p_value": 0.00027080144232296215,
           "significant": true,
           "n_models": 7,
           "n_folds": 5,
@@ -234,11 +239,11 @@
           ]
         },
         "average_ranks": {
-          "deeponet": 3.4,
-          "fkmad": 3.8,
+          "deeponet": 3.6,
+          "fkmad": 3.2,
           "fkmad_raw": 5.8,
-          "lstm": 4.4,
-          "patchtst": 2.6,
+          "lstm": 4.6,
+          "patchtst": 2.8,
           "random_forest": 1.0,
           "tirex": 7.0
         },
@@ -246,8 +251,8 @@
           {
             "model_a": "deeponet",
             "model_b": "fkmad",
-            "statistic": 5.0,
-            "p_value": 0.625,
+            "statistic": 7.0,
+            "p_value": 1.0,
             "significant": false
           },
           {
@@ -295,15 +300,15 @@
           {
             "model_a": "fkmad",
             "model_b": "lstm",
-            "statistic": 5.0,
-            "p_value": 0.625,
+            "statistic": 2.0,
+            "p_value": 0.1875,
             "significant": false
           },
           {
             "model_a": "fkmad",
             "model_b": "patchtst",
-            "statistic": 3.0,
-            "p_value": 0.3125,
+            "statistic": 6.0,
+            "p_value": 0.8125,
             "significant": false
           },
           {
@@ -323,8 +328,8 @@
           {
             "model_a": "fkmad_raw",
             "model_b": "lstm",
-            "statistic": 2.0,
-            "p_value": 0.1875,
+            "statistic": 1.0,
+            "p_value": 0.125,
             "significant": false
           },
           {
@@ -401,7 +406,7 @@
           {
             "model_a": "patchtst",
             "model_b": "tirex",
-            "rank_diff": 4.4
+            "rank_diff": 4.2
           },
           {
             "model_a": "random_forest",
@@ -421,8 +426,8 @@
           "tirex"
         ],
         "friedman": {
-          "statistic": 25.02857142857144,
-          "p_value": 0.00033732024330017954,
+          "statistic": 25.19999999999999,
+          "p_value": 0.000313529976470263,
           "significant": true,
           "n_models": 7,
           "n_folds": 5,
@@ -437,11 +442,11 @@
           ]
         },
         "average_ranks": {
-          "deeponet": 4.6,
-          "fkmad": 5.0,
+          "deeponet": 4.8,
+          "fkmad": 4.2,
           "fkmad_raw": 6.8,
-          "lstm": 5.0,
-          "patchtst": 3.6,
+          "lstm": 5.4,
+          "patchtst": 3.8,
           "random_forest": 1.0,
           "tirex": 2.0
         },
@@ -498,15 +503,15 @@
           {
             "model_a": "fkmad",
             "model_b": "lstm",
-            "statistic": 6.0,
-            "p_value": 0.8125,
+            "statistic": 2.0,
+            "p_value": 0.1875,
             "significant": false
           },
           {
             "model_a": "fkmad",
             "model_b": "patchtst",
-            "statistic": 3.0,
-            "p_value": 0.3125,
+            "statistic": 7.0,
+            "p_value": 1.0,
             "significant": false
           },
           {
@@ -605,6 +610,11 @@
             "model_a": "fkmad_raw",
             "model_b": "tirex",
             "rank_diff": 4.8
+          },
+          {
+            "model_a": "lstm",
+            "model_b": "random_forest",
+            "rank_diff": 4.4
           }
         ]
       }
