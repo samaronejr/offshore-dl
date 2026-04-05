@@ -68,12 +68,17 @@ def _load_pytorch_deps():
         from offshore_dl.models.fkmad import FKMADModel
     except (ImportError, ModuleNotFoundError, RuntimeError):
         FKMADModel = None
+    try:
+        from offshore_dl.models.mambasl import MambaSLModel
+    except (ImportError, ModuleNotFoundError, RuntimeError):
+        MambaSLModel = None
     return {
         "LSTMModel": LSTMModel,
         "DeepONetModel": DeepONetModel,
         "PatchTSTModel": PatchTSTModel,
         "TCNModel": TCNModel,
         "FKMADModel": FKMADModel,
+        "MambaSLModel": MambaSLModel,
         "ExperimentRunner": ExperimentRunner,
         "run_hpo": run_hpo,
     }
@@ -141,6 +146,24 @@ def _get_3w_models():
                 "d_model": 128,
                 "n_mamba_layers": 2,
                 "dropout": 0.2,
+            },
+        }
+    if deps["MambaSLModel"] is not None:
+        models["mambasl"] = {
+            "class": deps["MambaSLModel"],
+            "config": "configs/models/mambasl.yaml",
+            "kwargs": {
+                "task": "classification",
+                "n_vars": 27,
+                "window_size": 14,
+                "n_classes": 10,
+                "d_model": 128,
+                "d_state": 16,
+                "d_conv": 4,
+                "expand": 2,
+                "d_ff": 256,
+                "n_heads": 4,
+                "dropout": 0.1,
             },
         }
     return models
@@ -666,8 +689,8 @@ def main():
 
     if args.dataset == "3w":
         # Valid 3W models — names only for validation (lazy import of PyTorch deps)
-        valid_models = {"lstm", "deeponet", "patchtst", "random_forest", "fkmad"}
-        default_models = ["lstm", "deeponet", "patchtst", "random_forest", "fkmad"]
+        valid_models = {"lstm", "deeponet", "patchtst", "random_forest", "fkmad", "mambasl"}
+        default_models = ["lstm", "deeponet", "patchtst", "random_forest", "fkmad", "mambasl"]
     else:
         # Valid Ganymede models
         valid_models = {"lstm", "deeponet", "patchtst", "tcn"}
