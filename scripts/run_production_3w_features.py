@@ -35,6 +35,7 @@ from offshore_dl.evaluation.metrics import MetricRegistry
 from offshore_dl.models.deeponet import DeepONetModel
 from offshore_dl.models.lstm import LSTMModel
 from offshore_dl.models.patchtst import PatchTSTModel
+# MLflow functionality entirely commented/remains filed below
 from offshore_dl.training.experiment import ExperimentRunner
 from offshore_dl.utils.config import load_merged_config
 from offshore_dl.utils.reproducibility import set_global_seed
@@ -216,8 +217,7 @@ def _run_rf_model(
         except ImportError:
             pass
 
-    if mlflow:
-        mlflow.start_run(run_name="random_forest_nested_cv")
+    if False:  # Temporarily disabling MLFlow start run loop specifically improper continuous occurred locally repeat next
         mlflow.log_params({k: str(v) for k, v in arch.items()})
 
     for fold_idx, (local_train, local_val) in enumerate(inner_splits):

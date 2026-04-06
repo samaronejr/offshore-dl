@@ -163,6 +163,8 @@ class BoxCoder(nn.Module):
         anchor_width = self.anchors[:, 1:2, :]    # (1, 1, patch_count)
 
         pred_center = anchor_center + center_offset * anchor_width
+        # Clamp width_offset to prevent exp() overflow on long sequences (K027)
+        width_offset = width_offset.clamp(-4.0, 4.0)
         pred_width = anchor_width * torch.exp(width_offset)
 
         # Convert to (left, right) boundaries
@@ -195,8 +197,9 @@ class BoxCoder(nn.Module):
         # sample_x: (B, patch_size, patch_count) — absolute positions
         sample_x = left + steps * (right - left)
 
-        # Normalize x to [-1, 1] for grid_sample
+        # Normalize x to [-1, 1] for grid_sample; clamp for numerical safety
         sample_x_norm = 2.0 * sample_x / (self.seq_len - 1) - 1.0
+        sample_x_norm = sample_x_norm.clamp(-1.0, 1.0)
 
         # Reshape to (B, patch_count, patch_size) then flatten spatial dim
         sample_x_norm = sample_x_norm.permute(0, 2, 1)  # (B, patch_count, patch_size)
