@@ -53,3 +53,10 @@ try:
     __all__.append("MambaSLModel")
 except (ImportError, ModuleNotFoundError, RuntimeError):
     pass
+
+try:
+    from .convtimenet import ConvTimeNetModel
+
+    __all__.append("ConvTimeNetModel")
+except (ImportError, ModuleNotFoundError, RuntimeError):
+    pass
