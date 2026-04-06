@@ -71,14 +71,14 @@ Random Forest\treemodel & .966 & .964 & .966 & \best{.985} & .979$\pm$.016 \\
 PatchTST\hpo     & .965 & .962 & .965 & .931 & .955$\pm$.018 \\
 FKM-AD (feat.)   & .967 & .961 & .967 & .929 & .960$\pm$.019 \\
 FKM-AD (raw)     & .949 & .938 & .949 & .888 & .936$\pm$.021 \\
-MambaSL (feat.)\baseline & .961 & .947 & .962 & .904 & .953$\pm$.013 \\
-MambaSL (raw)\baseline   & .901 & .867 & .903 & .779 & .894$\pm$.021 \\
+MambaSL (feat.)$^\dagger$ & .966 & .961 & .966 & .927 & .952$\pm$.012 \\
+MambaSL (raw)$^\dagger$   & .919 & .887 & .920 & .807 & .930$\pm$.010 \\
 \midrule
 TiRex\fm         & .912 & .895 & .911 & .938 & .899$\pm$.021 \\
 \midrule
 \textit{Majority baseline} & \textit{.174} & \textit{.101} & --- & --- & --- \\
 \bottomrule
-\multicolumn{6}{@{}l}{\scriptsize $^\dagger$30-trial Optuna HPO. $^\ddagger$Baseline hyperparameters (no HPO). All others use manually tuned hyperparameters or defaults.}
+\multicolumn{6}{@{}l}{\scriptsize $^\dagger$30-trial Optuna HPO. All others use manually tuned hyperparameters or defaults.}
 \end{tabular}
 \end{table}
 
@@ -451,8 +451,8 @@ Random Forest\treemodel & .966 & .964 & N/A & N/A & N/A \\
 PatchTST     & .965 & .962 & .574 & 1.77 & 0.061 \\
 FKM-AD (feat.) & .967 & .961 & N/A & N/A & N/A \\
 FKM-AD (raw)   & .949 & .938 & N/A & N/A & N/A \\
-MambaSL (feat.)\baseline & .961 & .947 & N/A & N/A & N/A \\
-MambaSL (raw)\baseline   & .901 & .867 & N/A & N/A & N/A \\
+MambaSL (feat.)$^\dagger$ & .966 & .961 & N/A & N/A & N/A \\
+MambaSL (raw)$^\dagger$   & .919 & .887 & N/A & N/A & N/A \\
 TCN          & N/A & N/A & $-$4.51 & 3.98 & N/A \\
 \midrule
 TiRex\fm     & .912 & .895 & \best{.822} & \best{.658} & 24.88 \\
@@ -475,7 +475,7 @@ Chronos\fm   & N/A & N/A & .734 & .739 & 24.81 \\
 \toprule
 \textbf{Dataset} & \textbf{Winner} & \textbf{Key Finding} \\
 \midrule
-3W  & Trained models    & DeepONet 96.8\%, LSTM 96.7\%, FKM-AD 96.7\%, RF 96.6\%, PatchTST 96.5\%, MambaSL 96.1\% \\
+3W  & Trained models    & DeepONet 96.8\%, LSTM 96.7\%, FKM-AD 96.7\%, RF 96.6\%, MambaSL 96.6\%, PatchTST 96.5\% \\
     & \& Random Forest  & RF, FKM-AD \& MambaSL prove feature extraction captures structure \\
 \midrule
 Ganymede & Foundation models & TiRex/TimesFM $\rp > 0.8$ at $h{=}7$ \\

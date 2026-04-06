@@ -117,7 +117,15 @@ if MambaSLModel is not None:
     MODELS["mambasl"] = {
         "class": MambaSLModel,
         "config": "configs/models/mambasl.yaml",
-        "overrides": {},
+        "overrides": {
+            "d_model": 64,
+            "d_state": 16,
+            "d_ff": 256,
+            "d_conv": 8,
+            "expand": 4,
+            "n_heads": 1,
+            "dropout": 0.05441608345844953,
+        },
     }
 
 TREE_MODELS = ["random_forest"]

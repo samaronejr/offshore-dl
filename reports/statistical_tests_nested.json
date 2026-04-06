@@ -22,8 +22,8 @@
           "tirex"
         ],
         "friedman": {
-          "statistic": 35.52000000000001,
-          "p_value": 2.1492850580785395e-05,
+          "statistic": 35.68000000000001,
+          "p_value": 2.009379190229609e-05,
           "significant": true,
           "n_models": 9,
           "n_folds": 5,
@@ -41,14 +41,14 @@
         },
         "average_ranks": {
           "deeponet": 4.2,
-          "fkmad": 2.8,
-          "fkmad_raw": 7.0,
-          "lstm": 5.0,
-          "mambasl": 4.8,
-          "mambasl_raw": 8.6,
-          "patchtst": 3.2,
+          "fkmad": 2.6,
+          "fkmad_raw": 7.4,
+          "lstm": 4.8,
+          "mambasl": 5.0,
+          "mambasl_raw": 7.6,
+          "patchtst": 3.4,
           "random_forest": 1.0,
-          "tirex": 8.4
+          "tirex": 9.0
         },
         "wilcoxon_pairwise": [
           {
@@ -124,8 +124,8 @@
           {
             "model_a": "fkmad",
             "model_b": "mambasl",
-            "statistic": 2.0,
-            "p_value": 0.1875,
+            "statistic": 0.0,
+            "p_value": 0.0625,
             "significant": false
           },
           {
@@ -173,8 +173,8 @@
           {
             "model_a": "fkmad_raw",
             "model_b": "mambasl_raw",
-            "statistic": 0.0,
-            "p_value": 0.0625,
+            "statistic": 3.0,
+            "p_value": 0.3125,
             "significant": false
           },
           {
@@ -243,8 +243,8 @@
           {
             "model_a": "mambasl",
             "model_b": "patchtst",
-            "statistic": 5.0,
-            "p_value": 0.625,
+            "statistic": 6.0,
+            "p_value": 0.8125,
             "significant": false
           },
           {
@@ -278,8 +278,8 @@
           {
             "model_a": "mambasl_raw",
             "model_b": "tirex",
-            "statistic": 4.0,
-            "p_value": 0.4375,
+            "statistic": 0.0,
+            "p_value": 0.0625,
             "significant": false
           },
           {
@@ -308,33 +308,28 @@
         "nemenyi_significant_pairs": [
           {
             "model_a": "fkmad",
-            "model_b": "mambasl_raw",
-            "rank_diff": 5.8
-          },
-          {
-            "model_a": "fkmad",
             "model_b": "tirex",
-            "rank_diff": 5.6000000000000005
+            "rank_diff": 6.4
           },
           {
             "model_a": "fkmad_raw",
             "model_b": "random_forest",
-            "rank_diff": 6.0
-          },
-          {
-            "model_a": "mambasl_raw",
-            "model_b": "patchtst",
-            "rank_diff": 5.3999999999999995
+            "rank_diff": 6.4
           },
           {
             "model_a": "mambasl_raw",
             "model_b": "random_forest",
-            "rank_diff": 7.6
+            "rank_diff": 6.6
+          },
+          {
+            "model_a": "patchtst",
+            "model_b": "tirex",
+            "rank_diff": 5.6
           },
           {
             "model_a": "random_forest",
             "model_b": "tirex",
-            "rank_diff": 7.4
+            "rank_diff": 8.0
           }
         ]
       },
@@ -351,8 +346,8 @@
           "tirex"
         ],
         "friedman": {
-          "statistic": 34.45333333333335,
-          "p_value": 3.361790280608393e-05,
+          "statistic": 33.06666666666669,
+          "p_value": 5.9907879871062044e-05,
           "significant": true,
           "n_models": 9,
           "n_folds": 5,
@@ -370,14 +365,14 @@
         },
         "average_ranks": {
           "deeponet": 4.0,
-          "fkmad": 3.6,
-          "fkmad_raw": 6.8,
-          "lstm": 5.4,
-          "mambasl": 4.2,
-          "mambasl_raw": 8.8,
+          "fkmad": 3.8,
+          "fkmad_raw": 7.0,
+          "lstm": 5.2,
+          "mambasl": 4.4,
+          "mambasl_raw": 7.6,
           "patchtst": 3.0,
           "random_forest": 1.0,
-          "tirex": 8.2
+          "tirex": 9.0
         },
         "wilcoxon_pairwise": [
           {
@@ -404,8 +399,8 @@
           {
             "model_a": "deeponet",
             "model_b": "mambasl",
-            "statistic": 3.0,
-            "p_value": 0.3125,
+            "statistic": 4.0,
+            "p_value": 0.4375,
             "significant": false
           },
           {
@@ -453,8 +448,8 @@
           {
             "model_a": "fkmad",
             "model_b": "mambasl",
-            "statistic": 3.0,
-            "p_value": 0.3125,
+            "statistic": 6.0,
+            "p_value": 0.8125,
             "significant": false
           },
           {
@@ -502,8 +497,8 @@
           {
             "model_a": "fkmad_raw",
             "model_b": "mambasl_raw",
-            "statistic": 0.0,
-            "p_value": 0.0625,
+            "statistic": 2.0,
+            "p_value": 0.1875,
             "significant": false
           },
           {
@@ -530,53 +525,53 @@
           {
             "model_a": "lstm",
             "model_b": "mambasl",
+            "statistic": 7.0,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "lstm",
+            "model_b": "mambasl_raw",
+            "statistic": 1.0,
+            "p_value": 0.125,
+            "significant": false
+          },
+          {
+            "model_a": "lstm",
+            "model_b": "patchtst",
+            "statistic": 1.0,
+            "p_value": 0.125,
+            "significant": false
+          },
+          {
+            "model_a": "lstm",
+            "model_b": "random_forest",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
+          {
+            "model_a": "lstm",
+            "model_b": "tirex",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
+          {
+            "model_a": "mambasl",
+            "model_b": "mambasl_raw",
+            "statistic": 0.0,
+            "p_value": 0.0625,
+            "significant": false
+          },
+          {
+            "model_a": "mambasl",
+            "model_b": "patchtst",
             "statistic": 2.0,
             "p_value": 0.1875,
             "significant": false
           },
           {
-            "model_a": "lstm",
-            "model_b": "mambasl_raw",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "lstm",
-            "model_b": "patchtst",
-            "statistic": 1.0,
-            "p_value": 0.125,
-            "significant": false
-          },
-          {
-            "model_a": "lstm",
-            "model_b": "random_forest",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "lstm",
-            "model_b": "tirex",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "mambasl",
-            "model_b": "mambasl_raw",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "mambasl",
-            "model_b": "patchtst",
-            "statistic": 1.0,
-            "p_value": 0.125,
-            "significant": false
-          },
-          {
             "model_a": "mambasl",
             "model_b": "random_forest",
             "statistic": 0.0,
@@ -607,8 +602,8 @@
           {
             "model_a": "mambasl_raw",
             "model_b": "tirex",
-            "statistic": 1.0,
-            "p_value": 0.125,
+            "statistic": 0.0,
+            "p_value": 0.0625,
             "significant": false
           },
           {
@@ -638,22 +633,22 @@
           {
             "model_a": "fkmad_raw",
             "model_b": "random_forest",
-            "rank_diff": 5.8
-          },
-          {
-            "model_a": "mambasl_raw",
-            "model_b": "patchtst",
-            "rank_diff": 5.800000000000001
+            "rank_diff": 6.0
           },
           {
             "model_a": "mambasl_raw",
             "model_b": "random_forest",
-            "rank_diff": 7.800000000000001
+            "rank_diff": 6.6
+          },
+          {
+            "model_a": "patchtst",
+            "model_b": "tirex",
+            "rank_diff": 6.0
           },
           {
             "model_a": "random_forest",
             "model_b": "tirex",
-            "rank_diff": 7.199999999999999
+            "rank_diff": 8.0
           }
         ]
       },
@@ -670,8 +665,8 @@
           "tirex"
         ],
         "friedman": {
-          "statistic": 34.34666666666669,
-          "p_value": 3.515111508768635e-05,
+          "statistic": 33.28,
+          "p_value": 5.482870799931584e-05,
           "significant": true,
           "n_models": 9,
           "n_folds": 5,
@@ -688,13 +683,13 @@
           ]
         },
         "average_ranks": {
-          "deeponet": 5.2,
-          "fkmad": 4.6,
-          "fkmad_raw": 7.8,
-          "lstm": 6.2,
-          "mambasl": 5.2,
-          "mambasl_raw": 9.0,
-          "patchtst": 4.0,
+          "deeponet": 5.0,
+          "fkmad": 4.8,
+          "fkmad_raw": 8.0,
+          "lstm": 5.8,
+          "mambasl": 5.4,
+          "mambasl_raw": 8.8,
+          "patchtst": 4.2,
           "random_forest": 1.0,
           "tirex": 2.0
         },
@@ -772,8 +767,8 @@
           {
             "model_a": "fkmad",
             "model_b": "mambasl",
-            "statistic": 3.0,
-            "p_value": 0.3125,
+            "statistic": 6.0,
+            "p_value": 0.8125,
             "significant": false
           },
           {
@@ -821,8 +816,8 @@
           {
             "model_a": "fkmad_raw",
             "model_b": "mambasl_raw",
-            "statistic": 0.0,
-            "p_value": 0.0625,
+            "statistic": 2.0,
+            "p_value": 0.1875,
             "significant": false
           },
           {
@@ -849,8 +844,8 @@
           {
             "model_a": "lstm",
             "model_b": "mambasl",
-            "statistic": 2.0,
-            "p_value": 0.1875,
+            "statistic": 7.0,
+            "p_value": 1.0,
             "significant": false
           },
           {
@@ -891,8 +886,8 @@
           {
             "model_a": "mambasl",
             "model_b": "patchtst",
-            "statistic": 1.0,
-            "p_value": 0.125,
+            "statistic": 3.0,
+            "p_value": 0.3125,
             "significant": false
           },
           {
@@ -957,22 +952,22 @@
           {
             "model_a": "fkmad_raw",
             "model_b": "random_forest",
-            "rank_diff": 6.8
+            "rank_diff": 7.0
           },
           {
             "model_a": "fkmad_raw",
             "model_b": "tirex",
-            "rank_diff": 5.8
+            "rank_diff": 6.0
           },
           {
             "model_a": "mambasl_raw",
             "model_b": "random_forest",
-            "rank_diff": 8.0
+            "rank_diff": 7.800000000000001
           },
           {
             "model_a": "mambasl_raw",
             "model_b": "tirex",
-            "rank_diff": 7.0
+            "rank_diff": 6.800000000000001
           }
         ]
       }

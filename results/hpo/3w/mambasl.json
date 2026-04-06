@@ -1,0 +1,29 @@
+{
+  "hpo": {
+    "best_params": {
+      "d_model": 64,
+      "d_state": 16,
+      "d_ff": 256,
+      "d_conv": 8,
+      "expand": 4,
+      "n_heads": 1,
+      "dropout": 0.05441608345844953,
+      "lr": 0.002038269033454278
+    },
+    "best_value": 0.9412777811971494,
+    "n_trials": 30
+  },
+  "test_metrics": {},
+  "cv_aggregate": {},
+  "baseline_kwargs": {},
+  "best_kwargs": {
+    "d_model": 64,
+    "d_state": 16,
+    "d_ff": 256,
+    "d_conv": 8,
+    "expand": 4,
+    "n_heads": 1,
+    "dropout": 0.05441608345844953,
+    "lr": 0.002038269033454278
+  }
+}
