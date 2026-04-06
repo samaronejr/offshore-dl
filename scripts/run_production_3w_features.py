@@ -49,6 +49,11 @@ try:
 except (ImportError, ModuleNotFoundError, RuntimeError):
     MambaSLModel = None
 
+try:
+    from offshore_dl.models.convtimenet import ConvTimeNetModel
+except (ImportError, ModuleNotFoundError, RuntimeError):
+    ConvTimeNetModel = None
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
@@ -128,11 +133,18 @@ if MambaSLModel is not None:
         },
     }
 
+if ConvTimeNetModel is not None:
+    MODELS["convtimenet"] = {
+        "class": ConvTimeNetModel,
+        "config": "configs/models/convtimenet.yaml",
+        "overrides": {},
+    }
+
 TREE_MODELS = ["random_forest"]
-RAW_MODELS = ["fkmad_raw", "mambasl_raw"]
+RAW_MODELS = ["fkmad_raw", "mambasl_raw", "convtimenet_raw"]
 # ALL_MODELS includes all known model names (even optional ones) so --models
 # validation accepts them regardless of whether CUDA imports succeeded.
-_OPTIONAL_FEATURE_MODELS = [m for m in ["fkmad", "mambasl"] if m not in MODELS]
+_OPTIONAL_FEATURE_MODELS = [m for m in ["fkmad", "mambasl", "convtimenet"] if m not in MODELS]
 ALL_MODELS = list(MODELS.keys()) + _OPTIONAL_FEATURE_MODELS + TREE_MODELS + RAW_MODELS
 
 RESULTS_DIR = Path("results")
@@ -740,6 +752,128 @@ def main() -> None:
     elif run_mambasl_raw and MambaSLModel is None:
         logger.warning("MambaSLModel not available (CUDA required) — skipping mambasl_raw")
         summary["mambasl_raw"] = {"status": "skipped", "error": "MambaSLModel import failed (CUDA required)"}
+        summary_path.write_text(json.dumps(_make_serializable(summary), indent=2))
+
+    # ── ConvTimeNet Raw Classification (720×27 windows, CPU-native) ──
+    # Uses raw 3W windows instead of feature-extracted data.
+    # ConvTimeNet is CPU-native (no CUDA-only deps) — runs on any device.
+    # Reuses the same holdout split (train_pool/test_indices) from the
+    # feature dataset — sample ordering is identical.
+    run_convtimenet_raw = (args.models is None) or ("convtimenet_raw" in args.models)
+    if run_convtimenet_raw and ConvTimeNetModel is not None:
+        logger.info("─" * 60)
+        logger.info("CONVTIMENET_RAW CLASSIFICATION (720×27 raw windows)")
+        logger.info("─" * 60)
+        try:
+            # ── Free feature dataset to reclaim memory before loading raw ──
+            if dataset is not None:
+                del dataset
+                dataset = None
+            import gc; gc.collect()
+
+            from offshore_dl.data.datasets import ThreeWDataset
+
+            # Reuse raw dataset from holdout phase or prior raw blocks if available,
+            # otherwise load fresh with cache_in_memory=False to avoid OOM.
+            if _raw_ds_shared is not None:
+                raw_dataset_ct = _raw_ds_shared
+                logger.info("  Reusing raw dataset from holdout phase: %d samples", len(raw_dataset_ct))
+            else:
+                try:
+                    raw_dataset_ct = raw_dataset_sl  # type: ignore[name-defined]
+                    logger.info("  Reusing raw dataset from mambasl_raw: %d samples", len(raw_dataset_ct))
+                except NameError:
+                    try:
+                        raw_dataset_ct = raw_dataset  # type: ignore[name-defined]
+                        logger.info("  Reusing raw dataset from fkmad_raw: %d samples", len(raw_dataset_ct))
+                    except NameError:
+                        raw_dataset_ct = ThreeWDataset("configs/data/3w.yaml", cache_in_memory=False)
+                        logger.info("  Raw 3W loaded: %d samples (cache_in_memory=False)", len(raw_dataset_ct))
+
+            # Extract labels/groups from _windows metadata (zero-copy)
+            ct_raw_labels = np.array([w["label"] for w in raw_dataset_ct._windows])
+            ct_raw_groups = np.array([w["instance_id"] for w in raw_dataset_ct._windows])
+
+            # Inner CV within train_pool (reuse same holdout split)
+            pool_labels_ct = ct_raw_labels[train_pool]
+            pool_groups_ct = ct_raw_groups[train_pool]
+            inner_cv_ct = StratifiedGroupKFoldSKLearn(
+                n_folds=5, labels=pool_labels_ct, groups=pool_groups_ct, seed=42,
+            )
+
+            cfg_ct = load_merged_config(
+                "configs/base.yaml", "configs/data/3w.yaml", "configs/models/convtimenet.yaml",
+            )
+            cfg_ct.training.max_epochs = args.max_epochs
+            cfg_ct.training.batch_size = 32  # reduced for 720-length sequences — VRAM safety
+            cfg_ct.device = args.device
+            cfg_ct.training.scheduler = "cosine"
+
+            model_kwargs_ct = {
+                "task": "classification",
+                "n_vars": 27,
+                "n_classes": cfg_ct.data.n_classes,
+                "window_size": 720,
+            }
+
+            # Merge architecture params from model config
+            if hasattr(cfg_ct, "model") and hasattr(cfg_ct.model, "architecture"):
+                arch_ct = OmegaConf.to_container(cfg_ct.model.architecture, resolve=True)
+                model_kwargs_ct.update(arch_ct)
+
+            # Merge training LR/weight_decay
+            if hasattr(cfg_ct, "model") and hasattr(cfg_ct.model, "training"):
+                model_kwargs_ct["lr"] = cfg_ct.model.training.lr
+                model_kwargs_ct["weight_decay"] = cfg_ct.model.training.weight_decay
+
+            convtimenet_raw_start = time.time()
+            runner_ct_raw = ExperimentRunner(
+                model_class=ConvTimeNetModel,
+                dataset=raw_dataset_ct,
+                cv_strategy=inner_cv_ct,
+                cfg=cfg_ct,
+                model_kwargs=model_kwargs_ct,
+            )
+
+            convtimenet_raw_results = runner_ct_raw.run_nested(
+                train_pool=train_pool,
+                test_indices=test_indices,
+                use_mlflow=not args.no_mlflow,
+            )
+            convtimenet_raw_elapsed = time.time() - convtimenet_raw_start
+
+            out_path_ct_raw = RESULTS_DIR / "convtimenet_raw" / "3w.json"
+            out_path_ct_raw.parent.mkdir(parents=True, exist_ok=True)
+            out_path_ct_raw.write_text(json.dumps(_make_serializable(convtimenet_raw_results), indent=2))
+            logger.info("  Results saved: %s", out_path_ct_raw)
+
+            agg_ct_raw = convtimenet_raw_results.get("test_metrics", {})
+            metric_str_ct_raw = ", ".join(
+                f"{k}={v:.4f}" for k, v in sorted(agg_ct_raw.items())
+                if isinstance(v, (int, float))
+            )
+            summary["convtimenet_raw"] = {
+                "status": "ok",
+                "elapsed": round(convtimenet_raw_elapsed, 1),
+                "test_metrics": convtimenet_raw_results.get("test_metrics", {}),
+                "cv_aggregate": convtimenet_raw_results.get("cv_aggregate", {}),
+                "n_train": convtimenet_raw_results.get("n_train", 0),
+                "n_test": convtimenet_raw_results.get("n_test", 0),
+                "n_cv_folds": convtimenet_raw_results.get("n_cv_folds", 0),
+            }
+            logger.info("✓ convtimenet_raw: %s (%.1fs)", metric_str_ct_raw, convtimenet_raw_elapsed)
+
+            # Re-save summary with convtimenet_raw
+            summary_path.write_text(json.dumps(_make_serializable(summary), indent=2))
+
+        except Exception as e:
+            logger.error("✗ convtimenet_raw failed: %s", e)
+            traceback.print_exc()
+            summary["convtimenet_raw"] = {"status": "error", "error": str(e)}
+            summary_path.write_text(json.dumps(_make_serializable(summary), indent=2))
+    elif run_convtimenet_raw and ConvTimeNetModel is None:
+        logger.warning("ConvTimeNetModel not available — skipping convtimenet_raw")
+        summary["convtimenet_raw"] = {"status": "skipped", "error": "ConvTimeNetModel import failed"}
         summary_path.write_text(json.dumps(_make_serializable(summary), indent=2))
 
     # ── TiRex Classification (embedding + RF) ──

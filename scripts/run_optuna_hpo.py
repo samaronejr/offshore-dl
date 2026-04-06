@@ -72,6 +72,10 @@ def _load_pytorch_deps():
         from offshore_dl.models.mambasl import MambaSLModel
     except (ImportError, ModuleNotFoundError, RuntimeError):
         MambaSLModel = None
+    try:
+        from offshore_dl.models.convtimenet import ConvTimeNetModel
+    except (ImportError, ModuleNotFoundError, RuntimeError):
+        ConvTimeNetModel = None
     return {
         "LSTMModel": LSTMModel,
         "DeepONetModel": DeepONetModel,
@@ -79,6 +83,7 @@ def _load_pytorch_deps():
         "TCNModel": TCNModel,
         "FKMADModel": FKMADModel,
         "MambaSLModel": MambaSLModel,
+        "ConvTimeNetModel": ConvTimeNetModel,
         "ExperimentRunner": ExperimentRunner,
         "run_hpo": run_hpo,
     }
@@ -164,6 +169,24 @@ def _get_3w_models():
                 "d_ff": 256,
                 "n_heads": 4,
                 "dropout": 0.1,
+            },
+        }
+    if deps["ConvTimeNetModel"] is not None:
+        models["convtimenet"] = {
+            "class": deps["ConvTimeNetModel"],
+            "config": "configs/models/convtimenet.yaml",
+            "kwargs": {
+                "task": "classification",
+                "n_vars": 27,
+                "window_size": 14,
+                "n_classes": 10,
+                "d_model": 128,
+                "d_ff": 256,
+                "patch_size": 8,
+                "patch_stride": 4,
+                "dw_ks": [7, 13, 19],
+                "dropout": 0.1,
+                "pooling_tp": "max",
             },
         }
     return models
@@ -689,8 +712,8 @@ def main():
 
     if args.dataset == "3w":
         # Valid 3W models — names only for validation (lazy import of PyTorch deps)
-        valid_models = {"lstm", "deeponet", "patchtst", "random_forest", "fkmad", "mambasl"}
-        default_models = ["lstm", "deeponet", "patchtst", "random_forest", "fkmad", "mambasl"]
+        valid_models = {"lstm", "deeponet", "patchtst", "random_forest", "fkmad", "mambasl", "convtimenet"}
+        default_models = ["lstm", "deeponet", "patchtst", "random_forest", "fkmad", "mambasl", "convtimenet"]
     else:
         # Valid Ganymede models
         valid_models = {"lstm", "deeponet", "patchtst", "tcn"}

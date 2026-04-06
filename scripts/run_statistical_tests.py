@@ -26,7 +26,7 @@ RESULTS_DIR = Path("results")
 REPORT_PATH = Path("reports") / "statistical_tests_nested.json"
 
 # ── 3W classification models ──
-CLS_MODELS = ["lstm", "deeponet", "patchtst", "tirex", "random_forest", "fkmad", "fkmad_raw", "mambasl", "mambasl_raw"]
+CLS_MODELS = ["lstm", "deeponet", "patchtst", "tirex", "random_forest", "fkmad", "fkmad_raw", "mambasl", "mambasl_raw", "convtimenet", "convtimenet_raw"]
 CLS_METRICS = ["accuracy", "f1_macro", "auc_pr"]
 
 # ── CDF anomaly models ──
