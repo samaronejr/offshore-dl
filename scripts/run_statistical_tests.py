@@ -117,8 +117,9 @@ def _nemenyi_cd(n_models: int, n_folds: int, alpha: float = 0.05) -> float:
     q_table = {
         2: 1.960, 3: 2.343, 4: 2.569, 5: 2.728,
         6: 2.850, 7: 2.949, 8: 3.031, 9: 3.102, 10: 3.164,
+        11: 3.219, 12: 3.268, 13: 3.313, 14: 3.354, 15: 3.391,
     }
-    q = q_table.get(n_models, 2.569)  # fallback to k=4
+    q = q_table.get(n_models, q_table[max(q_table.keys())])  # fallback to largest known k
     return q * np.sqrt(n_models * (n_models + 1) / (6 * n_folds))
 
 
