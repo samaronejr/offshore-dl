@@ -138,7 +138,15 @@ if ConvTimeNetModel is not None:
     MODELS["convtimenet"] = {
         "class": ConvTimeNetModel,
         "config": "configs/models/convtimenet.yaml",
-        "overrides": {},
+        "overrides": {
+            "d_model": 128,
+            "d_ff": 512,
+            "patch_size": 8,
+            "patch_stride": 4,
+            "dw_ks": [7, 13, 19],
+            "dropout": 0.1234,
+            "pooling_tp": "max",
+        },
     }
 
 TREE_MODELS = ["random_forest"]

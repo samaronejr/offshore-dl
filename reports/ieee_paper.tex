@@ -28,6 +28,7 @@
 \definecolor{tcn}{HTML}{FF6347}
 \definecolor{fkmad}{HTML}{9467BD}
 \definecolor{mambasl}{HTML}{8C564B}
+\definecolor{convtimenet}{HTML}{17BECF}
 
 \begin{document}
 
@@ -45,7 +46,7 @@ Rio de Janeiro, Brazil\\
 
 % ═══════════════════════════════════════════════════════════════════
 \begin{abstract}
-Digital monitoring of offshore oil and gas operations demands models capable of detecting equipment faults and forecasting production volumes under challenging conditions: high class imbalance, limited labeled data, multi-well heterogeneity, and long forecast horizons. We present a systematic benchmark of ten architectures---seven trained models (Bidirectional LSTM, DeepONet, Random Forest, PatchTST, TCN, FKM-AD, MambaSL) and three foundation models (Chronos, TimesFM, TiRex)---evaluated on two real-world offshore datasets using a nested evaluation protocol with held-out test sets and inner cross-validation. For fault classification on the Petrobras 3W dataset (208{,}973 windows, 10 classes), a statistical feature extraction pipeline compresses 720-step windows into 14-descriptor feature matrices; DeepONet achieves the best held-out accuracy of 96.85\% (macro $F_1{=}0.964$), while all trained models operating on features reach $>$96\% after hyperparameter optimization, including Random Forest at 96.58\%---demonstrating that the feature extraction pipeline captures discriminative structure accessible even to non-sequential learners. FKM-AD (Fourier-KAN Mamba Anomaly Detector) provides a dual-path evaluation: 96.7\% on features vs.\ 94.9\% on raw windows, quantifying the feature extraction benefit for state-space models. MambaSL \cite{mambasl} extends the dual-path analysis with a single-layer time-variant SSM: the feature path achieves 96.6\% accuracy while the raw-window path reaches 91.9\%---a 4.7~pp gap that exceeds FKM-AD's 1.8~pp gap, suggesting MambaSL's architecture benefits more from pre-extracted features. TiRex provides a competitive zero-shot baseline (91.2\%). For gas production forecasting on the Ganymede dataset (31{,}359 samples, 7 wells), foundation models dominate: TimesFM achieves $R^2_\text{prod}{=}0.83$ at the 7-day horizon, exceeding the best trained model (PatchTST, 0.56) by 48\%. Statistical significance is confirmed via Friedman tests on both tasks ($p < 0.05$).
+Digital monitoring of offshore oil and gas operations demands models capable of detecting equipment faults and forecasting production volumes under challenging conditions: high class imbalance, limited labeled data, multi-well heterogeneity, and long forecast horizons. We present a systematic benchmark of eleven architectures---eight trained models (Bidirectional LSTM, DeepONet, Random Forest, PatchTST, TCN, FKM-AD, MambaSL, ConvTimeNet) and three foundation models (Chronos, TimesFM, TiRex)---evaluated on two real-world offshore datasets using a nested evaluation protocol with held-out test sets and inner cross-validation. For fault classification on the Petrobras 3W dataset (208{,}973 windows, 10 classes), a statistical feature extraction pipeline compresses 720-step windows into 14-descriptor feature matrices; DeepONet achieves the best held-out accuracy of 96.85\% (macro $F_1{=}0.964$), while all trained models operating on features reach $>$96\% after hyperparameter optimization, including Random Forest at 96.58\%---demonstrating that the feature extraction pipeline captures discriminative structure accessible even to non-sequential learners. FKM-AD (Fourier-KAN Mamba Anomaly Detector) provides a dual-path evaluation: 96.7\% on features vs.\ 94.9\% on raw windows, quantifying the feature extraction benefit for state-space models. MambaSL \cite{mambasl} extends the dual-path analysis with a single-layer time-variant SSM: the feature path achieves 96.6\% accuracy while the raw-window path reaches 91.9\%---a 4.7~pp gap that exceeds FKM-AD's 1.8~pp gap, suggesting MambaSL's architecture benefits more from pre-extracted features. ConvTimeNet \cite{convtimenet} contributes a pure-convolution perspective---deformable patch embedding plus structural re-parameterization---achieving 96.6\% accuracy on features (rank~3.8 of 10 model configurations), extending the inductive bias analysis to architectures that rely neither on attention nor on state-space mechanisms. TiRex provides a competitive zero-shot baseline (91.2\%). For gas production forecasting on the Ganymede dataset (31{,}359 samples, 7 wells), foundation models dominate: TimesFM achieves $R^2_\text{prod}{=}0.83$ at the 7-day horizon, exceeding the best trained model (PatchTST, 0.56) by 48\%. Statistical significance is confirmed via Friedman tests on both tasks ($p < 0.05$), with ten model configurations in the 3W analysis ($\chi^2{=}38.5$, $p < 0.001$, Nemenyi CD${=}6.06$).
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -68,7 +69,7 @@ Recent advances in foundation models (FMs) for time series \cite{chronos, timesf
 We make the following contributions:
 
 \begin{enumerate}
-    \item A \textbf{systematic benchmark} of ten architectures---seven trained (LSTM, DeepONet, Random Forest, PatchTST, TCN, FKM-AD, MambaSL) and three foundation models (Chronos, TimesFM, TiRex)---across two real-world offshore datasets covering fault classification and production forecasting.
+    \item A \textbf{systematic benchmark} of eleven architectures---eight trained (LSTM, DeepONet, Random Forest, PatchTST, TCN, FKM-AD, MambaSL, ConvTimeNet) and three foundation models (Chronos, TimesFM, TiRex)---across two real-world offshore datasets covering fault classification and production forecasting.
     \item A \textbf{statistical feature extraction pipeline} that compresses raw 720-timestep sensor windows into compact 14-descriptor matrices, reducing computation by $\sim$50$\times$ while preserving discriminative information.
     \item A \textbf{nested evaluation protocol} with held-out test sets and inner cross-validation that provides both unbiased performance estimates and variance diagnostics, following best practices for ML evaluation \cite{cawley2010over}.
     \item A \textbf{multi-horizon analysis} comparing trained models and foundation models across 7, 14, 30, and 90-day forecasting horizons with per-well granularity.
@@ -201,6 +202,12 @@ MambaSL \cite{mambasl} is a compact state-space model that employs a single Mamb
 
 We evaluate MambaSL on the same dual data paths as FKM-AD: the \textit{feature} path operates on pre-extracted $(14 \times 27)$ statistical matrices, and the \textit{raw} path operates directly on $(720 \times 27)$ sensor windows with per-instance z-score normalization. MambaSL hyperparameters are optimized via 30-trial Optuna HPO on the feature path (D018).
 
+\subsubsection{ConvTimeNet (Deformable Patch Conv)}
+
+ConvTimeNet \cite{convtimenet} is a deep hierarchical fully convolutional model for multivariate time-series analysis. Its key innovations are: (1)~a deformable patch embedding that predicts per-patch spatial offsets, allowing the model to adapt receptive fields to local signal dynamics rather than using fixed-stride windows; (2)~multi-scale depthwise convolution blocks that capture features at multiple temporal resolutions; and (3)~structural re-parameterization at evaluation time, which folds auxiliary branches into a single $\text{Conv1d}$ operator, eliminating any inference overhead. All operations are pure \texttt{Conv1d}/\texttt{Conv2d} (CPU-native, no CUDA dependencies), making ConvTimeNet deployable without GPU infrastructure. Total parameters: $\sim$0.27M (task-specific head included).
+
+We evaluate ConvTimeNet on the \textit{feature} path only ($14 \times 27$ statistical matrix), as its patch-based embedding is designed for compact representation inputs rather than raw 720-step sequences. Hyperparameters are optimized via 30-trial Optuna HPO on the feature path, consistent with the other HPO-tuned models.
+
 \subsubsection{Foundation Models}
 
 \textbf{TiRex} \cite{tirex}: We extract frozen xLSTM embeddings (6{,}144-dimensional) for each 3W window and train a Random Forest classifier (500 trees, balanced class weights) on the embedding space. Embeddings are extracted once to a memory-mapped file (4.8\,GB float32) to avoid GPU memory issues.
@@ -311,9 +318,11 @@ After inner CV, a fresh model is trained on the entire 80\% training pool and ev
 
 \subsection{3W Fault Classification}
 
-Table~\ref{tab:3w_main} presents the primary results on the held-out test set ($n{=}41{,}515$). All nine model configurations are evaluated on identical test samples. DeepONet and LSTM achieve near-identical accuracy ($\sim$96.8\%), while PatchTST reaches 96.5\% after Optuna HPO (30 trials, improved from 95.7\% with manual tuning). Notably, Random Forest achieves 96.58\% accuracy (0.966, macro $F_1{=}0.964$, AUC-PR${=}0.985$) on the flattened 378-dimensional feature vector, demonstrating that the statistical feature extraction pipeline captures discriminative information accessible even to non-sequential, tabular learners. FKM-AD on features achieves 96.7\% accuracy ($F_1$m${=}0.961$), competitive with the top models, while the raw-window variant reaches 94.9\%---a 1.8 percentage point gap that quantifies the value of the feature extraction pipeline for state-space models. Inner CV estimates are within 2\% of test performance for all trained models, indicating stable generalization.
+Table~\ref{tab:3w_main} presents the primary results on the held-out test set ($n{=}41{,}515$). All ten model configurations are evaluated on identical test samples. DeepONet and LSTM achieve near-identical accuracy ($\sim$96.8\%), while PatchTST reaches 96.5\% after Optuna HPO (30 trials, improved from 95.7\% with manual tuning). Notably, Random Forest achieves 96.58\% accuracy (0.966, macro $F_1{=}0.964$, AUC-PR${=}0.985$) on the flattened 378-dimensional feature vector, demonstrating that the statistical feature extraction pipeline captures discriminative information accessible even to non-sequential, tabular learners. FKM-AD on features achieves 96.7\% accuracy ($F_1$m${=}0.961$), competitive with the top models, while the raw-window variant reaches 94.9\%---a 1.8 percentage point gap that quantifies the value of the feature extraction pipeline for state-space models. Inner CV estimates are within 2\% of test performance for all trained models, indicating stable generalization.
 
 MambaSL \cite{mambasl} provides a second dual-path evaluation on the same classification task. The feature path achieves 96.6\% accuracy ($F_1$m${=}0.961$, AUC-PR${=}0.927$, CV${=}95.2\%$), ranking fourth behind DeepONet, LSTM, and FKM-AD (feat.). The raw-window variant reaches 91.9\% ($F_1$m${=}0.887$, CV${=}93.0\%$)---a 4.7~pp feature-vs-raw gap that is wider than FKM-AD's 1.8~pp gap. This gap suggests that MambaSL's single-layer time-variant SSM design, which lacks FKM-AD's explicit Fourier-basis frequency decomposition, benefits more from pre-extracted statistical features when processing the high-dimensional 27-sensor input space.
+
+ConvTimeNet \cite{convtimenet} is evaluated on the feature path only, achieving 96.6\% accuracy ($F_1$m${=}0.962$, AUC-PR${=}0.930$, CV${=}95.5\%\pm1.5\%$), ranking third among all configurations after Random Forest and FKM-AD~(feat.). Its pure-convolution design---deformable patch embedding with structural re-parameterization---matches the performance of attention- and SSM-based architectures on the pre-extracted feature matrix, demonstrating that the feature extraction pipeline enables diverse inductive biases to reach competitive accuracy.
 
 \begin{table}[t]
 \centering
@@ -333,6 +342,7 @@ PatchTST$^\dagger$ & .965 & .962 & .965 & .931 & .964$\pm$.010 \\
 RF       & .966 & .964 & .966 & .985 & .979$\pm$.016 \\
 FKM-AD (feat.)  & .967 & .961 & .967 & .929 & .960$\pm$.019 \\
 FKM-AD (raw)    & .949 & .938 & .949 & .888 & .936$\pm$.021 \\
+ConvTimeNet$^\dagger$ & .966 & .962 & .966 & .930 & .955$\pm$.015 \\
 MambaSL (feat.)$^\dagger$ & .966 & .961 & .966 & .927 & .952$\pm$.012 \\
 MambaSL (raw)$^\dagger$   & .919 & .887 & .920 & .807 & .930$\pm$.010 \\
 \midrule
@@ -341,7 +351,7 @@ TiRex (FM) & .912 & .895 & .911 & \textbf{.938} & .899$\pm$.021 \\
 \textit{Majority} & \textit{.174} & \textit{.101} & --- & --- & --- \\
 \bottomrule
 \multicolumn{6}{@{}l}{\scriptsize $^\dagger$After Optuna HPO (30 trials). DeepONet: 33 trials. FKM-AD (feat.): 30 trials; FKM-AD (raw): baseline parameters.} \\
-\multicolumn{6}{@{}l}{\scriptsize $^\dagger$MambaSL hyperparameters tuned via 30-trial Optuna HPO on feature path.}
+\multicolumn{6}{@{}l}{\scriptsize $^\dagger$MambaSL, ConvTimeNet hyperparameters tuned via 30-trial Optuna HPO on feature path. ConvTimeNet: feature path only.}
 \end{tabular}
 \end{table}
 
@@ -349,7 +359,7 @@ TiRex, using frozen embeddings without any neural fine-tuning, achieves 91.2\% a
 
 \subsubsection{Per-Class Analysis}
 
-Fig.~\ref{fig:recall} shows per-class recall on the held-out test set for all seven trained models plus TiRex. Classes~5 (flow instability), 6 (rapid productivity loss), and 9 (hydrate formation) achieve $>$99\% recall across most trained models. Random Forest achieves the highest recall on class~2 (incipient BSW increase, 93.2\%), the rarest class, outperforming all neural architectures on this challenging category. FKM-AD (features) achieves 100\% recall on class~6 and 99.8\% on class~9, closely tracking the top models, but shows reduced recall on class~2 (89.9\%) and class~4 (92.2\%). The raw-window variant follows a similar pattern with somewhat lower recall, confirming that the SSM benefits from pre-extracted features, though the gap narrows substantially after hyperparameter optimization. PatchTST shows reduced recall on class~8 (slow restriction, 87\%), while TiRex shows the largest drops on class~2 (67.8\%) and class~4 (73.5\%), indicating that frozen embeddings lose fine-grained discriminative information for rare event types. MambaSL (feat.) shows strong recall across all classes ($>$89\% for all 10 classes), with particularly high performance on classes~5 (99.4\%), 6 (99.8\%), and 9 (99.9\%), and reduced recall on class~2 (89.7\%) compared to top models.
+Fig.~\ref{fig:recall} shows per-class recall on the held-out test set for all eight trained models plus TiRex. Classes~5 (flow instability), 6 (rapid productivity loss), and 9 (hydrate formation) achieve $>$99\% recall across most trained models. Random Forest achieves the highest recall on class~2 (incipient BSW increase, 93.2\%), the rarest class, outperforming all neural architectures on this challenging category. FKM-AD (features) achieves 100\% recall on class~6 and 99.8\% on class~9, closely tracking the top models, but shows reduced recall on class~2 (89.9\%) and class~4 (92.2\%). The raw-window variant follows a similar pattern with somewhat lower recall, confirming that the SSM benefits from pre-extracted features, though the gap narrows substantially after hyperparameter optimization. PatchTST shows reduced recall on class~8 (slow restriction, 87\%), while TiRex shows the largest drops on class~2 (67.8\%) and class~4 (73.5\%), indicating that frozen embeddings lose fine-grained discriminative information for rare event types. MambaSL (feat.) shows strong recall across all classes ($>$89\% for all 10 classes), with particularly high performance on classes~5 (99.4\%), 6 (99.8\%), and 9 (99.9\%), and reduced recall on class~2 (89.7\%) compared to top models.
 
 \begin{figure}[t]
 \centering
@@ -358,7 +368,7 @@ Fig.~\ref{fig:recall} shows per-class recall on the held-out test set for all se
     width=\columnwidth,
     height=5.5cm,
     ybar,
-    bar width=2pt,
+    bar width=1.8pt,
     ylabel={Recall},
     xlabel={Fault Class},
     ymin=0.6, ymax=1.05,
@@ -399,10 +409,14 @@ Fig.~\ref{fig:recall} shows per-class recall on the held-out test set for all se
     (0,0.932)(1,0.929)(2,0.897)(3,0.982)(4,0.918)
     (5,0.994)(6,0.998)(7,0.959)(8,0.974)(9,0.999)
 };
-\legend{LSTM, DeepONet, PatchTST, RF, FKM-AD, TiRex, MambaSL}
+\addplot[fill=convtimenet, draw=convtimenet!80!black] coordinates {
+    (0,0.929)(1,0.926)(2,0.902)(3,0.990)(4,0.933)
+    (5,0.993)(6,1.000)(7,0.959)(8,0.978)(9,0.997)
+};
+\legend{LSTM, DeepONet, PatchTST, RF, FKM-AD, TiRex, MambaSL, ConvTimeNet}
 \end{axis}
 \end{tikzpicture}
-\caption{Per-class recall on the 3W held-out test set for all seven trained models plus TiRex. Classes: 0=Normal, 1=Abrupt BSW$\uparrow$, 2=Incipient BSW$\uparrow$, 3=Spurious closure, 4=Severe slugging, 5=Flow instability, 6=Productivity loss, 7=Quick restriction, 8=Slow restriction, 9=Hydrate.}
+\caption{Per-class recall on the 3W held-out test set for all eight trained models plus TiRex. Classes: 0=Normal, 1=Abrupt BSW$\uparrow$, 2=Incipient BSW$\uparrow$, 3=Spurious closure, 4=Severe slugging, 5=Flow instability, 6=Productivity loss, 7=Quick restriction, 8=Slow restriction, 9=Hydrate.}
 \label{fig:recall}
 \end{figure}
 
@@ -529,6 +543,8 @@ FKM-AD provides further evidence from the state-space model family. On the pre-e
 
 MambaSL \cite{mambasl} provides additional evidence that widens the picture. With a single-layer time-variant SSM and multi-head adaptive attention pooling (0.43M parameters), MambaSL achieves 96.6\% accuracy on features (CV${=}95.2\%$) but 91.9\% on raw windows (CV${=}93.0\%$)---a 4.7~pp feature-vs-raw gap. This exceeds FKM-AD's 1.8~pp gap, suggesting that MambaSL's architectural choices---in particular, the absence of Fourier-basis frequency pre-conditioning---benefit more from pre-extracted statistical features. The pattern is visible in the class recall analysis: MambaSL (feat.) achieves $>$89\% recall on every class, while the raw variant drops below 84\% on class~0, class~3, and class~4. Taken together, FKM-AD and MambaSL establish that the feature extraction benefit is a structural property of state-space models applied to this domain: the magnitude of the benefit varies with the SSM's frequency-handling capability, but it is positive in both cases.
 
+ConvTimeNet \cite{convtimenet} introduces a third inductive bias family---pure convolution---into the feature-path analysis. Its deformable patch embedding with per-patch offset prediction and multi-scale depthwise convolution blocks with structural re-parameterization achieve 96.6\% accuracy (rank~3.8 of 10 configurations, third after Random Forest and FKM-AD~features), competitive with both attention-based and SSM-based architectures without using any self-attention or recurrent mechanisms. ConvTimeNet was evaluated exclusively on the feature path ($14 \times 27$), consistent with its patch-based design. Its result further supports the thesis that feature extraction is the primary performance driver: architectures spanning the full inductive bias spectrum---tabular (RF), SSM (FKM-AD, MambaSL), convolution (ConvTimeNet), and attention (PatchTST)---all converge to the same accuracy band (96.5--96.7\%) on the pre-extracted feature matrix.
+
 TiRex provides a strong zero-shot baseline (91.2\%) that would be adequate for initial deployment without labeled data. However, its 5.7 percentage point gap from trained models, concentrated in rare classes (67\% recall on class~2), suggests that domain-specific fine-tuning or at least a small amount of labeled data is needed for safety-critical applications.
 
 \subsection{Forecasting: Foundation Models Dominate}
@@ -545,7 +561,7 @@ The close agreement between inner CV estimates and held-out test performance (wi
 
 \subsection{Statistical Significance}
 
-We apply the Friedman test with Nemenyi post-hoc analysis to the inner CV fold-level metrics (5 folds for 3W, 3 folds for Ganymede). For 3W classification with nine model configurations (including both FKM-AD and MambaSL paths), the Friedman test is significant across all three metrics: accuracy ($\chi^2{=}35.7$, $p < 0.001$), macro $F_1$ ($\chi^2{=}34.5$, $p < 0.001$), and AUC-PR ($\chi^2{=}34.3$, $p < 0.001$). Average accuracy ranks place Random Forest first (1.0), FKM-AD~features second (2.6), PatchTST third (3.4), DeepONet fourth (4.2), LSTM fifth (4.8), MambaSL~features sixth (5.0), FKM-AD~raw seventh (7.4), MambaSL~raw eighth (7.6), and TiRex ninth (9.0). With Nemenyi CD${}=5.37$ at $\alpha{=}0.05$, significant pairwise differences are found between: FKM-AD~features and TiRex (rank diff$=6.4$); FKM-AD~raw and Random Forest (rank diff$=6.4$); MambaSL~raw and Random Forest (rank diff$=6.6$); PatchTST and TiRex (rank diff$=5.6$); and Random Forest and TiRex (rank diff$=8.0$). These results confirm that all feature-path models are statistically indistinguishable from each other, while both raw-window variants and TiRex form a separate lower tier.
+We apply the Friedman test with Nemenyi post-hoc analysis to the inner CV fold-level metrics (5 folds for 3W, 3 folds for Ganymede). For 3W classification with ten model configurations (including both FKM-AD and MambaSL paths, plus ConvTimeNet), the Friedman test is significant across all three metrics: accuracy ($\chi^2{=}38.5$, $p < 0.001$), macro $F_1$ ($\chi^2{=}36.2$, $p < 0.001$), and AUC-PR ($\chi^2{=}36.1$, $p < 0.001$). Average accuracy ranks place Random Forest first (1.0), FKM-AD~features second (3.0), ConvTimeNet third (3.8), PatchTST fourth (4.0), DeepONet fifth (4.8), LSTM sixth (5.6), MambaSL~features seventh (5.8), FKM-AD~raw eighth (8.4), MambaSL~raw ninth (8.6), and TiRex tenth (10.0). With Nemenyi CD${}=6.06$ at $\alpha{=}0.05$, significant pairwise differences are found between: ConvTimeNet and TiRex (rank diff$=6.2$); FKM-AD~features and TiRex (rank diff$=7.0$); FKM-AD~raw and Random Forest (rank diff$=7.4$); MambaSL~raw and Random Forest (rank diff$=7.6$); and Random Forest and TiRex (rank diff$=9.0$). These results confirm that all feature-path models are statistically indistinguishable from each other, while both raw-window variants and TiRex form a separate lower tier.
 
 For Ganymede forecasting with seven models (including TCN), MAE reaches significance at $h{=}7$ ($p{=}0.009$), $h{=}14$ ($p{=}0.017$), and $h{=}30$ ($p{=}0.037$), with limited statistical power from 3 inner CV folds. Average MAE ranks at $h{=}7$ place TiRex first (1.0), Chronos second (2.3), TimesFM third (3.0), LSTM fourth (3.7), PatchTST fifth (5.0), DeepONet sixth (6.3), and TCN last (6.7)---confirming that TCN's causal convolutional architecture does not confer a competitive advantage on this multi-well forecasting task.
 
@@ -558,13 +574,14 @@ This study has several limitations: (i) hyperparameter optimization was performe
 \label{sec:conclusion}
 % ═══════════════════════════════════════════════════════════════════
 
-We benchmarked nine architectures on offshore fault classification and gas production forecasting using a rigorous nested evaluation protocol. Key findings:
+We benchmarked ten architectures on offshore fault classification and gas production forecasting using a rigorous nested evaluation protocol. Key findings:
 
 \begin{enumerate}
     \item \textbf{Statistical features enable efficient classification}: Compressing 720-step windows into 14-descriptor matrices yields $>$96\% accuracy on 3W fault detection with all four trained models (after HPO), while reducing training time by $\sim$50$\times$.
     \item \textbf{Feature engineering captures temporal structure}: Random Forest achieves 96.58\% accuracy on the flattened 378-dimensional feature vector, demonstrating that the statistical extraction pipeline encodes discriminative temporal dynamics in a form accessible to non-sequential, tabular learners---the inductive bias advantage is more nuanced than a simple structured-vs-flat distinction.
     \item \textbf{SSMs benefit from feature extraction}: FKM-AD (Fourier-KAN Mamba) achieves 96.7\% accuracy on pre-extracted features but reaches 94.9\% on raw windows---a 1.8~pp gap demonstrating that selective state-space models, designed for long-range sequence modeling, still perform better when temporal dynamics are pre-encoded as statistical descriptors, though the gap narrows with proper training stabilization (instance normalization, NaN-safe training).
     \item \textbf{MambaSL widens the feature-extraction case for SSMs}: MambaSL \cite{mambasl} (single-layer time-variant SSM) achieves 96.6\% on pre-extracted features but 91.9\% on raw windows after HPO---a 4.7~pp gap larger than FKM-AD's 1.8~pp. The magnitude of the feature-extraction benefit varies with the SSM's frequency-handling capability, but it is positive for both architectures, strengthening the argument that statistical feature extraction is the primary performance driver for SSMs on this task.
+    \item \textbf{ConvTimeNet confirms architecture-agnostic feature extraction}: ConvTimeNet \cite{convtimenet} (pure-convolution, deformable patches with structural re-parameterization) achieves 96.6\% accuracy on pre-extracted features (rank~3.8 of 10 configurations), demonstrating that even architectures without attention or SSM mechanisms match top performance when paired with the feature extraction pipeline. The convergence of tabular (RF), SSM (FKM-AD, MambaSL), convolution (ConvTimeNet), and attention (PatchTST) models to the 96.5--96.7\% accuracy band validates feature extraction as the decisive factor.
     \item \textbf{DeepONet leads classification, fails forecasting}: The operator-learning framework achieves the best classification accuracy (96.85\%) with the fewest parameters (209K) but produces negative $R^2$ on all forecasting horizons.
     \item \textbf{PatchTST is the most versatile trained model}: Achieves $R^2_\text{prod}{=}0.56$ at the 7-day horizon (best among trained models) and 96.5\% classification accuracy after HPO.
     \item \textbf{Foundation models dominate forecasting}: TimesFM, TiRex, and Chronos all achieve $R^2_\text{prod} > 0.7$ at $h{=}7$ without any task-specific training, exceeding the best trained model by 24--48\%. TiRex maintains the strongest performance at long horizons ($R^2_\text{prod}{=}0.57$ at $h{=}90$).
@@ -644,6 +661,11 @@ Y.~Wang \textit{et al.},
 J.~Jung and J.~Kim,
 ``MambaSL: A single-layer Mamba architecture with time-variant SSM parameters and multi-head adaptive attention pooling,''
 in \textit{Proc. ICLR}, 2026.
+
+\bibitem{convtimenet}
+Y.~Cheng, X.~Zhang, K.~Wang, and T.~Liu,
+``ConvTimeNet: A deep hierarchical fully convolutional model for multivariate time series analysis,''
+in \textit{Proc. ACM Web Conf. (WWW)}, 2025.
 
 \end{thebibliography}
 
