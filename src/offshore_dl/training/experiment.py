@@ -314,9 +314,13 @@ class ExperimentRunner:
         mlflow = None
         if mlflow_available:
             import mlflow as _mlflow
-            mlflow = _mlflow
-            mlflow.set_experiment(experiment_name)
-            parent_run = mlflow.start_run(run_name="experiment")
+            try:
+                mlflow = _mlflow
+                mlflow.set_experiment(experiment_name)
+                parent_run = mlflow.start_run(run_name="experiment")
+            except Exception as _mlflow_err:
+                logger.warning("MLflow unavailable (%s) — proceeding without tracking", _mlflow_err)
+                mlflow = None
 
         try:
             for fold_idx, (train_idx, val_idx) in enumerate(splits):
@@ -388,10 +392,14 @@ class ExperimentRunner:
             mlflow_available = _setup_mlflow(self.cfg)
             if mlflow_available:
                 import mlflow as _mlflow
-                mlflow = _mlflow
-                exp_name = experiment_name or f"offshore-dl-{task}-nested"
-                mlflow.set_experiment(exp_name)
-                logger.info("MLflow tracking enabled: experiment=%s", exp_name)
+                try:
+                    mlflow = _mlflow
+                    exp_name = experiment_name or f"offshore-dl-{task}-nested"
+                    mlflow.set_experiment(exp_name)
+                    logger.info("MLflow tracking enabled: experiment=%s", exp_name)
+                except Exception as _mlflow_err:
+                    logger.warning("MLflow unavailable (%s) — proceeding without tracking", _mlflow_err)
+                    mlflow = None
 
         # ── Step 1: Inner CV on training pool ──
         # Remap global indices to local [0, len(train_pool)) for the CV
