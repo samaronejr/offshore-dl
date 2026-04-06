@@ -1,6 +1,6 @@
 % ============================================================
 %  ALL RESULTS — Offshore Deep Learning Benchmark
-%  Models: LSTM, DeepONet, PatchTST, Random Forest, FKM-AD, MambaSL, TiRex, Chronos, TimesFM, TCN
+%  Models: LSTM, DeepONet, PatchTST, Random Forest, FKM-AD, ConvTimeNet, MambaSL, TiRex, Chronos, TimesFM, TCN
 %  Datasets: 3W (classification), Ganymede (forecasting), CDF (anomaly detection)
 %  Generated: 2026-04-02
 % ============================================================
@@ -71,6 +71,7 @@ Random Forest\treemodel & .966 & .964 & .966 & \best{.985} & .979$\pm$.016 \\
 PatchTST\hpo     & .965 & .962 & .965 & .931 & .955$\pm$.018 \\
 FKM-AD (feat.)   & .967 & .961 & .967 & .929 & .960$\pm$.019 \\
 FKM-AD (raw)     & .949 & .938 & .949 & .888 & .936$\pm$.021 \\
+ConvTimeNet\hpo  & .966 & .962 & .966 & .930 & .955$\pm$.015 \\
 MambaSL (feat.)$^\dagger$ & .966 & .961 & .966 & .927 & .952$\pm$.012 \\
 MambaSL (raw)$^\dagger$   & .919 & .887 & .920 & .807 & .930$\pm$.010 \\
 \midrule
@@ -451,6 +452,7 @@ Random Forest\treemodel & .966 & .964 & N/A & N/A & N/A \\
 PatchTST     & .965 & .962 & .574 & 1.77 & 0.061 \\
 FKM-AD (feat.) & .967 & .961 & N/A & N/A & N/A \\
 FKM-AD (raw)   & .949 & .938 & N/A & N/A & N/A \\
+ConvTimeNet\hpo & .966 & .962 & N/A & N/A & N/A \\
 MambaSL (feat.)$^\dagger$ & .966 & .961 & N/A & N/A & N/A \\
 MambaSL (raw)$^\dagger$   & .919 & .887 & N/A & N/A & N/A \\
 TCN          & N/A & N/A & $-$4.51 & 3.98 & N/A \\
@@ -475,8 +477,8 @@ Chronos\fm   & N/A & N/A & .734 & .739 & 24.81 \\
 \toprule
 \textbf{Dataset} & \textbf{Winner} & \textbf{Key Finding} \\
 \midrule
-3W  & Trained models    & DeepONet 96.8\%, LSTM 96.7\%, FKM-AD 96.7\%, RF 96.6\%, MambaSL 96.6\%, PatchTST 96.5\% \\
-    & \& Random Forest  & RF, FKM-AD \& MambaSL prove feature extraction captures structure \\
+3W  & Trained models    & DeepONet 96.8\%, LSTM 96.7\%, FKM-AD 96.7\%, RF 96.6\%, MambaSL 96.6\%, ConvTimeNet 96.6\%, PatchTST 96.5\% \\
+    & \& Random Forest  & RF, FKM-AD, MambaSL \& ConvTimeNet prove feature extraction captures structure \\
 \midrule
 Ganymede & Foundation models & TiRex/TimesFM $\rp > 0.8$ at $h{=}7$ \\
          &                   & TCN $\rp \leq 0.11$ $\to$ local receptive fields insufficient \\
