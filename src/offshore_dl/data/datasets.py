@@ -4,6 +4,7 @@
 - ``ThreeWFeatureDataset`` — 3W with statistical feature extraction (T02-v2)
 - ``CDFDataset`` — CDF unsupervised anomaly discovery (T03)
 - ``GanymedeDataset`` — NSTA Ganymede gas production forecasting (T04)
+- ``SPEBergDataset`` — SPE Bergen Eagle Ford shale gas production forecasting (T05)
 """
 
 from __future__ import annotations
@@ -607,4 +608,197 @@ class GanymedeDataset(BaseDataset):
             "horizon": self.horizon,
             "mode": self.mode,
             "well_counts": well_counts,
+        }
+
+
+class SPEBergDataset(BaseDataset):
+    """SPE Bergen Eagle Ford shale gas production forecasting dataset.
+
+    Supports per-well and multi-well modes with configurable forecast horizons.
+    Reads preprocessed per-well parquets from ``data/processed/spe_berg/``
+    (produced by ``preprocess_spe_berg``).
+
+    Returns ``(input_tensor[w, n_vars], target_tensor[h], metadata)`` where
+    the target is the ``Gas_Volume_MMscf`` column over the forecast horizon.
+
+    If the preprocessed parquets are missing, preprocessing is run automatically.
+
+    Args:
+        config: Path to SPE BERG YAML config or pre-loaded DictConfig.
+        base_config: Path to base config.
+        mode: ``"per_well"`` or ``"multi_well"``. Overrides config default.
+        well_name: Specific well filename stem to load (per_well mode only,
+            e.g. ``"well_1"``).
+        horizon: Override forecast horizon from config.
+        input_window: Override input window size from config.
+        filter_shutdowns: If True, drop samples whose target window is all-zero
+            (well offline / shutdown).
+    """
+
+    def __init__(
+        self,
+        config: str | Path | DictConfig,
+        base_config: str | Path = "configs/base.yaml",
+        mode: str = "multi_well",
+        well_name: str | None = None,
+        horizon: int | None = None,
+        input_window: int | None = None,
+        filter_shutdowns: bool = False,
+    ) -> None:
+        if isinstance(config, (str, Path)):
+            self.cfg = load_merged_config(base_config, config)
+        else:
+            self.cfg = config
+
+        self.mode = mode
+        self.well_name = well_name
+        self.horizon = horizon or self.cfg.data.forecasting.default_horizon
+        self.input_window = input_window or self.cfg.data.forecasting.input_window
+        self.target_col = self.cfg.data.target_column
+        self.filter_shutdowns = filter_shutdowns
+
+        self._load_data()
+
+    def _load_data(self) -> None:
+        """Load processed SPE BERG parquets and build sample index."""
+        processed_dir = Path(self.cfg.data.paths.processed)
+
+        if not processed_dir.exists() or not any(processed_dir.glob("*.parquet")):
+            from offshore_dl.data.preprocess_spe_berg import preprocess_spe_berg
+            preprocess_spe_berg(self.cfg)
+
+        # Load wells
+        self._well_data: list[tuple[str, pd.DataFrame]] = []
+
+        if self.mode == "per_well" and self.well_name:
+            path = processed_dir / f"{self.well_name}.parquet"
+            if path.exists():
+                df = pd.read_parquet(path)
+                self._well_data.append((self.well_name, df))
+            else:
+                logger.warning(
+                    "Well parquet not found: %s — loading all wells instead", path
+                )
+                for p in sorted(processed_dir.glob("*.parquet")):
+                    df = pd.read_parquet(p)
+                    self._well_data.append((p.stem, df))
+        else:
+            # Multi-well: load all wells sorted by filename stem
+            for path in sorted(processed_dir.glob("*.parquet")):
+                df = pd.read_parquet(path)
+                self._well_data.append((path.stem, df))
+
+        # Build sample index: (well_idx, start_idx)
+        self._samples: list[tuple[int, int]] = []
+        total_needed = self.input_window + self.horizon
+
+        for well_idx, (name, df) in enumerate(self._well_data):
+            n = len(df)
+            for start in range(0, max(0, n - total_needed + 1)):
+                self._samples.append((well_idx, start))
+
+        # Align all wells to a common sorted column set (union, fill missing with 0)
+        if self._well_data:
+            all_cols: list[set[str]] = [set(df.columns) for _, df in self._well_data]
+            self._common_columns: list[str] = sorted(set.union(*all_cols))
+        else:
+            self._common_columns = []
+
+        # Compute target column index in the ALIGNED (sorted) column order
+        if self.target_col in self._common_columns:
+            self._target_col_idx = self._common_columns.index(self.target_col)
+        else:
+            self._target_col_idx = 0
+            logger.warning(
+                "Target column '%s' not found in aligned columns, using col 0",
+                self.target_col,
+            )
+
+        # Precompute numpy arrays with aligned columns (avoids per-getitem reindex)
+        self._arrays: list[np.ndarray] = []
+        for _, df in self._well_data:
+            aligned = df.reindex(columns=self._common_columns, fill_value=0.0)
+            arr = aligned.values.astype(np.float32)
+            np.nan_to_num(arr, copy=False, nan=0.0)
+            self._arrays.append(arr)
+
+        self.n_vars = len(self._common_columns)
+
+        # ── Filter shutdown windows ──
+        # Drop samples where the entire target horizon is zero (well offline).
+        if self.filter_shutdowns and self._arrays:
+            original_n = len(self._samples)
+            filtered = []
+            for well_idx, start in self._samples:
+                arr = self._arrays[well_idx]
+                input_end = start + self.input_window
+                target_end = input_end + self.horizon
+                target_vals = arr[input_end:target_end, self._target_col_idx]
+                if np.any(target_vals > 0.01):
+                    filtered.append((well_idx, start))
+            self._samples = filtered
+            logger.info(
+                "  Filtered shutdowns: %d → %d samples (%.0f%% removed)",
+                original_n, len(filtered),
+                100 * (1 - len(filtered) / original_n) if original_n > 0 else 0,
+            )
+
+        logger.info(
+            "SPEBergDataset (%s): %d samples, %d wells, input=%d, horizon=%d, n_vars=%d",
+            self.mode, len(self._samples), len(self._well_data),
+            self.input_window, self.horizon, self.n_vars,
+        )
+
+    def __getitem__(self, index: int) -> tuple[torch.Tensor, torch.Tensor, dict]:
+        """Return a single forecasting sample.
+
+        Returns:
+            Tuple of ``(input_tensor[input_window, n_vars], target_tensor[horizon], metadata)``.
+        """
+        well_idx, start = self._samples[index]
+        well_name, _ = self._well_data[well_idx]
+        arr = self._arrays[well_idx]
+        input_end = start + self.input_window
+        target_end = input_end + self.horizon
+
+        # Input: all features over the input window
+        input_data = arr[start:input_end]
+        input_tensor = torch.from_numpy(input_data.copy())
+
+        # Target: only Gas_Volume_MMscf over the forecast horizon
+        target_data = arr[input_end:target_end, self._target_col_idx]
+        target_tensor = torch.from_numpy(target_data.copy())
+
+        metadata = {
+            "well_name": well_name,
+            "well_idx": well_idx,
+            "start_idx": start,
+            "input_end": input_end,
+            "target_end": target_end,
+            "horizon": self.horizon,
+            "mode": self.mode,
+        }
+
+        return input_tensor, target_tensor, metadata
+
+    def __len__(self) -> int:
+        return len(self._samples)
+
+    def get_metadata(self) -> dict:
+        """Return dataset-level metadata."""
+        well_counts: dict[str, int] = {}
+        for well_idx, _ in self._samples:
+            name = self._well_data[well_idx][0]
+            well_counts[name] = well_counts.get(name, 0) + 1
+
+        return {
+            "class": "SPEBergDataset",
+            "length": len(self),
+            "n_vars": self.n_vars,
+            "input_window": self.input_window,
+            "horizon": self.horizon,
+            "mode": self.mode,
+            "well_counts": well_counts,
+            "target_col": self.target_col,
+            "target_col_idx": self._target_col_idx,
         }
