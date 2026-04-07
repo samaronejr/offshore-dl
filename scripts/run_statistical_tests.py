@@ -40,6 +40,10 @@ FC_FMS = ["chronos", "timesfm", "tirex"]
 FC_METRICS = ["mae", "r2_prod"]
 HORIZONS = [7, 14, 30, 90]
 
+# ── SPE BERG forecasting models ──
+SPE_BERG_TRAINED = ["lstm", "deeponet", "patchtst", "tcn"]
+SPE_BERG_FMS = ["chronos", "timesfm", "tirex"]
+
 
 def _load_3w_folds(model: str) -> dict[str, list[float]] | None:
     """Load inner CV fold metrics for a 3W model."""
@@ -300,6 +304,92 @@ def _run_ganymede_tests() -> dict:
     return results
 
 
+def _load_spe_berg_folds(model: str, horizon: int, mode: str = "multi_well") -> dict[str, list[float]] | None:
+    """Load inner CV fold metrics for a SPE BERG model."""
+    path = RESULTS_DIR / model / f"spe_berg_h{horizon}_{mode}.json"
+    if not path.exists():
+        return None
+    with open(path) as f:
+        data = json.load(f)
+    folds = data.get("cv_fold_results", data.get("fold_results", []))
+    if not folds:
+        return None
+    return {
+        metric: [fr["metrics"].get(metric, float("nan"))
+                 for fr in folds]
+        for metric in FC_METRICS
+        if all(metric in fr.get("metrics", {}) for fr in folds)
+    }
+
+
+def _run_spe_berg_tests() -> dict:
+    """Run statistical tests on SPE BERG forecasting results per horizon."""
+    logger.info("═══ SPE BERG Forecasting Statistical Tests ═══")
+
+    results = {}
+    all_models = SPE_BERG_TRAINED + SPE_BERG_FMS
+
+    for horizon in HORIZONS:
+        all_folds = {}
+        for model in all_models:
+            folds = _load_spe_berg_folds(model, horizon)
+            if folds:
+                all_folds[model] = folds
+
+        if len(all_folds) < 2:
+            results[f"h{horizon}"] = {"status": "insufficient_models", "n_models": len(all_folds)}
+            logger.info("  h%d: only %d models with fold data", horizon, len(all_folds))
+            continue
+
+        logger.info("  h%d: %d models with fold data: %s", horizon, len(all_folds), list(all_folds.keys()))
+
+        horizon_results = {"n_models": len(all_folds), "metrics": {}}
+
+        for metric in FC_METRICS:
+            scores = {m: all_folds[m][metric] for m in all_folds if metric in all_folds[m]}
+            if len(scores) < 2:
+                continue
+
+            higher_is_better = metric in ("r2", "r2_prod")  # MAE/RMSE lower=better
+
+            friedman = _friedman_test(scores)
+            ranks = _compute_ranks(scores, higher_is_better=higher_is_better)
+            wilcoxon = _wilcoxon_pairwise(scores)
+
+            metric_result = {
+                "models": sorted(scores.keys()),
+                "friedman": friedman,
+                "average_ranks": ranks,
+                "wilcoxon_pairwise": wilcoxon,
+            }
+
+            if friedman.get("significant"):
+                n_models = friedman["n_models"]
+                n_folds = friedman["n_folds"]
+                cd = _nemenyi_cd(n_models, n_folds)
+                metric_result["nemenyi_cd"] = float(cd)
+                sig_pairs = []
+                models = sorted(ranks.keys())
+                for i in range(len(models)):
+                    for j in range(i + 1, len(models)):
+                        rank_diff = abs(ranks[models[i]] - ranks[models[j]])
+                        if rank_diff > cd:
+                            sig_pairs.append({
+                                "model_a": models[i], "model_b": models[j],
+                                "rank_diff": float(rank_diff),
+                            })
+                metric_result["nemenyi_significant_pairs"] = sig_pairs
+
+            horizon_results["metrics"][metric] = metric_result
+            logger.info("    %s %s: Friedman p=%.4f sig=%s",
+                         f"h{horizon}", metric,
+                         friedman.get("p_value", -1), friedman.get("significant"))
+
+        results[f"h{horizon}"] = horizon_results
+
+    return results
+
+
 def _load_cdf_folds(model: str) -> dict[str, list[float]] | None:
     """Load inner CV fold metrics for a CDF model."""
     path = RESULTS_DIR / model / "cdf.json"
@@ -382,6 +472,7 @@ def main():
         "alpha": 0.05,
         "3w": _run_3w_tests(),
         "ganymede": _run_ganymede_tests(),
+        "spe_berg": _run_spe_berg_tests(),
         "cdf": _run_cdf_tests(),
     }
 
