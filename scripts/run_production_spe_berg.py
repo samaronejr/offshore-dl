@@ -431,6 +431,7 @@ def main() -> None:
     parser.add_argument("--dry-run", action="store_true", help="Print plan without executing")
     parser.add_argument("--max-samples", type=int, default=None, help="Cap val samples per FM fold (for smoke tests)")
     parser.add_argument("--no-mlflow", action="store_true", help="Disable MLflow tracking")
+    parser.add_argument("--skip-existing", action="store_true", help="Skip runs whose result JSON already exists")
 
     args = parser.parse_args()
 
@@ -468,6 +469,21 @@ def main() -> None:
         logger.info("─" * 60)
         logger.info("RUN: %s", run_label)
         logger.info("─" * 60)
+
+        # Compute expected output path for skip check
+        if well:
+            _skip_safe = _safe_well(well)
+            out_path = RESULTS_DIR / model / f"spe_berg_h{horizon}_per_well_{_skip_safe}.json"
+        elif mode == "multi_well" and is_fm:
+            # FM multi_well uses a different naming convention (no mode prefix)
+            out_path = RESULTS_DIR / model / f"spe_berg_h{horizon}_multi_well.json"
+        else:
+            out_path = RESULTS_DIR / model / f"spe_berg_h{horizon}_{mode}.json"
+
+        if args.skip_existing and out_path.exists():
+            logger.info("  SKIP (exists): %s", out_path)
+            all_status[model].append({"run": run_label, "status": "skipped", "reason": "exists"})
+            continue
 
         start = time.time()
         try:
