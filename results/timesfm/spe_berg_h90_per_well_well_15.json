@@ -1,0 +1,10 @@
+{
+  "test_metrics": {},
+  "cv_aggregate": {},
+  "cv_fold_results": [],
+  "status": "unavailable",
+  "reason": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)",
+  "n_train": 0,
+  "n_test": 0,
+  "n_cv_folds": 0
+}

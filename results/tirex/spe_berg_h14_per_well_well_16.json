@@ -1,0 +1,10 @@
+{
+  "test_metrics": {},
+  "cv_aggregate": {},
+  "cv_fold_results": [],
+  "status": "unavailable",
+  "reason": "TiRex is not installed. Requires GPU with CUDA \u22658.0. Install via: pip install git+https://github.com/NX-AI/tirex",
+  "n_train": 0,
+  "n_test": 0,
+  "n_cv_folds": 0
+}

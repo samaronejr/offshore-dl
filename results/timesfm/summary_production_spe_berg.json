@@ -1,14 +1,15 @@
 [
   {
     "run": "timesfm h7 multi_well",
-    "status": "skipped",
-    "reason": "exists"
+    "status": "unavailable",
+    "elapsed": 1.5,
+    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_1",
     "status": "skipped",
     "reason": "empty dataset",
-    "elapsed": 0.5
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_2",
@@ -72,260 +73,260 @@
   },
   {
     "run": "timesfm h7 per_well well_12",
-    "status": "error",
-    "elapsed": 0.6,
+    "status": "unavailable",
+    "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_13",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_14",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_15",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_16",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_17",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_18",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_19",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_20",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_21",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_22",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_23",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_24",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_25",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_26",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_27",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_28",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_29",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_30",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_31",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_32",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_33",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_34",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_35",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_36",
-    "status": "error",
-    "elapsed": 0.1,
+    "status": "unavailable",
+    "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_37",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_38",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_39",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_40",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_41",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_42",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_43",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_44",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_45",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_46",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_47",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_48",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_49",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_50",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_51",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_52",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h7 per_well well_53",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 multi_well",
-    "status": "error",
-    "elapsed": 0.4,
+    "status": "unavailable",
+    "elapsed": 0.3,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
@@ -396,260 +397,260 @@
   },
   {
     "run": "timesfm h14 per_well well_12",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_13",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_14",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_15",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_16",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_17",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_18",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_19",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_20",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_21",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_22",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_23",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_24",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_25",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_26",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_27",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_28",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_29",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_30",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_31",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_32",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_33",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_34",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_35",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_36",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_37",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_38",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_39",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_40",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_41",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_42",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_43",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_44",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_45",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_46",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_47",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_48",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_49",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_50",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_51",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_52",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h14 per_well well_53",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 multi_well",
-    "status": "error",
-    "elapsed": 0.3,
+    "status": "unavailable",
+    "elapsed": 0.4,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
@@ -720,259 +721,259 @@
   },
   {
     "run": "timesfm h30 per_well well_12",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_13",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_14",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_15",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_16",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_17",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_18",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_19",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_20",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_21",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_22",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_23",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_24",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_25",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_26",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_27",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_28",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_29",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_30",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_31",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_32",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_33",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_34",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_35",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_36",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_37",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_38",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_39",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_40",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_41",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_42",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_43",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_44",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_45",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_46",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_47",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_48",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_49",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_50",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_51",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_52",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h30 per_well well_53",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 multi_well",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.3,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
@@ -1044,253 +1045,253 @@
   },
   {
     "run": "timesfm h90 per_well well_12",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_13",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_14",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_15",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_16",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_17",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_18",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_19",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_20",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_21",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_22",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_23",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_24",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_25",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_26",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_27",
-    "status": "error",
-    "elapsed": 0.0,
+    "status": "unavailable",
+    "elapsed": 0.1,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_28",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_29",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_30",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_31",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_32",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_33",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_34",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_35",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_36",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_37",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_38",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_39",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_40",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_41",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_42",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_43",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_44",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_45",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_46",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_47",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_48",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_49",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_50",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_51",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_52",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   },
   {
     "run": "timesfm h90 per_well well_53",
-    "status": "error",
+    "status": "unavailable",
     "elapsed": 0.0,
     "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
   }

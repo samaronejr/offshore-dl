@@ -570,6 +570,34 @@ def main() -> None:
             })
             logger.info("✓ %s: %s (%.1fs)", run_label, metric_str, elapsed)
 
+        except ImportError as e:
+            # FM model dependency not available (e.g. TimesFM needs Python <3.12, TiRex not installed)
+            # Write a graceful unavailability stub so downstream code can filter rather than crash.
+            elapsed = time.time() - start
+            stub = {
+                "test_metrics": {},
+                "cv_aggregate": {},
+                "cv_fold_results": [],
+                "status": "unavailable",
+                "reason": str(e),
+                "n_train": 0,
+                "n_test": 0,
+                "n_cv_folds": 0,
+            }
+            if is_fm:
+                try:
+                    stub_path = out_path
+                    stub_path.parent.mkdir(parents=True, exist_ok=True)
+                    stub_path.write_text(json.dumps(stub, indent=2))
+                    logger.warning("  UNAVAILABLE %s → stub written: %s", run_label, stub_path)
+                except Exception:
+                    pass
+            all_status[model].append({
+                "run": run_label, "status": "unavailable",
+                "elapsed": round(elapsed, 1), "error": str(e),
+            })
+            logger.error("✗ %s unavailable: %s (%.1fs)", run_label, e, elapsed)
+
         except Exception as e:
             elapsed = time.time() - start
             all_status[model].append({
