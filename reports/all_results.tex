@@ -1,7 +1,7 @@
 % ============================================================
 %  ALL RESULTS — Offshore Deep Learning Benchmark
 %  Models: LSTM, DeepONet, PatchTST, Random Forest, FKM-AD, ConvTimeNet (feat.), ConvTimeNet (raw), MambaSL, TiRex, Chronos, TimesFM, TCN
-%  Datasets: 3W (classification), Ganymede (forecasting), CDF (anomaly detection)
+%  Datasets: 3W (classification), Ganymede (forecasting), SPE BERG (forecasting), CDF (anomaly detection)
 %  Generated: 2026-04-02
 % ============================================================
 %
@@ -384,7 +384,120 @@ DeepONet    & 0.787 & 3.305 & 2.893 & 2.848 & 7.069 & 2.176 & 9.681 \\
 
 
 %% ************************************************************
-%%  PART III — CDF ANOMALY DETECTION
+%%  PART III — SPE BERG GAS PRODUCTION FORECASTING
+%% ************************************************************
+\newpage
+\section{SPE BERG Gas Production Forecasting}
+
+Dataset: 53 anonymized horizontal multi-fractured wells (Eagle Ford unconventional gas).
+67 features. Horizons: $h \in \{7, 14, 30, 90\}$ days.
+Inner CV: 3-fold expanding window. Units: Gas\_Volume\_MMscf.
+
+%% --------------------------------------------------
+%%  Table: SPE BERG multi-well — all models (main)
+%% --------------------------------------------------
+% TODO: populate after production runs
+\begin{table}[ht]
+\centering
+\caption{SPE BERG forecasting — held-out test (multi-well, MMscf).
+Best values per column in \textbf{bold}.
+FM = foundation model (zero-shot).}
+\label{tab:spe_berg_main}
+\small
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{@{}ll rrrr @{}}
+\toprule
+\textbf{Model} & \textbf{Metric} & $\boldsymbol{h{=}7}$ & $\boldsymbol{h{=}14}$ & $\boldsymbol{h{=}30}$ & $\boldsymbol{h{=}90}$ \\
+\midrule
+\multirow{2}{*}{TimesFM\fm}
+ & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+ & MAE   & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+\midrule
+\multirow{2}{*}{TiRex\fm}
+ & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+ & MAE   & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+\midrule
+\multirow{2}{*}{Chronos\fm}
+ & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+ & MAE   & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+\midrule
+\multirow{2}{*}{PatchTST}
+ & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+ & MAE   & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+\midrule
+\multirow{2}{*}{LSTM}
+ & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+ & MAE   & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+\midrule
+\multirow{2}{*}{TCN}
+ & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+ & MAE   & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+\midrule
+\multirow{2}{*}{DeepONet}
+ & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+ & MAE   & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%% --------------------------------------------------
+%%  Table: SPE BERG CV aggregates — all models
+%% --------------------------------------------------
+% TODO: populate after production runs
+\begin{table}[ht]
+\centering
+\caption{SPE BERG 3-fold expanding window CV (multi-well, mean $\pm$ std). Top: $\rp$, bottom: MAE.}
+\label{tab:spe_berg_cv}
+\scriptsize
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{@{}ll rrrr @{}}
+\toprule
+\textbf{Model} & \textbf{Metric} & $\boldsymbol{h{=}7}$ & $\boldsymbol{h{=}14}$ & $\boldsymbol{h{=}30}$ & $\boldsymbol{h{=}90}$ \\
+\midrule
+TimesFM\fm  & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+TiRex\fm    & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+Chronos\fm  & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+PatchTST    & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+LSTM        & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+TCN         & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+DeepONet    & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+\midrule
+TimesFM\fm  & MAE & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+TiRex\fm    & MAE & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+Chronos\fm  & MAE & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+PatchTST    & MAE & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+LSTM        & MAE & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+TCN         & MAE & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+DeepONet    & MAE & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%% --------------------------------------------------
+%%  Table: SPE BERG Friedman test summary
+%% --------------------------------------------------
+% TODO: populate after production runs
+\begin{table}[ht]
+\centering
+\caption{SPE BERG Friedman test summary per horizon.
+$\chi^2$: test statistic; $p$: p-value; ranks from lowest (best) to highest (worst) for $\rp$ and MAE.}
+\label{tab:spe_berg_friedman}
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}l rr l l@{}}
+\toprule
+\textbf{Horizon} & $\boldsymbol{\chi^2}$ & $\boldsymbol{p}$ & \textbf{Rank order ($\rp \uparrow$)} & \textbf{Rank order (MAE $\downarrow$)} \\
+\midrule
+$h{=}7$  & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+$h{=}14$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+$h{=}30$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+$h{=}90$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%% ************************************************************
+%%  PART IV — CDF ANOMALY DETECTION
 %% ************************************************************
 \newpage
 \section{CDF Anomaly Detection}
@@ -425,7 +538,7 @@ TiRex\fm    & 24.88 & 20.48 & 19.21 & 63.19 & 85.22 & $21.93 \pm 3.22$ \\
 
 
 %% ************************************************************
-%%  PART IV — CROSS-DATASET SUMMARY
+%%  PART V — CROSS-DATASET SUMMARY
 %% ************************************************************
 \newpage
 \section{Cross-Dataset Summary}
@@ -435,33 +548,33 @@ TiRex\fm    & 24.88 & 20.48 & 19.21 & 63.19 & 85.22 & $21.93 \pm 3.22$ \\
 %% --------------------------------------------------
 \begin{table}[ht]
 \centering
-\caption{Model performance summary across all three tasks.
+\caption{Model performance summary across all four tasks.
 Arrows indicate metric direction ($\uparrow$ = higher is better, $\downarrow$ = lower is better).
 Best in \textbf{bold}. N/A = model not evaluated on task.}
 \label{tab:summary_all}
 \small
 \setlength{\tabcolsep}{3pt}
-\begin{tabular}{@{}l cc cc c@{}}
+\begin{tabular}{@{}l cc cc cc c@{}}
 \toprule
- & \multicolumn{2}{c}{\textbf{3W (Classification)}} & \multicolumn{2}{c}{\textbf{Ganymede ($h{=}7$)}} & \textbf{CDF} \\
-\cmidrule(lr){2-3} \cmidrule(lr){4-5} \cmidrule(lr){6-6}
-\textbf{Model} & Acc. $\uparrow$ & $F_1$m $\uparrow$ & $\rp$ $\uparrow$ & MAE $\downarrow$ & Error $\downarrow$ \\
+ & \multicolumn{2}{c}{\textbf{3W (Classification)}} & \multicolumn{2}{c}{\textbf{Ganymede ($h{=}7$)}} & \multicolumn{2}{c}{\textbf{SPE BERG ($h{=}7$)}} & \textbf{CDF} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5} \cmidrule(lr){6-7} \cmidrule(lr){8-8}
+\textbf{Model} & Acc. $\uparrow$ & $F_1$m $\uparrow$ & $\rp$ $\uparrow$ & MAE $\downarrow$ & $\rp$ $\uparrow$ & MAE $\downarrow$ & Error $\downarrow$ \\
 \midrule
-DeepONet     & \best{.968} & \best{.964} & $-$5.72 & 4.84 & 0.219 \\
-LSTM         & .967 & .962 & .327 & 1.77 & \best{0.005} \\
-Random Forest\treemodel & .966 & .964 & N/A & N/A & N/A \\
-PatchTST     & .965 & .962 & .574 & 1.77 & 0.061 \\
-FKM-AD (feat.) & .967 & .961 & N/A & N/A & N/A \\
-FKM-AD (raw)   & .949 & .938 & N/A & N/A & N/A \\
-ConvTimeNet (feat.)\hpo & .966 & .962 & N/A & N/A & N/A \\
-ConvTimeNet (raw)       & .158 & .027 & N/A & N/A & N/A \\
-MambaSL (feat.)$^\dagger$ & .966 & .961 & N/A & N/A & N/A \\
-MambaSL (raw)$^\dagger$   & .919 & .887 & N/A & N/A & N/A \\
-TCN          & N/A & N/A & $-$4.51 & 3.98 & N/A \\
+DeepONet     & \best{.968} & \best{.964} & $-$5.72 & 4.84 & $\cdots$ & $\cdots$ & 0.219 \\
+LSTM         & .967 & .962 & .327 & 1.77 & $\cdots$ & $\cdots$ & \best{0.005} \\
+Random Forest\treemodel & .966 & .964 & N/A & N/A & N/A & N/A & N/A \\
+PatchTST     & .965 & .962 & .574 & 1.77 & $\cdots$ & $\cdots$ & 0.061 \\
+FKM-AD (feat.) & .967 & .961 & N/A & N/A & N/A & N/A & N/A \\
+FKM-AD (raw)   & .949 & .938 & N/A & N/A & N/A & N/A & N/A \\
+ConvTimeNet (feat.)\hpo & .966 & .962 & N/A & N/A & N/A & N/A & N/A \\
+ConvTimeNet (raw)       & .158 & .027 & N/A & N/A & N/A & N/A & N/A \\
+MambaSL (feat.)$^\dagger$ & .966 & .961 & N/A & N/A & N/A & N/A & N/A \\
+MambaSL (raw)$^\dagger$   & .919 & .887 & N/A & N/A & N/A & N/A & N/A \\
+TCN          & N/A & N/A & $-$4.51 & 3.98 & $\cdots$ & $\cdots$ & N/A \\
 \midrule
-TiRex\fm     & .912 & .895 & \best{.822} & \best{.658} & 24.88 \\
-TimesFM\fm   & N/A & N/A & .826 & .740 & 24.88 \\
-Chronos\fm   & N/A & N/A & .734 & .739 & 24.81 \\
+TiRex\fm     & .912 & .895 & \best{.822} & \best{.658} & $\cdots$ & $\cdots$ & 24.88 \\
+TimesFM\fm   & N/A & N/A & .826 & .740 & $\cdots$ & $\cdots$ & 24.88 \\
+Chronos\fm   & N/A & N/A & .734 & .739 & $\cdots$ & $\cdots$ & 24.81 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -484,6 +597,9 @@ Chronos\fm   & N/A & N/A & .734 & .739 & 24.81 \\
 \midrule
 Ganymede & Foundation models & TiRex/TimesFM $\rp > 0.8$ at $h{=}7$ \\
          &                   & TCN $\rp \leq 0.11$ $\to$ local receptive fields insufficient \\
+\midrule
+SPE BERG & $\cdots$ & $\cdots$ \\
+         &        & (Eagle Ford unconventional gas, 53 wells — results pending) \\
 \midrule
 CDF & Trained models & LSTM error 0.005 vs FMs $\sim$25 \\
     & (task-specific) & FMs lack CDF reconstruction inductive bias \\
