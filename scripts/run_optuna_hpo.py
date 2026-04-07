@@ -685,7 +685,7 @@ def run_ganymede_hpo(
         dataset=train_dataset,
         cv_strategy=cv,
         cfg=cfg,
-        model_kwargs=entry["kwargs"],
+        model_kwargs={**entry["kwargs"], "horizon": horizon_days},
         primary_metric="mae",
         search_space=search_space,
         n_trials=n_trials,
@@ -695,7 +695,7 @@ def run_ganymede_hpo(
     logger.info("  Best params: %s (value=%.4f)", hpo_result["best_params"], hpo_result["best_value"])
 
     # Final evaluation with best params
-    best_kwargs = dict(entry["kwargs"])
+    best_kwargs = {**entry["kwargs"], "horizon": horizon_days}
     best_cfg = load_merged_config("configs/base.yaml", "configs/data/ganymede.yaml", entry["config"])
     best_cfg.training.max_epochs = 50  # same as HPO trials — lr schedule must match
     best_cfg.training.batch_size = 32
@@ -787,7 +787,7 @@ def run_spe_berg_hpo(
         dataset=train_dataset,
         cv_strategy=cv,
         cfg=cfg,
-        model_kwargs=entry["kwargs"],
+        model_kwargs={**entry["kwargs"], "horizon": horizon_days},
         primary_metric="mae",
         search_space=search_space,
         n_trials=n_trials,
@@ -797,7 +797,7 @@ def run_spe_berg_hpo(
     logger.info("  Best params: %s (value=%.4f)", hpo_result["best_params"], hpo_result["best_value"])
 
     # Final evaluation with best params
-    best_kwargs = dict(entry["kwargs"])
+    best_kwargs = {**entry["kwargs"], "horizon": horizon_days}
     best_cfg = load_merged_config("configs/base.yaml", "configs/data/spe_berg.yaml", entry["config"])
     best_cfg.training.max_epochs = 50  # same as HPO trials — lr schedule must match
     best_cfg.training.batch_size = 32
