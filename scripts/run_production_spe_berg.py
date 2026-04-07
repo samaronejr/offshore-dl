@@ -368,7 +368,7 @@ def _run_fm_per_well(
 # ═══════════════════════════════════════════════════════════════════
 
 
-def _build_plan(models: list[str]) -> list[dict]:
+def _build_plan(models: list[str], multi_well_only: bool = False) -> list[dict]:
     """Build the ordered list of runs for the sweep."""
     plan: list[dict] = []
     for model in models:
@@ -385,15 +385,16 @@ def _build_plan(models: list[str]) -> list[dict]:
                 "is_tree": is_tree,
             })
             # per_well: individual wells
-            for well in WELLS:
-                plan.append({
-                    "model": model,
-                    "horizon": horizon,
-                    "mode": "per_well",
-                    "well": well,
-                    "is_fm": is_fm,
-                    "is_tree": is_tree,
-                })
+            if not multi_well_only:
+                for well in WELLS:
+                    plan.append({
+                        "model": model,
+                        "horizon": horizon,
+                        "mode": "per_well",
+                        "well": well,
+                        "is_fm": is_fm,
+                        "is_tree": is_tree,
+                    })
     return plan
 
 
@@ -432,10 +433,11 @@ def main() -> None:
     parser.add_argument("--max-samples", type=int, default=None, help="Cap val samples per FM fold (for smoke tests)")
     parser.add_argument("--no-mlflow", action="store_true", help="Disable MLflow tracking")
     parser.add_argument("--skip-existing", action="store_true", help="Skip runs whose result JSON already exists")
+    parser.add_argument("--multi-well-only", action="store_true", help="Run only multi_well mode, skip per_well")
 
     args = parser.parse_args()
 
-    plan = _build_plan(args.models)
+    plan = _build_plan(args.models, multi_well_only=args.multi_well_only)
 
     if args.dry_run:
         _print_plan(plan)
