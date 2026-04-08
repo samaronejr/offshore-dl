@@ -51,6 +51,7 @@ class LSTMModel(BaseModel):
         window_size: int = 48,
         lr: float = 0.001,
         weight_decay: float = 0.0001,
+        **kwargs,
     ) -> None:
         super().__init__(task=task, n_vars=n_vars)
         self.hidden_size = hidden_size

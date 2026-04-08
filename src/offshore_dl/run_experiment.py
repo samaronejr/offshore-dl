@@ -130,6 +130,7 @@ DATASET_REGISTRY: dict[str, dict] = {
             "n_vars": ds[0][0].shape[-1],
             "horizon": ds.horizon,
             "window_size": ds[0][0].shape[0],
+            "target_channel": ds._target_col_idx,
         },
     },
     "cdf": {

@@ -1,2 +1,8 @@
 2026-04-07 18:47:43 [SKIP] lstm h7 — valid JSON already exists
 2026-04-07 18:47:43 [START] lstm h14 (trial 2/16)
+2026-04-08 02:15:19 [DONE] lstm h14 in 26856s
+2026-04-08 02:15:19 [PROGRESS] done=2 failed=0 remaining=14
+2026-04-08 02:15:19 [START] lstm h30 (trial 3/16)
+2026-04-08 06:31:03 [DONE] lstm h30 in 15344s
+2026-04-08 06:31:03 [PROGRESS] done=3 failed=0 remaining=13
+2026-04-08 06:31:03 [START] lstm h90 (trial 4/16)

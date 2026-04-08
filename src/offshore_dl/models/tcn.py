@@ -107,6 +107,7 @@ class TCNModel(BaseModel):
         n_classes: int = 10,
         lr: float = 0.001,
         weight_decay: float = 0.0001,
+        **kwargs,
     ) -> None:
         super().__init__(task=task, n_vars=n_vars)
 

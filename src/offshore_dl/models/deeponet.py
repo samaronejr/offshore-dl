@@ -262,6 +262,7 @@ class DeepONetModel(BaseModel):
         weight_decay: float = 0.0001,
         loss_type: str = "ce",
         focal_gamma: float = 2.0,
+        **kwargs,
     ) -> None:
         super().__init__(task=task, n_vars=n_vars, loss_type=loss_type, focal_gamma=focal_gamma)
         self.rank = rank
