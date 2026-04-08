@@ -34,7 +34,7 @@ import torch
 from omegaconf import OmegaConf
 
 from offshore_dl.utils.config import load_merged_config
-from offshore_dl.data.datasets import ThreeWFeatureDataset, GanymedeDataset, SPEBergDataset
+from offshore_dl.data.datasets import ThreeWFeatureDataset, GanymedeDataset, SPEBergDataset, VolveDataset
 from offshore_dl.evaluation.cv import (
     HoldoutSplitter,
     StratifiedGroupKFoldSKLearn,
@@ -306,6 +306,73 @@ def _get_spe_berg_models():
             "kwargs": {
                 "task": "forecasting",
                 "n_vars": 67,
+                "window_size": 90,
+                "n_channels": 128,
+                "n_layers": 6,
+                "kernel_size": 3,
+                "dropout": 0.2,
+            },
+        },
+    }
+
+
+def _get_volve_models():
+    """Build Volve model registry (lazy, imports PyTorch models).
+
+    n_vars=73 (Volve has 73 feature columns), window_size=90.
+    PatchTST requires target_channel=48 because BORE_OIL_VOL is at column index 48.
+    """
+    deps = _load_pytorch_deps()
+    return {
+        "lstm": {
+            "class": deps["LSTMModel"],
+            "config": "configs/models/lstm.yaml",
+            "kwargs": {
+                "task": "forecasting",
+                "n_vars": 73,
+                "window_size": 90,
+                "hidden_size": 256,
+                "num_layers": 2,
+                "dropout": 0.3,
+                "bidirectional": True,
+            },
+        },
+        "deeponet": {
+            "class": deps["DeepONetModel"],
+            "config": "configs/models/deeponet.yaml",
+            "kwargs": {
+                "task": "forecasting",
+                "n_vars": 73,
+                "window_size": 90,
+                "rank": 128,
+                "branch_hidden": [128, 128],
+                "dropout": 0.2,
+            },
+        },
+        "patchtst": {
+            "class": deps["PatchTSTModel"],
+            "config": "configs/models/patchtst.yaml",
+            "kwargs": {
+                "task": "forecasting",
+                "n_vars": 73,
+                "window_size": 90,
+                "pretrained": False,
+                "d_model": 256,
+                "d_ff": 512,
+                "n_heads": 8,
+                "n_layers": 3,
+                "patch_len": 8,
+                "stride": 4,
+                "dropout": 0.15,
+                "target_channel": 48,
+            },
+        },
+        "tcn": {
+            "class": deps["TCNModel"],
+            "config": "configs/models/tcn.yaml",
+            "kwargs": {
+                "task": "forecasting",
+                "n_vars": 73,
                 "window_size": 90,
                 "n_channels": 128,
                 "n_layers": 6,
@@ -844,6 +911,108 @@ def run_spe_berg_hpo(
 
 
 # ═══════════════════════════════════════════════════════════════════
+# VOLVE FORECASTING (PyTorch models)
+# ═══════════════════════════════════════════════════════════════════
+
+
+def run_volve_hpo(
+    model_name: str, horizon: str, n_trials: int, device: str,
+) -> dict:
+    """Run HPO for a Volve model at a specific horizon."""
+    from offshore_dl.training.experiment import ExperimentRunner
+    from offshore_dl.training.optuna_utils import run_hpo
+
+    set_global_seed(42)
+
+    VOLVE_MODELS = _get_volve_models()
+    entry = VOLVE_MODELS[model_name]
+    model_cfg = OmegaConf.load(entry["config"])
+    search_space = OmegaConf.to_container(
+        model_cfg.model.optuna_search_space, resolve=True
+    )
+
+    cfg = load_merged_config("configs/base.yaml", "configs/data/volve.yaml", entry["config"])
+    cfg.training.max_epochs = 50
+    cfg.training.batch_size = 32
+    cfg.device = device
+    cfg.training.scheduler = "cosine"
+
+    horizon_days = int(horizon.replace("h", ""))
+    dataset = VolveDataset("configs/data/volve.yaml", horizon=horizon_days)
+    logger.info("  Volve %s loaded: %d samples", horizon, len(dataset))
+
+    # Temporal holdout
+    holdout = HoldoutSplitter(test_ratio=0.2, mode="temporal")
+    train_pool, test_indices = holdout.split(len(dataset))
+
+    # Inner CV for HPO
+    cv = ExpandingWindowCV(n_splits=3)
+
+    from torch.utils.data import Subset
+    train_dataset = Subset(dataset, train_pool.tolist())
+
+    hpo_result = run_hpo(
+        model_class=entry["class"],
+        dataset=train_dataset,
+        cv_strategy=cv,
+        cfg=cfg,
+        model_kwargs={**entry["kwargs"], "horizon": horizon_days},
+        primary_metric="mae",
+        search_space=search_space,
+        n_trials=n_trials,
+        study_name=f"volve_{model_name}_{horizon}",
+    )
+
+    logger.info("  Best params: %s (value=%.4f)", hpo_result["best_params"], hpo_result["best_value"])
+
+    # Final evaluation with best params
+    best_kwargs = {**entry["kwargs"], "horizon": horizon_days}
+    best_cfg = load_merged_config("configs/base.yaml", "configs/data/volve.yaml", entry["config"])
+    best_cfg.training.max_epochs = 50  # same as HPO trials — lr schedule must match
+    best_cfg.training.batch_size = 32
+    best_cfg.device = device
+    best_cfg.training.scheduler = "cosine"
+
+    from offshore_dl.training.optuna_utils import OptunaObjective
+    for param_name, value in hpo_result["best_params"].items():
+        if param_name in OptunaObjective.TRAINING_PARAMS:
+            OmegaConf.update(best_cfg, f"training.{param_name}", value)
+        else:
+            best_kwargs[param_name] = value
+
+    # Translate branch_width → branch_hidden (list of 2)
+    if "branch_width" in best_kwargs:
+        w = best_kwargs.pop("branch_width")
+        best_kwargs["branch_hidden"] = [w, w]
+
+    final_cv = ExpandingWindowCV(n_splits=3)
+    runner = ExperimentRunner(
+        model_class=entry["class"],
+        dataset=dataset,
+        cv_strategy=final_cv,
+        cfg=best_cfg,
+        model_kwargs=best_kwargs,
+    )
+    nested_result = runner.run_nested(
+        train_pool=train_pool,
+        test_indices=test_indices,
+        use_mlflow=True,
+    )
+
+    return {
+        "hpo": {
+            "best_params": hpo_result["best_params"],
+            "best_value": hpo_result["best_value"],
+            "n_trials": hpo_result["n_trials_completed"],
+        },
+        "test_metrics": nested_result["test_metrics"],
+        "cv_aggregate": nested_result["cv_aggregate"],
+        "baseline_kwargs": entry["kwargs"],
+        "best_kwargs": best_kwargs,
+    }
+
+
+# ═══════════════════════════════════════════════════════════════════
 
 def _make_serializable(obj):
     if isinstance(obj, dict):
@@ -863,7 +1032,7 @@ def _make_serializable(obj):
 
 def main():
     parser = argparse.ArgumentParser(description="Optuna HPO for trained models")
-    parser.add_argument("--dataset", required=True, choices=["3w", "ganymede", "spe_berg"],
+    parser.add_argument("--dataset", required=True, choices=["3w", "ganymede", "spe_berg", "volve"],
                         help="Dataset to optimize on")
     parser.add_argument("--models", nargs="+", default=None,
                         help="Models to optimize (default: all trained)")
@@ -880,6 +1049,10 @@ def main():
         default_models = ["lstm", "deeponet", "patchtst", "random_forest", "fkmad", "mambasl", "convtimenet"]
     elif args.dataset == "spe_berg":
         # Valid SPE BERG models
+        valid_models = {"lstm", "deeponet", "patchtst", "tcn"}
+        default_models = ["lstm", "deeponet", "patchtst", "tcn"]
+    elif args.dataset == "volve":
+        # Valid Volve models
         valid_models = {"lstm", "deeponet", "patchtst", "tcn"}
         default_models = ["lstm", "deeponet", "patchtst", "tcn"]
     else:
@@ -912,6 +1085,8 @@ def main():
                     result = run_3w_hpo(model_name, args.n_trials, args.device)
             elif args.dataset == "spe_berg":
                 result = run_spe_berg_hpo(model_name, args.horizon, args.n_trials, args.device)
+            elif args.dataset == "volve":
+                result = run_volve_hpo(model_name, args.horizon, args.n_trials, args.device)
             else:
                 result = run_ganymede_hpo(model_name, args.horizon, args.n_trials, args.device)
 
@@ -920,7 +1095,7 @@ def main():
             # Save per-model result
             out_dir = RESULTS_DIR / "hpo" / args.dataset
             out_dir.mkdir(parents=True, exist_ok=True)
-            suffix = f"_{args.horizon}" if args.dataset in ("ganymede", "spe_berg") else ""
+            suffix = f"_{args.horizon}" if args.dataset in ("ganymede", "spe_berg", "volve") else ""
             out_path = out_dir / f"{model_name}{suffix}.json"
             out_path.write_text(json.dumps(_make_serializable(result), indent=2))
 

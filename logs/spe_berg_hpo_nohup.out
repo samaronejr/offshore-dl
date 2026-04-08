@@ -9,3 +9,6 @@
 2026-04-08 11:17:17 [DONE] lstm h90 in 17174s
 2026-04-08 11:17:17 [PROGRESS] done=4 failed=0 remaining=12
 2026-04-08 11:17:17 [START] deeponet h7 (trial 5/16)
+2026-04-08 13:49:12 [DONE] deeponet h7 in 9115s
+2026-04-08 13:49:12 [PROGRESS] done=5 failed=0 remaining=11
+2026-04-08 13:49:12 [START] deeponet h14 (trial 6/16)
