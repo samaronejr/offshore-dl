@@ -410,32 +410,32 @@ FM = foundation model (zero-shot).}
 \textbf{Model} & \textbf{Metric} & $\boldsymbol{h{=}7}$ & $\boldsymbol{h{=}14}$ & $\boldsymbol{h{=}30}$ & $\boldsymbol{h{=}90}$ \\
 \midrule
 \multirow{2}{*}{TimesFM\fm}
- & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
- & MAE   & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+ & $\rp$ & N/A & N/A & N/A & N/A \\
+ & MAE   & N/A & N/A & N/A & N/A \\
 \midrule
 \multirow{2}{*}{TiRex\fm}
- & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
- & MAE   & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+ & $\rp$ & N/A & N/A & N/A & N/A \\
+ & MAE   & N/A & N/A & N/A & N/A \\
 \midrule
 \multirow{2}{*}{Chronos\fm}
- & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
- & MAE   & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+ & $\rp$ & $-$0.203 & $-$0.121 & \best{$-$0.126} & \best{$-$0.171} \\
+ & MAE   & \best{.490} & \best{.678} & \best{.929} & \best{1.479} \\
 \midrule
 \multirow{2}{*}{PatchTST}
- & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
- & MAE   & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+ & $\rp$ & N/A & N/A & N/A & N/A \\
+ & MAE   & N/A & N/A & N/A & N/A \\
 \midrule
 \multirow{2}{*}{LSTM}
- & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
- & MAE   & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+ & $\rp$ & $-$0.040 & $-$0.351 & $-$0.509 & $-$0.451 \\
+ & MAE   & .843 & 1.185 & 1.548 & 2.309 \\
 \midrule
 \multirow{2}{*}{TCN}
- & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
- & MAE   & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+ & $\rp$ & N/A & N/A & N/A & N/A \\
+ & MAE   & N/A & N/A & N/A & N/A \\
 \midrule
 \multirow{2}{*}{DeepONet}
- & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
- & MAE   & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+ & $\rp$ & \best{.036} & \best{$-$0.012} & $-$1.311 & $-$0.401 \\
+ & MAE   & .839 & 1.274 & 2.880 & 2.655 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -454,21 +454,21 @@ FM = foundation model (zero-shot).}
 \toprule
 \textbf{Model} & \textbf{Metric} & $\boldsymbol{h{=}7}$ & $\boldsymbol{h{=}14}$ & $\boldsymbol{h{=}30}$ & $\boldsymbol{h{=}90}$ \\
 \midrule
-TimesFM\fm  & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
-TiRex\fm    & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
-Chronos\fm  & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
-PatchTST    & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
-LSTM        & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
-TCN         & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
-DeepONet    & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+TimesFM\fm    & $\rp$ & N/A & N/A & N/A & N/A \\
+TiRex\fm      & $\rp$ & N/A & N/A & N/A & N/A \\
+Chronos\fm    & $\rp$ & $-$0.118 $\pm$ .04 & $-$0.144 $\pm$ .08 & $-$0.242 $\pm$ .20 & $-$0.470 $\pm$ .20 \\
+PatchTST      & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+LSTM          & $\rp$ & \best{$.252 \pm .00$} & \best{$.222 \pm .02$} & \best{$.129 \pm .03$} & \best{$.034 \pm .02$} \\
+TCN           & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+DeepONet      & $\rp$ & $.223 \pm .02$ & $.147 \pm .02$ & $.048 \pm .03$ & $-$0.012 $\pm$ .03 \\
 \midrule
-TimesFM\fm  & MAE & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
-TiRex\fm    & MAE & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
-Chronos\fm  & MAE & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
-PatchTST    & MAE & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
-LSTM        & MAE & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
-TCN         & MAE & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
-DeepONet    & MAE & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+TimesFM\fm    & MAE & N/A & N/A & N/A & N/A \\
+TiRex\fm      & MAE & N/A & N/A & N/A & N/A \\
+Chronos\fm    & MAE & \best{$.439 \pm .02$} & \best{$.674 \pm .03$} & \best{$.881 \pm .05$} & $1.066 \pm .09$ \\
+PatchTST      & MAE & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+LSTM          & MAE & $.532 \pm .02$ & $.818 \pm .04$ & $.991 \pm .07$ & \best{$.989 \pm .20$} \\
+TCN           & MAE & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+DeepONet      & MAE & $.637 \pm .01$ & $1.044 \pm .17$ & $1.211 \pm .06$ & $1.475 \pm .44$ \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -488,10 +488,10 @@ $\chi^2$: test statistic; $p$: p-value; ranks from lowest (best) to highest (wor
 \toprule
 \textbf{Horizon} & $\boldsymbol{\chi^2}$ & $\boldsymbol{p}$ & \textbf{Rank order ($\rp \uparrow$)} & \textbf{Rank order (MAE $\downarrow$)} \\
 \midrule
-$h{=}7$  & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
-$h{=}14$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
-$h{=}30$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
-$h{=}90$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+$h{=}7$    & 6.00 & 0.050 & LSTM, DeepONet, Chronos & Chronos, LSTM, DeepONet \\
+$h{=}14$   & 6.00 & 0.050 & LSTM, DeepONet, Chronos & Chronos, LSTM, DeepONet \\
+$h{=}30$   & 4.67 & 0.097 & LSTM, DeepONet, Chronos & Chronos, LSTM, DeepONet \\
+$h{=}90$   & 4.67 & 0.097 & LSTM, DeepONet, Chronos & LSTM, Chronos, DeepONet \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -560,8 +560,8 @@ Best in \textbf{bold}. N/A = model not evaluated on task.}
 \cmidrule(lr){2-3} \cmidrule(lr){4-5} \cmidrule(lr){6-7} \cmidrule(lr){8-8}
 \textbf{Model} & Acc. $\uparrow$ & $F_1$m $\uparrow$ & $\rp$ $\uparrow$ & MAE $\downarrow$ & $\rp$ $\uparrow$ & MAE $\downarrow$ & Error $\downarrow$ \\
 \midrule
-DeepONet     & \best{.968} & \best{.964} & $-$5.72 & 4.84 & $\cdots$ & $\cdots$ & 0.219 \\
-LSTM         & .967 & .962 & .327 & 1.77 & $\cdots$ & $\cdots$ & \best{0.005} \\
+DeepONet     & \best{.968} & \best{.964} & $-$5.72 & 4.84 & \best{.036} & .839 & 0.219 \\
+LSTM         & .967 & .962 & .327 & 1.77 & \best{$-$0.040} & .843 & \best{0.005} \\
 Random Forest\treemodel & .966 & .964 & N/A & N/A & N/A & N/A & N/A \\
 PatchTST     & .965 & .962 & .574 & 1.77 & $\cdots$ & $\cdots$ & 0.061 \\
 FKM-AD (feat.) & .967 & .961 & N/A & N/A & N/A & N/A & N/A \\
@@ -574,7 +574,7 @@ TCN          & N/A & N/A & $-$4.51 & 3.98 & $\cdots$ & $\cdots$ & N/A \\
 \midrule
 TiRex\fm     & .912 & .895 & \best{.822} & \best{.658} & $\cdots$ & $\cdots$ & 24.88 \\
 TimesFM\fm   & N/A & N/A & .826 & .740 & $\cdots$ & $\cdots$ & 24.88 \\
-Chronos\fm   & N/A & N/A & .734 & .739 & $\cdots$ & $\cdots$ & 24.81 \\
+Chronos\fm   & N/A & N/A & .734 & .739 & $-$0.203 & \best{.490} & 24.81 \\
 \bottomrule
 \end{tabular}
 \end{table}

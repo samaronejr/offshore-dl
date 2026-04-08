@@ -1,0 +1,36 @@
+[
+  {
+    "run": "chronos h7 multi_well",
+    "status": "skipped",
+    "reason": "exists"
+  },
+  {
+    "run": "chronos h14 multi_well",
+    "status": "skipped",
+    "reason": "exists"
+  },
+  {
+    "run": "chronos h30 multi_well",
+    "status": "ok",
+    "elapsed": 2522.6,
+    "test_metrics": {
+      "mae": 0.9291272535769964,
+      "rmse": 3.743860928647681,
+      "r2": -0.1260165804930573,
+      "r2_prod": -0.12609681456474253,
+      "mase": 0.9587916700066694
+    }
+  },
+  {
+    "run": "chronos h90 multi_well",
+    "status": "ok",
+    "elapsed": 7667.7,
+    "test_metrics": {
+      "mae": 1.4794950830061462,
+      "rmse": 4.831678549278146,
+      "r2": -0.1719272582068352,
+      "r2_prod": -0.1713975516130899,
+      "mase": 1.5236309996100064
+    }
+  }
+]

@@ -2953,20 +2953,448 @@
   },
   "spe_berg": {
     "h7": {
-      "status": "insufficient_models",
-      "n_models": 0
+      "n_models": 3,
+      "metrics": {
+        "mae": {
+          "models": [
+            "chronos",
+            "deeponet",
+            "lstm"
+          ],
+          "friedman": {
+            "statistic": 6.0,
+            "p_value": 0.04978706836786395,
+            "significant": true,
+            "n_models": 3,
+            "n_folds": 3,
+            "models": [
+              "chronos",
+              "deeponet",
+              "lstm"
+            ]
+          },
+          "average_ranks": {
+            "chronos": 1.0,
+            "deeponet": 3.0,
+            "lstm": 2.0
+          },
+          "wilcoxon_pairwise": [
+            {
+              "model_a": "chronos",
+              "model_b": "deeponet",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "lstm",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "lstm",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            }
+          ],
+          "nemenyi_cd": 1.913051489113662,
+          "nemenyi_significant_pairs": [
+            {
+              "model_a": "chronos",
+              "model_b": "deeponet",
+              "rank_diff": 2.0
+            }
+          ]
+        },
+        "r2_prod": {
+          "models": [
+            "chronos",
+            "deeponet",
+            "lstm"
+          ],
+          "friedman": {
+            "statistic": 6.0,
+            "p_value": 0.04978706836786395,
+            "significant": true,
+            "n_models": 3,
+            "n_folds": 3,
+            "models": [
+              "chronos",
+              "deeponet",
+              "lstm"
+            ]
+          },
+          "average_ranks": {
+            "chronos": 3.0,
+            "deeponet": 2.0,
+            "lstm": 1.0
+          },
+          "wilcoxon_pairwise": [
+            {
+              "model_a": "chronos",
+              "model_b": "deeponet",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "lstm",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "lstm",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            }
+          ],
+          "nemenyi_cd": 1.913051489113662,
+          "nemenyi_significant_pairs": [
+            {
+              "model_a": "chronos",
+              "model_b": "lstm",
+              "rank_diff": 2.0
+            }
+          ]
+        }
+      }
     },
     "h14": {
-      "status": "insufficient_models",
-      "n_models": 0
+      "n_models": 3,
+      "metrics": {
+        "mae": {
+          "models": [
+            "chronos",
+            "deeponet",
+            "lstm"
+          ],
+          "friedman": {
+            "statistic": 6.0,
+            "p_value": 0.04978706836786395,
+            "significant": true,
+            "n_models": 3,
+            "n_folds": 3,
+            "models": [
+              "chronos",
+              "deeponet",
+              "lstm"
+            ]
+          },
+          "average_ranks": {
+            "chronos": 1.0,
+            "deeponet": 3.0,
+            "lstm": 2.0
+          },
+          "wilcoxon_pairwise": [
+            {
+              "model_a": "chronos",
+              "model_b": "deeponet",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "lstm",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "lstm",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            }
+          ],
+          "nemenyi_cd": 1.913051489113662,
+          "nemenyi_significant_pairs": [
+            {
+              "model_a": "chronos",
+              "model_b": "deeponet",
+              "rank_diff": 2.0
+            }
+          ]
+        },
+        "r2_prod": {
+          "models": [
+            "chronos",
+            "deeponet",
+            "lstm"
+          ],
+          "friedman": {
+            "statistic": 6.0,
+            "p_value": 0.04978706836786395,
+            "significant": true,
+            "n_models": 3,
+            "n_folds": 3,
+            "models": [
+              "chronos",
+              "deeponet",
+              "lstm"
+            ]
+          },
+          "average_ranks": {
+            "chronos": 3.0,
+            "deeponet": 2.0,
+            "lstm": 1.0
+          },
+          "wilcoxon_pairwise": [
+            {
+              "model_a": "chronos",
+              "model_b": "deeponet",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "lstm",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "lstm",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            }
+          ],
+          "nemenyi_cd": 1.913051489113662,
+          "nemenyi_significant_pairs": [
+            {
+              "model_a": "chronos",
+              "model_b": "lstm",
+              "rank_diff": 2.0
+            }
+          ]
+        }
+      }
     },
     "h30": {
-      "status": "insufficient_models",
-      "n_models": 0
+      "n_models": 3,
+      "metrics": {
+        "mae": {
+          "models": [
+            "chronos",
+            "deeponet",
+            "lstm"
+          ],
+          "friedman": {
+            "statistic": 4.666666666666664,
+            "p_value": 0.09697196786440515,
+            "significant": false,
+            "n_models": 3,
+            "n_folds": 3,
+            "models": [
+              "chronos",
+              "deeponet",
+              "lstm"
+            ]
+          },
+          "average_ranks": {
+            "chronos": 1.3333333333333333,
+            "deeponet": 3.0,
+            "lstm": 1.6666666666666667
+          },
+          "wilcoxon_pairwise": [
+            {
+              "model_a": "chronos",
+              "model_b": "deeponet",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "lstm",
+              "statistic": 1.0,
+              "p_value": 0.5,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "lstm",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            }
+          ]
+        },
+        "r2_prod": {
+          "models": [
+            "chronos",
+            "deeponet",
+            "lstm"
+          ],
+          "friedman": {
+            "statistic": 6.0,
+            "p_value": 0.04978706836786395,
+            "significant": true,
+            "n_models": 3,
+            "n_folds": 3,
+            "models": [
+              "chronos",
+              "deeponet",
+              "lstm"
+            ]
+          },
+          "average_ranks": {
+            "chronos": 3.0,
+            "deeponet": 2.0,
+            "lstm": 1.0
+          },
+          "wilcoxon_pairwise": [
+            {
+              "model_a": "chronos",
+              "model_b": "deeponet",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "lstm",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "lstm",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            }
+          ],
+          "nemenyi_cd": 1.913051489113662,
+          "nemenyi_significant_pairs": [
+            {
+              "model_a": "chronos",
+              "model_b": "lstm",
+              "rank_diff": 2.0
+            }
+          ]
+        }
+      }
     },
     "h90": {
-      "status": "insufficient_models",
-      "n_models": 0
+      "n_models": 3,
+      "metrics": {
+        "mae": {
+          "models": [
+            "chronos",
+            "deeponet",
+            "lstm"
+          ],
+          "friedman": {
+            "statistic": 4.666666666666664,
+            "p_value": 0.09697196786440515,
+            "significant": false,
+            "n_models": 3,
+            "n_folds": 3,
+            "models": [
+              "chronos",
+              "deeponet",
+              "lstm"
+            ]
+          },
+          "average_ranks": {
+            "chronos": 1.6666666666666667,
+            "deeponet": 3.0,
+            "lstm": 1.3333333333333333
+          },
+          "wilcoxon_pairwise": [
+            {
+              "model_a": "chronos",
+              "model_b": "deeponet",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "lstm",
+              "statistic": 1.0,
+              "p_value": 0.5,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "lstm",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            }
+          ]
+        },
+        "r2_prod": {
+          "models": [
+            "chronos",
+            "deeponet",
+            "lstm"
+          ],
+          "friedman": {
+            "statistic": 6.0,
+            "p_value": 0.04978706836786395,
+            "significant": true,
+            "n_models": 3,
+            "n_folds": 3,
+            "models": [
+              "chronos",
+              "deeponet",
+              "lstm"
+            ]
+          },
+          "average_ranks": {
+            "chronos": 3.0,
+            "deeponet": 2.0,
+            "lstm": 1.0
+          },
+          "wilcoxon_pairwise": [
+            {
+              "model_a": "chronos",
+              "model_b": "deeponet",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "chronos",
+              "model_b": "lstm",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            },
+            {
+              "model_a": "deeponet",
+              "model_b": "lstm",
+              "statistic": 0.0,
+              "p_value": 0.25,
+              "significant": false
+            }
+          ],
+          "nemenyi_cd": 1.913051489113662,
+          "nemenyi_significant_pairs": [
+            {
+              "model_a": "chronos",
+              "model_b": "lstm",
+              "rank_diff": 2.0
+            }
+          ]
+        }
+      }
     }
   },
   "cdf": {
