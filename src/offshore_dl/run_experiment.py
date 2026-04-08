@@ -19,7 +19,7 @@ import numpy as np
 import torch
 from omegaconf import OmegaConf
 
-from offshore_dl.data.datasets import CDFDataset, GanymedeDataset, SPEBergDataset, ThreeWDataset
+from offshore_dl.data.datasets import CDFDataset, GanymedeDataset, SPEBergDataset, ThreeWDataset, VolveDataset
 from offshore_dl.evaluation.cv import (
     ExpandingWindowCV,
     StratifiedGroupKFoldSKLearn,
@@ -105,6 +105,21 @@ DATASET_REGISTRY: dict[str, dict] = {
     "spe_berg": {
         "class": SPEBergDataset,
         "config": "configs/data/spe_berg.yaml",
+        "task": "forecasting",
+        "cv_factory": lambda cfg, ds: ExpandingWindowCV(
+            n_splits=3,
+            min_train_ratio=0.5,
+        ),
+        "model_kwargs": lambda ds, cfg: {
+            "task": "forecasting",
+            "n_vars": ds[0][0].shape[-1],
+            "horizon": ds.horizon,
+            "window_size": ds[0][0].shape[0],
+        },
+    },
+    "volve": {
+        "class": VolveDataset,
+        "config": "configs/data/volve.yaml",
         "task": "forecasting",
         "cv_factory": lambda cfg, ds: ExpandingWindowCV(
             n_splits=3,
