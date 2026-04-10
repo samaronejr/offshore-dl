@@ -19,9 +19,9 @@ import numpy as np
 import torch
 from omegaconf import OmegaConf
 
-from offshore_dl.data.datasets import CDFDataset, GanymedeDataset, SPEBergDataset, ThreeWDataset, VolveDataset
+from offshore_dl.data.datasets import CDFDataset, GanymedeDataset, InnerMongoliaDataset, SPEBergDataset, ThreeWDataset, VolveDataset
 from offshore_dl.evaluation.cv import (
-    ExpandingWindowCV,
+    GroupedExpandingWindowCV,
     StratifiedGroupKFoldSKLearn,
     TemporalSplitCV,
 )
@@ -91,7 +91,8 @@ DATASET_REGISTRY: dict[str, dict] = {
         "class": GanymedeDataset,
         "config": "configs/data/ganymede.yaml",
         "task": "forecasting",
-        "cv_factory": lambda cfg, ds: ExpandingWindowCV(
+        "cv_factory": lambda cfg, ds: GroupedExpandingWindowCV(
+            groups=np.array([well_idx for well_idx, _ in ds._samples], dtype=np.int32),
             n_splits=3,
             min_train_ratio=0.5,
         ),
@@ -106,7 +107,8 @@ DATASET_REGISTRY: dict[str, dict] = {
         "class": SPEBergDataset,
         "config": "configs/data/spe_berg.yaml",
         "task": "forecasting",
-        "cv_factory": lambda cfg, ds: ExpandingWindowCV(
+        "cv_factory": lambda cfg, ds: GroupedExpandingWindowCV(
+            groups=np.array([well_idx for well_idx, _ in ds._samples], dtype=np.int32),
             n_splits=3,
             min_train_ratio=0.5,
         ),
@@ -121,7 +123,25 @@ DATASET_REGISTRY: dict[str, dict] = {
         "class": VolveDataset,
         "config": "configs/data/volve.yaml",
         "task": "forecasting",
-        "cv_factory": lambda cfg, ds: ExpandingWindowCV(
+        "cv_factory": lambda cfg, ds: GroupedExpandingWindowCV(
+            groups=np.array([well_idx for well_idx, _ in ds._samples], dtype=np.int32),
+            n_splits=3,
+            min_train_ratio=0.5,
+        ),
+        "model_kwargs": lambda ds, cfg: {
+            "task": "forecasting",
+            "n_vars": ds[0][0].shape[-1],
+            "horizon": ds.horizon,
+            "window_size": ds[0][0].shape[0],
+            "target_channel": ds._target_col_idx,
+        },
+    },
+    "inner_mongolia": {
+        "class": InnerMongoliaDataset,
+        "config": "configs/data/inner_mongolia.yaml",
+        "task": "forecasting",
+        "cv_factory": lambda cfg, ds: GroupedExpandingWindowCV(
+            groups=np.array([well_idx for well_idx, _ in ds._samples], dtype=np.int32),
             n_splits=3,
             min_train_ratio=0.5,
         ),

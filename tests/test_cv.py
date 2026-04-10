@@ -11,6 +11,8 @@ import pytest
 from offshore_dl.evaluation.cv import (
     ExpandingWindowCV,
     FoldNormalizer,
+    GroupedExpandingWindowCV,
+    GroupedTemporalHoldoutSplitter,
     LeakageGuard,
     SlidingWindowCV,
     StratifiedGroupKFoldSKLearn,
@@ -105,6 +107,45 @@ class TestTemporalSplitCV:
         train_idx, val_idx = splits[0]
         all_idx = np.concatenate([train_idx, val_idx])
         assert set(all_idx) == set(range(50))
+
+
+class TestGroupedTemporalHoldoutSplitter:
+    """Tests for per-group temporal holdout splitting."""
+
+    def test_split_preserves_temporal_tail_per_group(self) -> None:
+        groups = np.array(["well_a"] * 10 + ["well_b"] * 10)
+        splitter = GroupedTemporalHoldoutSplitter(test_ratio=0.2, groups=groups)
+        train_idx, test_idx = splitter.split(len(groups))
+
+        assert len(train_idx) == 16
+        assert len(test_idx) == 4
+        assert set(train_idx).isdisjoint(set(test_idx))
+
+        for group in np.unique(groups):
+            group_train = train_idx[groups[train_idx] == group]
+            group_test = test_idx[groups[test_idx] == group]
+            assert len(group_train) == 8
+            assert len(group_test) == 2
+            assert group_train.max() < group_test.min()
+
+
+class TestGroupedExpandingWindowCV:
+    """Tests for per-group expanding-window CV."""
+
+    def test_grouped_splits_remain_temporal_within_each_group(self) -> None:
+        groups = np.array(["well_a"] * 12 + ["well_b"] * 12)
+        cv = GroupedExpandingWindowCV(groups=groups, n_splits=2, min_train_ratio=0.5)
+        splits = cv.get_splits(len(groups))
+
+        assert len(splits) == 2
+        for train_idx, val_idx in splits:
+            assert set(train_idx).isdisjoint(set(val_idx))
+            for group in np.unique(groups):
+                group_train = train_idx[groups[train_idx] == group]
+                group_val = val_idx[groups[val_idx] == group]
+                assert len(group_train) > 0
+                assert len(group_val) > 0
+                assert group_train.max() < group_val.min()
 
 
 # ═══════════════════════════════════════════════════════════════════

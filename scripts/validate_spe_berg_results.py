@@ -5,7 +5,7 @@ Validate SPE BERG production sweep results.
 Checks all expected result JSONs exist and contain valid metrics.
 Handles gracefully:
   - status=unavailable stubs (TimesFM/TiRex Python-incompatible)
-  - 42 active wells (well_12..well_53; well_1..11 have 0 samples after shutdown filter)
+  - 53 per-well outputs (no shutdown-window prefilter in the primary benchmark)
 
 Exit codes:
   0 — All expected files found and valid (or valid stubs for unavailable models)
@@ -24,19 +24,18 @@ RESULTS_DIR = Path("results")
 MODELS = ["lstm", "deeponet", "patchtst", "tcn", "chronos", "timesfm", "tirex"]
 HORIZONS = [7, 14, 30, 90]
 
-# Wells 1-11 produce 0 samples after shutdown filtering (no production data).
-# The SPE BERG dataset has wells well_1..well_53 but 1-11 are empty.
-# Only well_12..well_53 (42 wells) have data and produce per_well files.
-ACTIVE_WELL_IDS = list(range(12, 54))  # [12, 13, ..., 53]
-N_ACTIVE_WELLS = len(ACTIVE_WELL_IDS)  # 42
+# The primary benchmark keeps all wells and evaluates shutdown periods instead
+# of filtering them out ahead of time.
+ACTIVE_WELL_IDS = list(range(1, 54))  # [1, 2, ..., 53]
+N_ACTIVE_WELLS = len(ACTIVE_WELL_IDS)  # 53
 
 # Models known to be unavailable in Python 3.13 — produce status=unavailable stubs.
 UNAVAILABLE_MODELS = {"timesfm", "tirex"}
 
 # ─── Expected file counts ─────────────────────────────────────────────────────
 # multi_well: 7 models × 4 horizons = 28 files
-# per_well:   7 models × 4 horizons × 42 active wells = 1,176 files
-# Total:      1,204 files
+# per_well:   7 models × 4 horizons × 53 wells = 1,484 files
+# Total:      1,512 files
 EXPECTED_MULTI_WELL = len(MODELS) * len(HORIZONS)
 EXPECTED_PER_WELL = len(MODELS) * len(HORIZONS) * N_ACTIVE_WELLS
 EXPECTED_TOTAL = EXPECTED_MULTI_WELL + EXPECTED_PER_WELL
@@ -128,7 +127,7 @@ def main() -> int:
     print("=" * 70)
     print(f"SPE BERG PRODUCTION RESULTS VALIDATION")
     print(f"  Expected: {EXPECTED_MULTI_WELL} multi_well + {EXPECTED_PER_WELL} per_well = {EXPECTED_TOTAL} total")
-    print(f"  Active wells: {N_ACTIVE_WELLS} (well_12..well_53; well_1..11 are empty datasets)")
+    print(f"  Active wells: {N_ACTIVE_WELLS} (well_1..well_53; no shutdown prefilter)")
     print(f"  Unavailable model stubs: {sorted(UNAVAILABLE_MODELS)} (Python 3.13 incompatible)")
     print("=" * 70)
 

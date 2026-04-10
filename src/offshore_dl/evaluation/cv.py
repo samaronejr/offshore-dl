@@ -263,6 +263,102 @@ class ExpandingWindowCV(BaseCVStrategy):
         return splits
 
 
+class GroupedExpandingWindowCV(BaseCVStrategy):
+    """Expanding-window CV applied independently within each group.
+
+    This is designed for multi-well forecasting datasets whose samples are
+    stored as a concatenation of per-well temporal windows. A plain
+    ``ExpandingWindowCV`` over the flattened sample index would incorrectly
+    interpret well boundaries as temporal boundaries. Instead, this strategy
+    performs the expanding split inside each group and then concatenates the
+    per-group train/validation indices fold-by-fold.
+
+    Args:
+        groups: Group identifier for each sample (for example, ``well_idx``).
+        n_splits: Number of expanding folds to request per group.
+        min_train_ratio: Minimum fraction of each group reserved for the first
+            training window.
+        gap: Number of samples to skip between train and validation within each
+            group.
+    """
+
+    def __init__(
+        self,
+        groups: np.ndarray | list,
+        n_splits: int = 5,
+        min_train_ratio: float = 0.5,
+        gap: int = 0,
+    ) -> None:
+        self.groups = np.asarray(groups)
+        self.n_splits = n_splits
+        self.min_train_ratio = min_train_ratio
+        self.gap = gap
+
+    def subset(self, indices: np.ndarray | list[int]) -> "GroupedExpandingWindowCV":
+        """Return the same strategy restricted to a subset of samples."""
+        indices = np.asarray(indices, dtype=np.int64)
+        return GroupedExpandingWindowCV(
+            groups=self.groups[indices],
+            n_splits=self.n_splits,
+            min_train_ratio=self.min_train_ratio,
+            gap=self.gap,
+        )
+
+    def get_splits(self, n_samples: int) -> list[tuple[np.ndarray, np.ndarray]]:
+        """Return grouped expanding-window splits."""
+        if len(self.groups) != n_samples:
+            msg = (
+                f"GroupedExpandingWindowCV groups length mismatch: "
+                f"{len(self.groups)} != {n_samples}"
+            )
+            raise ValueError(msg)
+
+        per_group_splits: list[tuple[np.ndarray, list[tuple[np.ndarray, np.ndarray]]]] = []
+        unique_groups = pd.unique(self.groups)
+
+        for group in unique_groups:
+            group_idx = np.where(self.groups == group)[0]
+            group_cv = ExpandingWindowCV(
+                n_splits=self.n_splits,
+                min_train_ratio=self.min_train_ratio,
+                gap=self.gap,
+            )
+            local_splits = group_cv.get_splits(len(group_idx))
+            if not local_splits:
+                logger.warning(
+                    "GroupedExpandingWindowCV: skipping group %r with 0 valid splits",
+                    group,
+                )
+                continue
+            per_group_splits.append((group_idx, local_splits))
+
+        if not per_group_splits:
+            return []
+
+        n_effective_splits = min(len(local_splits) for _, local_splits in per_group_splits)
+
+        splits = []
+        for fold_idx in range(n_effective_splits):
+            train_parts = []
+            val_parts = []
+            for group_idx, local_splits in per_group_splits:
+                local_train, local_val = local_splits[fold_idx]
+                train_parts.append(group_idx[local_train])
+                val_parts.append(group_idx[local_val])
+
+            train_idx = np.concatenate(train_parts)
+            val_idx = np.concatenate(val_parts)
+            train_idx.sort()
+            val_idx.sort()
+            splits.append((train_idx, val_idx))
+
+        logger.info(
+            "GroupedExpandingWindowCV: %d folds across %d groups, n=%d",
+            len(splits), len(per_group_splits), n_samples,
+        )
+        return splits
+
+
 class SlidingWindowCV(BaseCVStrategy):
     """Sliding window cross-validation for temporal anomaly detection.
 
@@ -456,6 +552,72 @@ class HoldoutSplitter:
             "test=%d (%.1f%%)",
             len(train_idx), 100 * len(train_idx) / n_samples,
             len(test_idx), 100 * len(test_idx) / n_samples,
+        )
+        return train_idx, test_idx
+
+
+class GroupedTemporalHoldoutSplitter:
+    """Temporal holdout applied independently within each group.
+
+    Splits each group into an early training segment and a late held-out test
+    segment, then concatenates the resulting indices across groups. This keeps
+    the holdout temporal for every well instead of for the accidental
+    well-concatenated sample order.
+
+    Args:
+        test_ratio: Fraction of each group assigned to the held-out test tail.
+        groups: Group identifier for each sample.
+    """
+
+    def __init__(
+        self,
+        test_ratio: float = 0.2,
+        groups: np.ndarray | list | None = None,
+    ) -> None:
+        self.test_ratio = test_ratio
+        self.groups = None if groups is None else np.asarray(groups)
+
+    def split(self, n_samples: int) -> tuple[np.ndarray, np.ndarray]:
+        """Return grouped temporal (train_pool, test_set) indices."""
+        if self.groups is None:
+            raise ValueError("GroupedTemporalHoldoutSplitter requires groups")
+        if len(self.groups) != n_samples:
+            msg = (
+                f"GroupedTemporalHoldoutSplitter groups length mismatch: "
+                f"{len(self.groups)} != {n_samples}"
+            )
+            raise ValueError(msg)
+
+        train_parts = []
+        test_parts = []
+        for group in pd.unique(self.groups):
+            group_idx = np.where(self.groups == group)[0]
+            if len(group_idx) < 2:
+                logger.warning(
+                    "GroupedTemporalHoldoutSplitter: skipping group %r with <2 samples",
+                    group,
+                )
+                continue
+
+            split_point = int(len(group_idx) * (1.0 - self.test_ratio))
+            split_point = max(1, min(split_point, len(group_idx) - 1))
+
+            train_parts.append(group_idx[:split_point])
+            test_parts.append(group_idx[split_point:])
+
+        if not train_parts or not test_parts:
+            return np.array([], dtype=np.int64), np.array([], dtype=np.int64)
+
+        train_idx = np.concatenate(train_parts)
+        test_idx = np.concatenate(test_parts)
+        train_idx.sort()
+        test_idx.sort()
+
+        logger.info(
+            "GroupedTemporalHoldoutSplitter: train_pool=%d (%.1f%%), test=%d (%.1f%%), groups=%d",
+            len(train_idx), 100 * len(train_idx) / n_samples,
+            len(test_idx), 100 * len(test_idx) / n_samples,
+            len(pd.unique(self.groups)),
         )
         return train_idx, test_idx
 

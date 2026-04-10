@@ -56,6 +56,25 @@ class TestClassificationMetrics:
         # Event i2 (class 1): detected. Event i3 (class 2): not detected. EDR = 0.5
         assert results["edr"] == pytest.approx(0.5)
 
+    def test_auc_pr_prefers_probability_scores_over_hard_labels(self) -> None:
+        targets = np.array([0, 1, 2, 0, 1, 2])
+        preds = np.array([0, 0, 2, 0, 1, 1])
+        probs = np.array([
+            [0.90, 0.05, 0.05],
+            [0.35, 0.34, 0.31],
+            [0.10, 0.10, 0.80],
+            [0.70, 0.20, 0.10],
+            [0.20, 0.60, 0.20],
+            [0.33, 0.34, 0.33],
+        ])
+
+        without_scores = MetricRegistry.compute("classification", preds, targets)
+        with_scores = MetricRegistry.compute(
+            "classification", preds, targets, prediction_scores=probs,
+        )
+
+        assert with_scores["auc_pr"] > without_scores["auc_pr"]
+
 
 # ═══════════════════════════════════════════════════════════════════
 # Forecasting Metrics Tests

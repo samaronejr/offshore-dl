@@ -5,6 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 import torch
+import torch.nn as nn
 
 from offshore_dl.models.base import BaseModel, model_summary
 from offshore_dl.models.dummy import DummyModel
@@ -46,6 +47,12 @@ class TestDummyModelClassification:
         preds = model.predict(batch)
         assert preds.shape == (4,)
         assert preds.dtype == torch.int64
+
+    def test_predict_scores_returns_probabilities(self, model: DummyModel) -> None:
+        batch = (torch.randn(4, 100, 27), torch.randint(0, 10, (4,)), [{}] * 4)
+        scores = model.predict_scores(batch)
+        assert scores.shape == (4, 10)
+        torch.testing.assert_close(scores.sum(dim=-1), torch.ones(4), atol=1e-6, rtol=0.0)
 
 
 class TestDummyModelForecasting:
@@ -246,7 +253,8 @@ import time
 # ═══════════════════════════════════════════════════════════════════
 
 from offshore_dl.evaluation.cv import TemporalSplitCV
-from offshore_dl.training.experiment import ExperimentRunner
+from offshore_dl.evaluation.metrics import MetricRegistry
+from offshore_dl.training.experiment import ExperimentRunner, NormalizedSubset
 
 
 def _make_tiny_dataset(task="classification", n=40, n_vars=10, window=20, n_classes=3, horizon=5):
@@ -261,8 +269,50 @@ def _make_tiny_dataset(task="classification", n=40, n_vars=10, window=20, n_clas
             elif task == "anomaly":
                 self.y = self.X.clone()  # reconstruction target
         def __len__(self): return n
-        def __getitem__(self, i): return self.X[i], self.y[i], {}
+        def __getitem__(self, i):
+            metadata = {"instance_id": f"instance_{i // 2}"} if task == "classification" else {}
+            return self.X[i], self.y[i], metadata
     return TinyDS()
+
+
+class _ScoreAwareDataset(torch.utils.data.Dataset):
+    """Tiny classification dataset with deterministic per-sample logits."""
+
+    def __init__(self) -> None:
+        self.codes = torch.tensor([0, 1, 2, 3, 4, 5], dtype=torch.float32)
+        self.targets = torch.tensor([0, 1, 2, 0, 1, 2], dtype=torch.long)
+        self.instance_ids = ["inst_a", "inst_b", "inst_c", "inst_d", "inst_e", "inst_f"]
+
+    def __len__(self) -> int:
+        return len(self.codes)
+
+    def __getitem__(self, i: int):
+        x = self.codes[i].view(1, 1).repeat(2, 1)
+        return x, self.targets[i], {"instance_id": self.instance_ids[i]}
+
+
+class _ScoreAwareModel(BaseModel):
+    """Classification model with fixed logits for metric-plumbing tests."""
+
+    def __init__(self) -> None:
+        super().__init__(task="classification", n_vars=1)
+        self.n_classes = 3
+        self.dummy = nn.Parameter(torch.tensor(0.0))
+        self.logit_table = torch.tensor([
+            [4.0, 1.0, 0.5],
+            [3.0, 2.9, 2.8],
+            [0.5, 1.0, 4.0],
+            [3.5, 1.0, 0.5],
+            [1.0, 4.0, 0.5],
+            [2.8, 2.9, 2.7],
+        ], dtype=torch.float32)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        codes = x[:, 0, 0].long()
+        return self.logit_table[codes] + (self.dummy * 0.0)
+
+    def configure_optimizers(self, cfg=None) -> torch.optim.Optimizer:
+        return torch.optim.SGD([self.dummy], lr=0.0)
 
 
 class TestExperimentRunner:
@@ -430,6 +480,50 @@ class TestExperimentRunner:
         assert "mae" in results["test_metrics"]
         assert results["n_train"] == 64
         assert results["n_test"] == 16
+
+    def test_nested_retrain_split_is_disjoint(self) -> None:
+        train_idx, val_idx = ExperimentRunner._split_retrain_train_val(list(range(20)))
+        assert set(train_idx).isdisjoint(set(val_idx))
+        assert len(train_idx) == 18
+        assert len(val_idx) == 2
+
+    def test_classification_metrics_use_probability_scores_and_instance_ids(self) -> None:
+        ds = _ScoreAwareDataset()
+        cv = TemporalSplitCV(train_ratio=0.5)
+        cfg = OmegaConf.create({
+            "training": {"batch_size": 2, "max_epochs": 1,
+                         "early_stopping_patience": 5, "gradient_clip_val": 1.0},
+        })
+        runner = ExperimentRunner(
+            model_class=_ScoreAwareModel,
+            dataset=ds,
+            cv_strategy=cv,
+            cfg=cfg,
+            model_kwargs={},
+        )
+
+        results = runner.run(use_mlflow=False)
+        metrics = results["fold_results"][0]["metrics"]
+
+        val_targets = np.array([0, 1, 2])
+        mean, std = NormalizedSubset.compute_stats(ds, [0, 1, 2])
+        val_features = torch.stack([ds[i][0] for i in [3, 4, 5]])
+        val_features = (val_features - mean) / std
+        expected_model = _ScoreAwareModel()
+        val_logits = expected_model.forward(val_features)
+        val_preds = expected_model._extract_predictions(val_logits).detach().numpy()
+        val_probs = expected_model._extract_prediction_scores(val_logits).detach().numpy()
+        val_instance_ids = np.array(["inst_d", "inst_e", "inst_f"])
+        expected = MetricRegistry.compute(
+            "classification",
+            val_preds,
+            val_targets,
+            prediction_scores=val_probs,
+            instance_ids=val_instance_ids,
+        )
+
+        assert metrics["auc_pr"] == pytest.approx(expected["auc_pr"], rel=1e-5)
+        assert metrics["edr"] == pytest.approx(expected["edr"], rel=1e-5)
 
 
 from omegaconf import OmegaConf

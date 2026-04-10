@@ -1,23 +1,23 @@
-"""Production sweep: 6 models × 4 horizons × 2 modes on Ganymede.
+"""Production sweep: 7 models × 4 horizons × 2 modes on Inner Mongolia.
 
-Orchestrates all production runs for the Ganymede gas-production
-forecasting benchmark. Trained models (LSTM, DeepONet, PatchTST) use
-``run_and_save()``; zero-shot FMs (Chronos, TimesFM, TiRex) use direct
-instantiation with manual CV evaluation.
+Orchestrates all production runs for the Inner Mongolia Shanxi Formation gas
+production forecasting benchmark. Trained models (LSTM, DeepONet, PatchTST,
+TCN) use ``run_and_save()``; zero-shot FMs (Chronos, TimesFM, TiRex) use
+direct instantiation with manual CV evaluation.
 
 Usage::
 
     # Full production sweep (GPU)
-    python scripts/run_production_ganymede.py
+    python scripts/run_production_inner_mongolia.py
 
     # Smoke test (CPU, 1 epoch, single model)
-    python scripts/run_production_ganymede.py --max-epochs 1 --device cpu --models lstm
+    python scripts/run_production_inner_mongolia.py --max-epochs 1 --device cpu --models lstm
 
     # Dry run — print plan without executing
-    python scripts/run_production_ganymede.py --dry-run
+    python scripts/run_production_inner_mongolia.py --dry-run
 
     # Docker invocation
-    docker_run.sh python scripts/run_production_ganymede.py --device cuda
+    docker_run.sh python scripts/run_production_inner_mongolia.py --device cuda
 """
 
 from __future__ import annotations
@@ -25,7 +25,6 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-import shutil
 import sys
 import time
 import traceback
@@ -38,7 +37,7 @@ import numpy as np
 import torch
 from omegaconf import OmegaConf
 
-from offshore_dl.data.datasets import GanymedeDataset
+from offshore_dl.data.datasets import InnerMongoliaDataset
 from offshore_dl.evaluation.cv import (
     GroupedExpandingWindowCV,
     GroupedTemporalHoldoutSplitter,
@@ -63,15 +62,13 @@ FM_MODELS = ["chronos", "timesfm", "tirex"]
 TREE_MODELS: list[str] = []
 ALL_MODELS = TRAINED_MODELS + FM_MODELS + TREE_MODELS
 
-# Wells from configs/data/ganymede.yaml
+# Inner Mongolia: 29 wells (Shanxi Formation, 56-14X excluded — <180 production days)
 WELLS = [
-    "49/22-Z01Z",
-    "49/22-Z02Z",
-    "49/22-Z04",
-    "49/22-Z05Z",
-    "49/22-Z06",
-    "49/22-Z07",
-    "49/22-Z08",
+    "54-16X", "54-21X", "54-22X", "55-15", "55-16X", "55-21", "55-22",
+    "56-21", "56-23", "57-14X", "57-15X", "57-21X", "57-22X", "57-23X",
+    "58-18X", "58-24X", "58-25", "59-18X", "59-19X", "59-20", "59-24X",
+    "59-31X", "59-32X", "60-28X", "60-29X", "60-30X", "60-31", "60-32",
+    "60-34H",
 ]
 
 FM_WRAPPER_MAP = {
@@ -109,12 +106,12 @@ def _make_serializable(obj):
     return obj
 
 
-def _sample_groups(dataset: GanymedeDataset) -> np.ndarray:
+def _sample_groups(dataset: InnerMongoliaDataset) -> np.ndarray:
     """Return per-sample well-group IDs for grouped temporal splitting."""
     return np.array([well_idx for well_idx, _ in dataset._samples], dtype=np.int32)
 
 
-def _make_holdout(dataset: GanymedeDataset) -> GroupedTemporalHoldoutSplitter:
+def _make_holdout(dataset: InnerMongoliaDataset) -> GroupedTemporalHoldoutSplitter:
     """Create a per-well temporal holdout splitter for this dataset."""
     return GroupedTemporalHoldoutSplitter(
         test_ratio=0.2,
@@ -123,7 +120,7 @@ def _make_holdout(dataset: GanymedeDataset) -> GroupedTemporalHoldoutSplitter:
 
 
 def _make_inner_cv(
-    dataset: GanymedeDataset,
+    dataset: InnerMongoliaDataset,
     indices: np.ndarray,
 ) -> GroupedExpandingWindowCV:
     """Create grouped expanding CV restricted to a subset of samples."""
@@ -215,7 +212,7 @@ def _run_trained_model(
 
     runner, cfg = build_experiment(
         model_name=model_name,
-        dataset_name="ganymede",
+        dataset_name="inner_mongolia",
         max_epochs=max_epochs,
         device=device,
         dataset_kwargs=ds_kwargs,
@@ -235,9 +232,9 @@ def _run_trained_model(
     # Save results
     if well:
         safe_name = _safe_well(well)
-        out_path = RESULTS_DIR / model_name / f"ganymede_h{horizon}_{mode}_{safe_name}.json"
+        out_path = RESULTS_DIR / model_name / f"inner_mongolia_h{horizon}_{mode}_{safe_name}.json"
     else:
-        out_path = RESULTS_DIR / model_name / f"ganymede_h{horizon}_{mode}.json"
+        out_path = RESULTS_DIR / model_name / f"inner_mongolia_h{horizon}_{mode}.json"
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(_make_serializable(results), indent=2))
@@ -249,7 +246,7 @@ def _run_trained_model(
         f"{k}={v:.4f}" for k, v in sorted(tm.items())
         if isinstance(v, (int, float))
     )
-    print(f"\n  {model_name.upper()} on GANYMEDE h{horizon} {mode}"
+    print(f"\n  {model_name.upper()} on INNER_MONGOLIA h{horizon} {mode}"
           f"{(' ' + well) if well else ''}")
     print(f"  TEST: {metric_str}")
     print(f"  Results saved: {out_path}\n")
@@ -267,19 +264,24 @@ def _run_fm_multi_well(
     horizon: int,
     max_samples: int | None = None,
 ) -> dict:
-    """Run zero-shot FM on Ganymede multi_well with temporal holdout.
+    """Run zero-shot FM on Inner Mongolia multi_well with temporal holdout.
 
     FMs don't train, so the protocol is simpler:
       1. Temporal holdout: last 20% → test set
       2. Evaluate FM on test set only
       3. Also run inner CV on train pool for variance estimates
+
+    target_channel must be passed because daily_gas_volume_1e4m3
+    does NOT sort to index 0 in the common columns.
     """
     set_global_seed(42)
-    dataset = GanymedeDataset("configs/data/ganymede.yaml", horizon=horizon, mode="multi_well", filter_shutdowns=False)
+    dataset = InnerMongoliaDataset("configs/data/inner_mongolia.yaml", horizon=horizon, mode="multi_well", filter_shutdowns=False)
     n_vars = dataset.n_vars
 
     fm_class = _load_fm_class(model_name)
-    model = fm_class(task="forecasting", n_vars=n_vars, horizon=horizon, window_size=90)
+    # Pass target_channel so FM predicts the correct channel
+    model = fm_class(task="forecasting", n_vars=n_vars, horizon=horizon, window_size=90,
+                     target_channel=dataset._target_col_idx)
 
     # Temporal holdout: last 20%
     n = len(dataset)
@@ -311,7 +313,7 @@ def _run_fm_multi_well(
     }
 
     # Save
-    out_path = RESULTS_DIR / model_name / f"ganymede_h{horizon}_multi_well.json"
+    out_path = RESULTS_DIR / model_name / f"inner_mongolia_h{horizon}_multi_well.json"
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(json.dumps(_make_serializable(result), indent=2))
     logger.info("  Saved %s", out_path)
@@ -324,9 +326,11 @@ def _run_fm_per_well(
     horizon: int,
     max_samples: int | None = None,
 ) -> list[dict]:
-    """Run zero-shot FM on each Ganymede well for one horizon.
+    """Run zero-shot FM on each Inner Mongolia well for one horizon.
 
-    Batches by model: creates FM once per horizon, iterates wells.
+    Batches by model: creates FM once per well (n_vars can vary), iterates wells.
+
+    target_channel must be passed — daily_gas_volume_1e4m3 is not at index 0.
     """
     fm_class = _load_fm_class(model_name)
     per_well_results = []
@@ -334,8 +338,8 @@ def _run_fm_per_well(
     for well in WELLS:
         set_global_seed(42)
         safe = _safe_well(well)
-        dataset = GanymedeDataset(
-            "configs/data/ganymede.yaml",
+        dataset = InnerMongoliaDataset(
+            "configs/data/inner_mongolia.yaml",
             horizon=horizon,
             mode="per_well",
             well_name=well,
@@ -349,8 +353,10 @@ def _run_fm_per_well(
             })
             continue
 
-        n_vars = dataset.n_vars  # varies per well (e.g. 48 vs 63)
-        model = fm_class(task="forecasting", n_vars=n_vars, horizon=horizon, window_size=90)
+        n_vars = dataset.n_vars  # varies per well
+        # Pass target_channel so FM predicts the correct channel
+        model = fm_class(task="forecasting", n_vars=n_vars, horizon=horizon, window_size=90,
+                         target_channel=dataset._target_col_idx)
 
         # Temporal holdout: last 20%
         n = len(dataset)
@@ -381,7 +387,7 @@ def _run_fm_per_well(
             "well": well,
         }
 
-        out_path = RESULTS_DIR / model_name / f"ganymede_h{horizon}_per_well_{safe}.json"
+        out_path = RESULTS_DIR / model_name / f"inner_mongolia_h{horizon}_per_well_{safe}.json"
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(json.dumps(_make_serializable(result), indent=2))
         logger.info("  Saved %s", out_path)
@@ -392,27 +398,11 @@ def _run_fm_per_well(
 
 
 # ═══════════════════════════════════════════════════════════════════
-# Legacy compatibility
-# ═══════════════════════════════════════════════════════════════════
-
-
-def _copy_h30_legacy(model_name: str) -> None:
-    """Copy h30 multi_well result → legacy ganymede.json for compare.py compat."""
-    src = RESULTS_DIR / model_name / "ganymede_h30_multi_well.json"
-    dst = RESULTS_DIR / model_name / "ganymede.json"
-    if src.exists():
-        shutil.copy2(src, dst)
-        logger.info("  Legacy copy: %s → %s", src, dst)
-    else:
-        logger.warning("  Legacy copy skipped: %s not found", src)
-
-
-# ═══════════════════════════════════════════════════════════════════
 # Main orchestrator
 # ═══════════════════════════════════════════════════════════════════
 
 
-def _build_plan(models: list[str]) -> list[dict]:
+def _build_plan(models: list[str], multi_well_only: bool = False) -> list[dict]:
     """Build the ordered list of runs for the sweep."""
     plan: list[dict] = []
     for model in models:
@@ -429,22 +419,23 @@ def _build_plan(models: list[str]) -> list[dict]:
                 "is_tree": is_tree,
             })
             # per_well: individual wells
-            for well in WELLS:
-                plan.append({
-                    "model": model,
-                    "horizon": horizon,
-                    "mode": "per_well",
-                    "well": well,
-                    "is_fm": is_fm,
-                    "is_tree": is_tree,
-                })
+            if not multi_well_only:
+                for well in WELLS:
+                    plan.append({
+                        "model": model,
+                        "horizon": horizon,
+                        "mode": "per_well",
+                        "well": well,
+                        "is_fm": is_fm,
+                        "is_tree": is_tree,
+                    })
     return plan
 
 
 def _print_plan(plan: list[dict]) -> None:
     """Print sweep plan without executing."""
     print(f"\n{'═'*70}")
-    print(f"  GANYMEDE PRODUCTION SWEEP PLAN — {len(plan)} runs")
+    print(f"  INNER MONGOLIA PRODUCTION SWEEP PLAN — {len(plan)} runs")
     print(f"{'═'*70}")
     for i, run in enumerate(plan, 1):
         well_str = f" well={run['well']}" if run["well"] else ""
@@ -454,7 +445,7 @@ def _print_plan(plan: list[dict]) -> None:
             tag = " [tree]"
         else:
             tag = " [trained]"
-        print(f"  {i:3d}. {run['model']:10s} h={run['horizon']:2d} {run['mode']:12s}{well_str}{tag}")
+        print(f"  {i:4d}. {run['model']:10s} h={run['horizon']:2d} {run['mode']:12s}{well_str}{tag}")
     print(f"{'═'*70}")
     print(f"  Total runs: {len(plan)}")
     n_trained = sum(1 for r in plan if not r["is_fm"] and not r.get("is_tree"))
@@ -466,7 +457,7 @@ def _print_plan(plan: list[dict]) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(
-        description="Production sweep: Ganymede gas-production forecasting",
+        description="Production sweep: Inner Mongolia Shanxi Formation gas forecasting",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument("--device", type=str, default="cuda", help="Compute device")
@@ -475,17 +466,19 @@ def main() -> None:
     parser.add_argument("--dry-run", action="store_true", help="Print plan without executing")
     parser.add_argument("--max-samples", type=int, default=None, help="Cap val samples per FM fold (for smoke tests)")
     parser.add_argument("--no-mlflow", action="store_true", help="Disable MLflow tracking")
+    parser.add_argument("--skip-existing", action="store_true", help="Skip runs whose result JSON already exists")
+    parser.add_argument("--multi-well-only", action="store_true", help="Run only multi_well mode, skip per_well")
 
     args = parser.parse_args()
 
-    plan = _build_plan(args.models)
+    plan = _build_plan(args.models, multi_well_only=args.multi_well_only)
 
     if args.dry_run:
         _print_plan(plan)
         return
 
     logger.info("═" * 70)
-    logger.info("GANYMEDE PRODUCTION SWEEP — %d runs", len(plan))
+    logger.info("INNER MONGOLIA PRODUCTION SWEEP — %d runs", len(plan))
     logger.info("  device=%s  max_epochs=%s  models=%s", args.device, args.max_epochs, args.models)
     logger.info("═" * 70)
 
@@ -513,6 +506,21 @@ def main() -> None:
         logger.info("RUN: %s", run_label)
         logger.info("─" * 60)
 
+        # Compute expected output path for skip check
+        if well:
+            _skip_safe = _safe_well(well)
+            out_path = RESULTS_DIR / model / f"inner_mongolia_h{horizon}_per_well_{_skip_safe}.json"
+        elif mode == "multi_well" and is_fm:
+            # FM multi_well uses a different naming convention (no mode prefix)
+            out_path = RESULTS_DIR / model / f"inner_mongolia_h{horizon}_multi_well.json"
+        else:
+            out_path = RESULTS_DIR / model / f"inner_mongolia_h{horizon}_{mode}.json"
+
+        if args.skip_existing and out_path.exists():
+            logger.info("  SKIP (exists): %s", out_path)
+            all_status[model].append({"run": run_label, "status": "skipped", "reason": "exists"})
+            continue
+
         start = time.time()
         try:
             if is_fm:
@@ -523,8 +531,8 @@ def main() -> None:
                     # per_well individual run
                     set_global_seed(42)
                     safe = _safe_well(well)
-                    dataset = GanymedeDataset(
-                        "configs/data/ganymede.yaml",
+                    dataset = InnerMongoliaDataset(
+                        "configs/data/inner_mongolia.yaml",
                         horizon=horizon,
                         mode="per_well",
                         well_name=well,
@@ -541,7 +549,9 @@ def main() -> None:
 
                     n_vars = dataset.n_vars
                     fm_class = _load_fm_class(model)
-                    fm_model = fm_class(task="forecasting", n_vars=n_vars, horizon=horizon, window_size=90)
+                    # Pass target_channel so FM predicts the correct channel
+                    fm_model = fm_class(task="forecasting", n_vars=n_vars, horizon=horizon, window_size=90,
+                                        target_channel=dataset._target_col_idx)
 
                     # Temporal holdout
                     n_ds = len(dataset)
@@ -571,7 +581,7 @@ def main() -> None:
                         "well": well,
                     }
 
-                    out_path = RESULTS_DIR / model / f"ganymede_h{horizon}_per_well_{safe}.json"
+                    out_path = RESULTS_DIR / model / f"inner_mongolia_h{horizon}_per_well_{safe}.json"
                     out_path.parent.mkdir(parents=True, exist_ok=True)
                     out_path.write_text(json.dumps(_make_serializable(result), indent=2))
                     logger.info("  Saved %s", out_path)
@@ -596,9 +606,33 @@ def main() -> None:
             })
             logger.info("✓ %s: %s (%.1fs)", run_label, metric_str, elapsed)
 
-            # Legacy copy after h30 multi_well
-            if horizon == 30 and mode == "multi_well":
-                _copy_h30_legacy(model)
+        except ImportError as e:
+            # FM model dependency not available (e.g. TimesFM needs Python <3.12, TiRex not installed)
+            # Write a graceful unavailability stub so downstream code can filter rather than crash.
+            elapsed = time.time() - start
+            stub = {
+                "test_metrics": {},
+                "cv_aggregate": {},
+                "cv_fold_results": [],
+                "status": "unavailable",
+                "reason": str(e),
+                "n_train": 0,
+                "n_test": 0,
+                "n_cv_folds": 0,
+            }
+            if is_fm:
+                try:
+                    stub_path = out_path
+                    stub_path.parent.mkdir(parents=True, exist_ok=True)
+                    stub_path.write_text(json.dumps(stub, indent=2))
+                    logger.warning("  UNAVAILABLE %s → stub written: %s", run_label, stub_path)
+                except Exception:
+                    pass
+            all_status[model].append({
+                "run": run_label, "status": "unavailable",
+                "elapsed": round(elapsed, 1), "error": str(e),
+            })
+            logger.error("✗ %s unavailable: %s (%.1fs)", run_label, e, elapsed)
 
         except Exception as e:
             elapsed = time.time() - start
@@ -611,7 +645,7 @@ def main() -> None:
 
     # ── Per-model summary files ──────────────────────────────────
     for model, statuses in all_status.items():
-        summary_path = RESULTS_DIR / model / "summary_production_ganymede.json"
+        summary_path = RESULTS_DIR / model / "summary_production_inner_mongolia.json"
         summary_path.parent.mkdir(parents=True, exist_ok=True)
         summary_path.write_text(json.dumps(_make_serializable(statuses), indent=2))
         logger.info("Summary saved: %s", summary_path)
@@ -623,7 +657,7 @@ def main() -> None:
     n_skip = sum(1 for sts in all_status.values() for s in sts if s["status"] == "skipped")
 
     print(f"\n{'═'*70}")
-    print(f"  GANYMEDE PRODUCTION SWEEP COMPLETE")
+    print(f"  INNER MONGOLIA PRODUCTION SWEEP COMPLETE")
     print(f"{'═'*70}")
     print(f"  Total time: {total_elapsed:.0f}s ({total_elapsed/60:.1f} min)")
     print(f"  OK: {n_ok}  Errors: {n_err}  Skipped: {n_skip}")

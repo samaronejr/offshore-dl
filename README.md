@@ -60,7 +60,7 @@ The models cover different approaches:
 | XGBoost | −0.031 | −1.252 | 1.928 |
 | DeepONet | −5.716 | −14.93 | 4.836 |
 
-Foundation models outperform trained models at all horizons. TiRex shows the least degradation with increasing horizon (R²_prod 0.82→0.57). XGBoost performs better than DeepONet but worse than the neural sequence models. Evaluation uses 80/20 temporal holdout with 3-fold ExpandingWindowCV.
+Foundation models outperform trained models at all horizons. TiRex shows the least degradation with increasing horizon (R²_prod 0.82→0.57). XGBoost performs better than DeepONet but worse than the neural sequence models. The production forecasting scripts now use a **per-well grouped 80/20 temporal holdout plus grouped 3-fold ExpandingWindowCV** for multi-well evaluation; regenerate benchmark tables after methodology changes to refresh the published numbers.
 
 ### CDF — Anomaly Detection (held-out test, reconstruction error ↓)
 
@@ -166,13 +166,14 @@ Every trained model inherits from `BaseModel` and implements `training_step`, `p
 
 ### Cross-Validation
 
-| Dataset | Strategy | Rationale |
-|---------|----------|-----------|
-| Ganymede | `ExpandingWindowCV` (3-fold) | Temporal walk-forward |
-| 3W | `StratifiedGroupKFoldCV` (5-fold) | No well leaks across folds |
-| CDF | `TemporalSplitCV` (3-fold) | Single compressor |
+| Dataset / sweep | Strategy | Rationale |
+|-----------------|----------|-----------|
+| Forecasting production (`ganymede`, `spe_berg`, `volve`, `inner_mongolia`) | grouped 80/20 temporal holdout + `GroupedExpandingWindowCV` (3-fold) | Preserve temporal order **within each well** instead of across the flattened multi-well sample index |
+| 3W feature-based production | stratified-group holdout + `StratifiedGroupKFoldSKLearn` (5-fold) | No instance leakage across folds |
+| 3W raw production script | `TemporalSplitCV` | Legacy raw-window baseline path |
+| CDF production | temporal holdout + `SlidingWindowCV` (3-fold) | Multiple temporal folds for the single-compressor series |
 
-Normalization is computed from the training partition only, per fold. A `LeakageGuard` validates every split.
+Normalization is computed from the training partition only. Classification metrics use probability scores for AUC-PR and per-instance metadata for EDR when available.
 
 ### Configuration
 

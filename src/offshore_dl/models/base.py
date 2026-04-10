@@ -196,6 +196,17 @@ class BaseModel(nn.Module, ABC):
             outputs = self.forward(features)
         return self._extract_predictions(outputs)
 
+    def predict_scores(self, batch: tuple) -> torch.Tensor:
+        """Generate prediction scores for a batch.
+
+        For classification this returns softmax probabilities. For other tasks
+        it returns the raw model outputs unchanged.
+        """
+        features, _targets, _metadata = batch
+        with torch.no_grad():
+            outputs = self.forward(features)
+        return self._extract_prediction_scores(outputs)
+
     @abstractmethod
     def configure_optimizers(self, cfg) -> torch.optim.Optimizer:
         """Create and return the optimizer.
@@ -229,6 +240,12 @@ class BaseModel(nn.Module, ABC):
             return outputs.argmax(dim=-1)
         else:
             return outputs
+
+    def _extract_prediction_scores(self, outputs: torch.Tensor) -> torch.Tensor:
+        """Extract score-like outputs for metric computation."""
+        if self.task == "classification":
+            return torch.softmax(outputs, dim=-1)
+        return outputs
 
 
 def model_summary(model: nn.Module) -> dict:

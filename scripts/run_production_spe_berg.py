@@ -38,7 +38,10 @@ import torch
 from omegaconf import OmegaConf
 
 from offshore_dl.data.datasets import SPEBergDataset
-from offshore_dl.evaluation.cv import ExpandingWindowCV, HoldoutSplitter
+from offshore_dl.evaluation.cv import (
+    GroupedExpandingWindowCV,
+    GroupedTemporalHoldoutSplitter,
+)
 from offshore_dl.evaluation.metrics import MetricRegistry
 from offshore_dl.utils.reproducibility import set_global_seed
 
@@ -95,6 +98,31 @@ def _make_serializable(obj):
     elif isinstance(obj, torch.Tensor):
         return obj.tolist()
     return obj
+
+
+def _sample_groups(dataset: SPEBergDataset) -> np.ndarray:
+    """Return per-sample well-group IDs for grouped temporal splitting."""
+    return np.array([well_idx for well_idx, _ in dataset._samples], dtype=np.int32)
+
+
+def _make_holdout(dataset: SPEBergDataset) -> GroupedTemporalHoldoutSplitter:
+    """Create a per-well temporal holdout splitter for this dataset."""
+    return GroupedTemporalHoldoutSplitter(
+        test_ratio=0.2,
+        groups=_sample_groups(dataset),
+    )
+
+
+def _make_inner_cv(
+    dataset: SPEBergDataset,
+    indices: np.ndarray,
+) -> GroupedExpandingWindowCV:
+    """Create grouped expanding CV restricted to a subset of samples."""
+    return GroupedExpandingWindowCV(
+        groups=_sample_groups(dataset)[indices],
+        n_splits=3,
+        min_train_ratio=0.5,
+    )
 
 
 def _aggregate(fold_results: list[dict]) -> dict:
@@ -172,7 +200,7 @@ def _run_trained_model(
     # a trained model is actually requested (not needed for tree/FM paths).
     from offshore_dl.run_experiment import build_experiment  # noqa: F811
 
-    ds_kwargs: dict = {"horizon": horizon, "mode": mode, "filter_shutdowns": True}
+    ds_kwargs: dict = {"horizon": horizon, "mode": mode, "filter_shutdowns": False}
     if well:
         ds_kwargs["well_name"] = well
 
@@ -186,7 +214,7 @@ def _run_trained_model(
 
     # Temporal holdout: last 20% as test
     n = len(runner.dataset)
-    holdout = HoldoutSplitter(test_ratio=0.2, mode="temporal")
+    holdout = _make_holdout(runner.dataset)
     train_pool, test_indices = holdout.split(n)
 
     results = runner.run_nested(
@@ -241,7 +269,7 @@ def _run_fm_multi_well(
     (Gas_Volume_MMscf) does NOT sort to index 0 in the common columns.
     """
     set_global_seed(42)
-    dataset = SPEBergDataset("configs/data/spe_berg.yaml", horizon=horizon, mode="multi_well", filter_shutdowns=True)
+    dataset = SPEBergDataset("configs/data/spe_berg.yaml", horizon=horizon, mode="multi_well", filter_shutdowns=False)
     n_vars = dataset.n_vars
 
     fm_class = _load_fm_class(model_name)
@@ -251,14 +279,14 @@ def _run_fm_multi_well(
 
     # Temporal holdout: last 20%
     n = len(dataset)
-    holdout = HoldoutSplitter(test_ratio=0.2, mode="temporal")
+    holdout = _make_holdout(dataset)
     train_pool, test_indices = holdout.split(n)
 
     # ── Evaluate on held-out test set (primary metric) ──
     test_metrics = _zero_shot_evaluate(model, dataset, test_indices, max_samples=max_samples)
 
     # ── Inner CV on train pool (for variance estimates) ──
-    cv = ExpandingWindowCV(n_splits=3, min_train_ratio=0.5)
+    cv = _make_inner_cv(dataset, train_pool)
     inner_splits = cv.get_splits(len(train_pool))
     cv_fold_results = []
     for fold_idx, (local_train, local_val) in enumerate(inner_splits):
@@ -309,7 +337,7 @@ def _run_fm_per_well(
             horizon=horizon,
             mode="per_well",
             well_name=well,
-            filter_shutdowns=True,
+            filter_shutdowns=False,
         )
 
         if len(dataset) == 0:
@@ -326,14 +354,14 @@ def _run_fm_per_well(
 
         # Temporal holdout: last 20%
         n = len(dataset)
-        holdout = HoldoutSplitter(test_ratio=0.2, mode="temporal")
+        holdout = _make_holdout(dataset)
         train_pool, test_idx = holdout.split(n)
 
         # Evaluate on held-out test
         test_metrics = _zero_shot_evaluate(model, dataset, test_idx, max_samples=max_samples)
 
         # Inner CV for variance
-        cv = ExpandingWindowCV(n_splits=3, min_train_ratio=0.5)
+        cv = _make_inner_cv(dataset, train_pool)
         inner_splits = cv.get_splits(len(train_pool))
         cv_fold_results = []
         for fold_idx, (local_train, local_val) in enumerate(inner_splits):
@@ -502,7 +530,7 @@ def main() -> None:
                         horizon=horizon,
                         mode="per_well",
                         well_name=well,
-                        filter_shutdowns=True,
+                        filter_shutdowns=False,
                     )
                     if len(dataset) == 0:
                         elapsed = time.time() - start
@@ -521,14 +549,14 @@ def main() -> None:
 
                     # Temporal holdout
                     n_ds = len(dataset)
-                    holdout = HoldoutSplitter(test_ratio=0.2, mode="temporal")
+                    holdout = _make_holdout(dataset)
                     pw_train_pool, pw_test_idx = holdout.split(n_ds)
 
                     # Evaluate on held-out test
                     test_metrics = _zero_shot_evaluate(fm_model, dataset, pw_test_idx, max_samples=args.max_samples)
 
                     # Inner CV for variance
-                    cv = ExpandingWindowCV(n_splits=3, min_train_ratio=0.5)
+                    cv = _make_inner_cv(dataset, pw_train_pool)
                     inner_splits = cv.get_splits(len(pw_train_pool))
                     fold_results = []
                     for fold_idx, (local_train, local_val) in enumerate(inner_splits):

@@ -7,7 +7,6 @@ slices call. Wires model + dataset + CV + metrics + Trainer + MLflow.
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 from typing import Any
 
 import numpy as np
@@ -15,7 +14,6 @@ import torch
 from omegaconf import DictConfig, OmegaConf
 from torch.utils.data import DataLoader, Dataset, Subset
 
-from offshore_dl.evaluation.cv import FoldNormalizer
 from offshore_dl.evaluation.metrics import MetricRegistry
 from offshore_dl.models.base import model_summary
 from offshore_dl.training.trainer import Trainer
@@ -368,7 +366,9 @@ class ExperimentRunner:
         Protocol:
           1. Run inner K-fold CV within ``train_pool`` (for variance
              estimates and model-selection diagnostics).
-          2. Retrain a fresh model on the **entire** ``train_pool``.
+          2. Fit a fresh model on a retraining subset from ``train_pool``
+             while reserving a disjoint temporal/group-safe validation subset
+             for checkpoint selection.
           3. Evaluate the retrained model on the held-out ``test_indices``.
 
         The **test metrics** are the primary reported numbers. Inner CV
@@ -404,12 +404,14 @@ class ExperimentRunner:
         # ── Step 1: Inner CV on training pool ──
         # Remap global indices to local [0, len(train_pool)) for the CV
         # strategy, then map back to global for _run_fold.
-        from torch.utils.data import Subset
-
         train_pool_list = train_pool.tolist()
         pool_dataset = Subset(self.dataset, train_pool_list)
 
-        inner_splits = self.cv_strategy.get_splits(len(pool_dataset))
+        cv_strategy = self.cv_strategy
+        if hasattr(cv_strategy, "subset"):
+            cv_strategy = cv_strategy.subset(train_pool)
+
+        inner_splits = cv_strategy.get_splits(len(pool_dataset))
         logger.info(
             "═══ Nested CV: %d inner folds on %d training samples, "
             "%d held-out test samples ═══",
@@ -450,22 +452,25 @@ class ExperimentRunner:
         })
 
         # ── Step 2: Retrain on full training pool ──
-        logger.info("═══ Retraining on full training pool (%d samples) ═══",
+        logger.info("═══ Retraining with disjoint train/val split from training pool (%d samples) ═══",
                      len(train_pool))
 
+        retrain_train_idx, retrain_val_idx = self._split_retrain_train_val(
+            train_pool_list,
+        )
         mean, std = NormalizedSubset.compute_stats(
-            self.dataset, train_pool_list,
+            self.dataset, retrain_train_idx,
         )
         use_augment = task == "classification" and mean.dim() == 1
 
         target_mean, target_std = None, None
         if task == "forecasting":
             target_mean, target_std = NormalizedSubset.compute_target_stats(
-                self.dataset, train_pool_list,
+                self.dataset, retrain_train_idx,
             )
 
         train_subset = NormalizedSubset(
-            self.dataset, train_pool_list, mean, std,
+            self.dataset, retrain_train_idx, mean, std,
             augment=use_augment,
             target_mean=target_mean, target_std=target_std,
         )
@@ -478,12 +483,6 @@ class ExperimentRunner:
             train_subset, batch_size=batch_size,
             shuffle=True, num_workers=0, pin_memory=True,
         )
-
-        # Use a small validation split from the training pool for early
-        # stopping during retraining (last 10% of training pool).
-        n_retrain_val = max(1, int(len(train_pool) * 0.1))
-        retrain_train_idx = train_pool_list[:-n_retrain_val]
-        retrain_val_idx = train_pool_list[-n_retrain_val:]
 
         retrain_val_subset = NormalizedSubset(
             self.dataset, retrain_val_idx, mean, std,
@@ -498,7 +497,7 @@ class ExperimentRunner:
         if task == "classification":
             n_classes = self.model_kwargs.get("n_classes", None)
             class_weights = self._compute_class_weights(
-                self.dataset, train_pool_list, n_classes=n_classes,
+                self.dataset, retrain_train_idx, n_classes=n_classes,
             )
             if class_weights is not None:
                 model.set_class_weights(class_weights)
@@ -538,14 +537,23 @@ class ExperimentRunner:
 
         model.eval()
         all_preds, all_targets = [], []
+        all_scores = []
+        all_instance_ids = []
         for batch in test_loader:
             batch = tuple(
                 t.to(trainer.device) if isinstance(t, torch.Tensor) else t
                 for t in batch
             )
-            preds = model.predict(batch)
+            features, targets, metadata = batch
+            with torch.no_grad():
+                outputs = model.forward(features)
+            preds = model._extract_predictions(outputs)
             all_preds.append(preds.cpu())
-            _, targets, _ = batch
+            if task == "classification":
+                all_scores.append(model._extract_prediction_scores(outputs).cpu())
+                instance_ids = self._extract_instance_ids(metadata)
+                if instance_ids is not None:
+                    all_instance_ids.append(instance_ids)
             if isinstance(targets, torch.Tensor):
                 all_targets.append(targets.cpu())
             else:
@@ -553,6 +561,14 @@ class ExperimentRunner:
 
         predictions = torch.cat(all_preds).numpy()
         targets = torch.cat(all_targets).numpy()
+        prediction_scores = (
+            torch.cat(all_scores).numpy() if all_scores else None
+        )
+        instance_ids = (
+            np.concatenate(all_instance_ids)
+            if all_instance_ids and sum(len(x) for x in all_instance_ids) == len(predictions)
+            else None
+        )
 
         if target_mean is not None and target_std is not None:
             predictions = NormalizedSubset.denormalize_targets(
@@ -562,7 +578,13 @@ class ExperimentRunner:
                 targets, target_mean, target_std,
             )
 
-        test_metrics = MetricRegistry.compute(task, predictions, targets)
+        test_metrics = MetricRegistry.compute(
+            task,
+            predictions,
+            targets,
+            prediction_scores=prediction_scores,
+            instance_ids=instance_ids,
+        )
 
         logger.info("Test metrics: %s", {
             k: f"{v:.4f}" if isinstance(v, float) else v
@@ -600,6 +622,8 @@ class ExperimentRunner:
             },
             "n_train": len(train_pool),
             "n_test": len(test_indices),
+            "n_retrain_train": len(retrain_train_idx),
+            "n_retrain_val": len(retrain_val_idx),
             "n_cv_folds": len(inner_splits),
             "experiment_name": experiment_name or "unknown",
         }
@@ -711,14 +735,23 @@ class ExperimentRunner:
             model.eval()
             all_preds = []
             all_targets = []
+            all_scores = []
+            all_instance_ids = []
             for batch in val_loader:
                 batch = tuple(
                     t.to(trainer.device) if isinstance(t, torch.Tensor) else t
                     for t in batch
                 )
-                preds = model.predict(batch)
+                features, targets, metadata = batch
+                with torch.no_grad():
+                    outputs = model.forward(features)
+                preds = model._extract_predictions(outputs)
                 all_preds.append(preds.cpu())
-                _, targets, _ = batch
+                if task == "classification":
+                    all_scores.append(model._extract_prediction_scores(outputs).cpu())
+                    instance_ids = self._extract_instance_ids(metadata)
+                    if instance_ids is not None:
+                        all_instance_ids.append(instance_ids)
                 if isinstance(targets, torch.Tensor):
                     all_targets.append(targets.cpu())
                 else:
@@ -726,6 +759,14 @@ class ExperimentRunner:
 
             predictions = torch.cat(all_preds).numpy()
             targets = torch.cat(all_targets).numpy()
+            prediction_scores = (
+                torch.cat(all_scores).numpy() if all_scores else None
+            )
+            instance_ids = (
+                np.concatenate(all_instance_ids)
+                if all_instance_ids and sum(len(x) for x in all_instance_ids) == len(predictions)
+                else None
+            )
 
             # ── Denormalize targets and predictions (forecasting) ──
             if target_mean is not None and target_std is not None:
@@ -737,7 +778,13 @@ class ExperimentRunner:
                 )
 
             # Compute metrics
-            metrics = MetricRegistry.compute(task, predictions, targets)
+            metrics = MetricRegistry.compute(
+                task,
+                predictions,
+                targets,
+                prediction_scores=prediction_scores,
+                instance_ids=instance_ids,
+            )
 
             # Log fold metrics to MLflow
             if mlflow and child_run:
@@ -789,6 +836,47 @@ class ExperimentRunner:
                 agg[f"{key}_std"] = float(np.std(values))
 
         return agg
+
+    @staticmethod
+    def _split_retrain_train_val(
+        train_pool_indices: list[int],
+        val_ratio: float = 0.1,
+    ) -> tuple[list[int], list[int]]:
+        """Split a training pool into disjoint retrain-train / retrain-val subsets."""
+        if len(train_pool_indices) < 2:
+            return train_pool_indices[:], train_pool_indices[:]
+
+        n_retrain_val = max(1, int(len(train_pool_indices) * val_ratio))
+        retrain_train_idx = train_pool_indices[:-n_retrain_val]
+        retrain_val_idx = train_pool_indices[-n_retrain_val:]
+
+        if not retrain_train_idx:
+            retrain_train_idx = train_pool_indices[:-1]
+            retrain_val_idx = train_pool_indices[-1:]
+
+        return retrain_train_idx, retrain_val_idx
+
+    @staticmethod
+    def _extract_instance_ids(metadata: Any) -> np.ndarray | None:
+        """Extract per-sample instance IDs from collated batch metadata."""
+        if isinstance(metadata, dict):
+            instance_ids = metadata.get("instance_id")
+        elif isinstance(metadata, list) and metadata and isinstance(metadata[0], dict):
+            instance_ids = [m.get("instance_id") for m in metadata]
+        else:
+            return None
+
+        if instance_ids is None:
+            return None
+        if isinstance(instance_ids, torch.Tensor):
+            instance_ids = instance_ids.cpu().numpy()
+        elif isinstance(instance_ids, tuple):
+            instance_ids = list(instance_ids)
+
+        instance_ids = np.asarray(instance_ids, dtype=object)
+        if instance_ids.ndim == 0:
+            instance_ids = instance_ids.reshape(1)
+        return instance_ids
 
     @staticmethod
     def _aggregate_costs(costs: list[dict]) -> dict:

@@ -36,9 +36,10 @@ from omegaconf import OmegaConf
 from offshore_dl.utils.config import load_merged_config
 from offshore_dl.data.datasets import ThreeWFeatureDataset, GanymedeDataset, SPEBergDataset, VolveDataset
 from offshore_dl.evaluation.cv import (
+    GroupedExpandingWindowCV,
+    GroupedTemporalHoldoutSplitter,
     HoldoutSplitter,
     StratifiedGroupKFoldSKLearn,
-    ExpandingWindowCV,
 )
 from offshore_dl.evaluation.metrics import MetricRegistry
 from offshore_dl.utils.reproducibility import set_global_seed
@@ -734,15 +735,16 @@ def run_ganymede_hpo(
     cfg.training.scheduler = "cosine"
 
     horizon_days = int(horizon.replace("h", ""))
-    dataset = GanymedeDataset("configs/data/ganymede.yaml", horizon=horizon_days)
+    dataset = GanymedeDataset("configs/data/ganymede.yaml", horizon=horizon_days, filter_shutdowns=False)
     logger.info("  Ganymede %s loaded: %d samples", horizon, len(dataset))
+    groups = np.array([well_idx for well_idx, _ in dataset._samples], dtype=np.int32)
 
     # Temporal holdout
-    holdout = HoldoutSplitter(test_ratio=0.2, mode="temporal")
+    holdout = GroupedTemporalHoldoutSplitter(test_ratio=0.2, groups=groups)
     train_pool, test_indices = holdout.split(len(dataset))
 
     # Inner CV for HPO
-    cv = ExpandingWindowCV(n_splits=3)
+    cv = GroupedExpandingWindowCV(groups=groups[train_pool], n_splits=3)
 
     from torch.utils.data import Subset
     train_dataset = Subset(dataset, train_pool.tolist())
@@ -781,7 +783,7 @@ def run_ganymede_hpo(
         w = best_kwargs.pop("branch_width")
         best_kwargs["branch_hidden"] = [w, w]
 
-    final_cv = ExpandingWindowCV(n_splits=3)
+    final_cv = GroupedExpandingWindowCV(groups=groups, n_splits=3)
     runner = ExperimentRunner(
         model_class=entry["class"],
         dataset=dataset,
@@ -836,15 +838,16 @@ def run_spe_berg_hpo(
     cfg.training.scheduler = "cosine"
 
     horizon_days = int(horizon.replace("h", ""))
-    dataset = SPEBergDataset("configs/data/spe_berg.yaml", horizon=horizon_days)
+    dataset = SPEBergDataset("configs/data/spe_berg.yaml", horizon=horizon_days, filter_shutdowns=False)
     logger.info("  SPE BERG %s loaded: %d samples", horizon, len(dataset))
+    groups = np.array([well_idx for well_idx, _ in dataset._samples], dtype=np.int32)
 
     # Temporal holdout
-    holdout = HoldoutSplitter(test_ratio=0.2, mode="temporal")
+    holdout = GroupedTemporalHoldoutSplitter(test_ratio=0.2, groups=groups)
     train_pool, test_indices = holdout.split(len(dataset))
 
     # Inner CV for HPO
-    cv = ExpandingWindowCV(n_splits=3)
+    cv = GroupedExpandingWindowCV(groups=groups[train_pool], n_splits=3)
 
     from torch.utils.data import Subset
     train_dataset = Subset(dataset, train_pool.tolist())
@@ -883,7 +886,7 @@ def run_spe_berg_hpo(
         w = best_kwargs.pop("branch_width")
         best_kwargs["branch_hidden"] = [w, w]
 
-    final_cv = ExpandingWindowCV(n_splits=3)
+    final_cv = GroupedExpandingWindowCV(groups=groups, n_splits=3)
     runner = ExperimentRunner(
         model_class=entry["class"],
         dataset=dataset,
@@ -938,15 +941,16 @@ def run_volve_hpo(
     cfg.training.scheduler = "cosine"
 
     horizon_days = int(horizon.replace("h", ""))
-    dataset = VolveDataset("configs/data/volve.yaml", horizon=horizon_days)
+    dataset = VolveDataset("configs/data/volve.yaml", horizon=horizon_days, filter_shutdowns=False)
     logger.info("  Volve %s loaded: %d samples", horizon, len(dataset))
+    groups = np.array([well_idx for well_idx, _ in dataset._samples], dtype=np.int32)
 
     # Temporal holdout
-    holdout = HoldoutSplitter(test_ratio=0.2, mode="temporal")
+    holdout = GroupedTemporalHoldoutSplitter(test_ratio=0.2, groups=groups)
     train_pool, test_indices = holdout.split(len(dataset))
 
     # Inner CV for HPO
-    cv = ExpandingWindowCV(n_splits=3)
+    cv = GroupedExpandingWindowCV(groups=groups[train_pool], n_splits=3)
 
     from torch.utils.data import Subset
     train_dataset = Subset(dataset, train_pool.tolist())
@@ -985,7 +989,7 @@ def run_volve_hpo(
         w = best_kwargs.pop("branch_width")
         best_kwargs["branch_hidden"] = [w, w]
 
-    final_cv = ExpandingWindowCV(n_splits=3)
+    final_cv = GroupedExpandingWindowCV(groups=groups, n_splits=3)
     runner = ExperimentRunner(
         model_class=entry["class"],
         dataset=dataset,
