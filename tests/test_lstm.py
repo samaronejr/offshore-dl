@@ -2,21 +2,28 @@
 
 import torch
 import pytest
+from omegaconf import OmegaConf
+from torch.utils.data import Dataset
 
+from offshore_dl.evaluation.cv import TemporalSplitCV
 from offshore_dl.models.lstm import LSTMModel
-from offshore_dl.models.base import model_summary
+from offshore_dl.models.base import FocalLoss, model_summary
+from offshore_dl.training.experiment import ExperimentRunner
 
 
 # ═══════════════════════════════════════════════════════════════════
 # Classification (3W)
 # ═══════════════════════════════════════════════════════════════════
 
+
 class TestLSTMClassification:
     """LSTM for 3W 10-class classification."""
 
     @pytest.fixture
     def model(self):
-        return LSTMModel(task="classification", n_vars=27, n_classes=10, hidden_size=32, num_layers=1)
+        return LSTMModel(
+            task="classification", n_vars=27, n_classes=10, hidden_size=32, num_layers=1
+        )
 
     @pytest.fixture
     def batch(self):
@@ -47,24 +54,37 @@ class TestLSTMClassification:
 
     def test_bidirectional(self, batch) -> None:
         model = LSTMModel(
-            task="classification", n_vars=27, n_classes=10,
-            hidden_size=32, num_layers=1, bidirectional=True,
+            task="classification",
+            n_vars=27,
+            n_classes=10,
+            hidden_size=32,
+            num_layers=1,
+            bidirectional=True,
         )
         x, _, _ = batch
         out = model(x)
         assert out.shape == (4, 10)
+
+    def test_focal_loss_can_be_selected(self) -> None:
+        model = LSTMModel(
+            task="classification", n_vars=27, n_classes=10, loss_type="focal"
+        )
+        assert isinstance(model._loss_fn, FocalLoss)
 
 
 # ═══════════════════════════════════════════════════════════════════
 # Forecasting (Ganymede)
 # ═══════════════════════════════════════════════════════════════════
 
+
 class TestLSTMForecasting:
     """LSTM for Ganymede gas production forecasting."""
 
     @pytest.fixture
     def model(self):
-        return LSTMModel(task="forecasting", n_vars=63, horizon=30, hidden_size=32, num_layers=1)
+        return LSTMModel(
+            task="forecasting", n_vars=63, horizon=30, hidden_size=32, num_layers=1
+        )
 
     @pytest.fixture
     def batch(self):
@@ -91,12 +111,15 @@ class TestLSTMForecasting:
 # Anomaly Detection (CDF)
 # ═══════════════════════════════════════════════════════════════════
 
+
 class TestLSTMAnomaly:
     """LSTM for CDF unsupervised anomaly detection."""
 
     @pytest.fixture
     def model(self):
-        return LSTMModel(task="anomaly", n_vars=11, window_size=48, hidden_size=32, num_layers=1)
+        return LSTMModel(
+            task="anomaly", n_vars=11, window_size=48, hidden_size=32, num_layers=1
+        )
 
     @pytest.fixture
     def batch(self):
@@ -123,11 +146,18 @@ class TestLSTMAnomaly:
 # Model Summary
 # ═══════════════════════════════════════════════════════════════════
 
+
 class TestLSTMModelSummary:
     """Model summary statistics for LSTM."""
 
     def test_param_count_reasonable(self) -> None:
-        model = LSTMModel(task="classification", n_vars=27, n_classes=10, hidden_size=128, num_layers=2)
+        model = LSTMModel(
+            task="classification",
+            n_vars=27,
+            n_classes=10,
+            hidden_size=128,
+            num_layers=2,
+        )
         summary = model_summary(model)
         # 2-layer LSTM with 128 hidden + linear head should have ~200k+ params
         assert summary["param_count"] > 50_000
@@ -145,17 +175,13 @@ class TestLSTMModelSummary:
 # Integration: LSTM through ExperimentRunner
 # ═══════════════════════════════════════════════════════════════════
 
-from omegaconf import OmegaConf
-from torch.utils.data import Dataset
-
-from offshore_dl.evaluation.cv import TemporalSplitCV
-from offshore_dl.training.experiment import ExperimentRunner
-
 
 class _TinyDataset(Dataset):
     """Tiny synthetic dataset for integration testing."""
 
-    def __init__(self, task="classification", n=40, n_vars=10, window=20, n_classes=3, horizon=5):
+    def __init__(
+        self, task="classification", n=40, n_vars=10, window=20, n_classes=3, horizon=5
+    ):
         self.X = torch.randn(n, window, n_vars)
         self.task = task
         if task == "classification":
@@ -178,16 +204,29 @@ class TestLSTMIntegration:
     def test_classification_pipeline(self) -> None:
         ds = _TinyDataset("classification", n=40, n_vars=10, n_classes=3, window=20)
         cv = TemporalSplitCV(train_ratio=0.7)
-        cfg = OmegaConf.create({
-            "training": {"batch_size": 8, "max_epochs": 2, "early_stopping_patience": 5, "gradient_clip_val": 1.0},
-        })
+        cfg = OmegaConf.create(
+            {
+                "training": {
+                    "batch_size": 8,
+                    "max_epochs": 2,
+                    "early_stopping_patience": 5,
+                    "gradient_clip_val": 1.0,
+                },
+            }
+        )
         runner = ExperimentRunner(
             model_class=LSTMModel,
             dataset=ds,
             cv_strategy=cv,
             cfg=cfg,
-            model_kwargs={"task": "classification", "n_vars": 10, "n_classes": 3,
-                          "hidden_size": 16, "num_layers": 1, "window_size": 20},
+            model_kwargs={
+                "task": "classification",
+                "n_vars": 10,
+                "n_classes": 3,
+                "hidden_size": 16,
+                "num_layers": 1,
+                "window_size": 20,
+            },
         )
         results = runner.run(use_mlflow=False)
         assert "f1_macro" in results["fold_results"][0]["metrics"]
@@ -195,16 +234,28 @@ class TestLSTMIntegration:
     def test_forecasting_pipeline(self) -> None:
         ds = _TinyDataset("forecasting", n=40, n_vars=10, horizon=5, window=20)
         cv = TemporalSplitCV(train_ratio=0.7)
-        cfg = OmegaConf.create({
-            "training": {"batch_size": 8, "max_epochs": 2, "early_stopping_patience": 5, "gradient_clip_val": 1.0},
-        })
+        cfg = OmegaConf.create(
+            {
+                "training": {
+                    "batch_size": 8,
+                    "max_epochs": 2,
+                    "early_stopping_patience": 5,
+                    "gradient_clip_val": 1.0,
+                },
+            }
+        )
         runner = ExperimentRunner(
             model_class=LSTMModel,
             dataset=ds,
             cv_strategy=cv,
             cfg=cfg,
-            model_kwargs={"task": "forecasting", "n_vars": 10, "horizon": 5,
-                          "hidden_size": 16, "num_layers": 1},
+            model_kwargs={
+                "task": "forecasting",
+                "n_vars": 10,
+                "horizon": 5,
+                "hidden_size": 16,
+                "num_layers": 1,
+            },
         )
         results = runner.run(use_mlflow=False)
         assert "mae" in results["fold_results"][0]["metrics"]
@@ -212,16 +263,28 @@ class TestLSTMIntegration:
     def test_anomaly_pipeline(self) -> None:
         ds = _TinyDataset("anomaly", n=40, n_vars=10, window=20)
         cv = TemporalSplitCV(train_ratio=0.7)
-        cfg = OmegaConf.create({
-            "training": {"batch_size": 8, "max_epochs": 2, "early_stopping_patience": 5, "gradient_clip_val": 1.0},
-        })
+        cfg = OmegaConf.create(
+            {
+                "training": {
+                    "batch_size": 8,
+                    "max_epochs": 2,
+                    "early_stopping_patience": 5,
+                    "gradient_clip_val": 1.0,
+                },
+            }
+        )
         runner = ExperimentRunner(
             model_class=LSTMModel,
             dataset=ds,
             cv_strategy=cv,
             cfg=cfg,
-            model_kwargs={"task": "anomaly", "n_vars": 10, "window_size": 20,
-                          "hidden_size": 16, "num_layers": 1},
+            model_kwargs={
+                "task": "anomaly",
+                "n_vars": 10,
+                "window_size": 20,
+                "hidden_size": 16,
+                "num_layers": 1,
+            },
         )
         results = runner.run(use_mlflow=False)
         assert "error_mean" in results["fold_results"][0]["metrics"]

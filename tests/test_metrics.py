@@ -48,7 +48,9 @@ class TestClassificationMetrics:
 
     def test_edr_with_instance_ids(self) -> None:
         targets = np.array([0, 1, 1, 2, 2, 0])
-        preds = np.array([0, 1, 0, 0, 0, 0])  # detects event type 1, misses event type 2
+        preds = np.array(
+            [0, 1, 0, 0, 0, 0]
+        )  # detects event type 1, misses event type 2
         instance_ids = np.array(["i1", "i2", "i2", "i3", "i3", "i4"])
         results = MetricRegistry.compute(
             "classification", preds, targets, instance_ids=instance_ids
@@ -59,18 +61,23 @@ class TestClassificationMetrics:
     def test_auc_pr_prefers_probability_scores_over_hard_labels(self) -> None:
         targets = np.array([0, 1, 2, 0, 1, 2])
         preds = np.array([0, 0, 2, 0, 1, 1])
-        probs = np.array([
-            [0.90, 0.05, 0.05],
-            [0.35, 0.34, 0.31],
-            [0.10, 0.10, 0.80],
-            [0.70, 0.20, 0.10],
-            [0.20, 0.60, 0.20],
-            [0.33, 0.34, 0.33],
-        ])
+        probs = np.array(
+            [
+                [0.90, 0.05, 0.05],
+                [0.35, 0.34, 0.31],
+                [0.10, 0.10, 0.80],
+                [0.70, 0.20, 0.10],
+                [0.20, 0.60, 0.20],
+                [0.33, 0.34, 0.33],
+            ]
+        )
 
         without_scores = MetricRegistry.compute("classification", preds, targets)
         with_scores = MetricRegistry.compute(
-            "classification", preds, targets, prediction_scores=probs,
+            "classification",
+            preds,
+            targets,
+            prediction_scores=probs,
         )
 
         assert with_scores["auc_pr"] > without_scores["auc_pr"]
@@ -118,8 +125,95 @@ class TestForecastingMetrics:
         targets = np.tile([1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0], 5)  # 35 values
         # Perfect seasonal naive prediction would match exactly
         preds = targets.copy()
-        results = MetricRegistry.compute("forecasting", preds, targets, seasonal_period=7)
+        results = MetricRegistry.compute(
+            "forecasting", preds, targets, seasonal_period=7
+        )
         assert results["mase"] == pytest.approx(0.0)
+
+    def test_r2_prod_productive_mask(self) -> None:
+        """R²_prod should only use non-shutdown, non-zero production samples."""
+        predictions = np.array(
+            [
+                1.0,
+                2.0,
+                3.0,
+                4.0,
+                5.0,
+                6.0,
+                7.0,
+                8.0,
+                9.0,
+                10.0,
+                11.0,
+                12.0,
+                13.0,
+                14.0,
+                15.0,
+                8.0,
+                9.0,
+                10.0,
+            ]
+        )
+        targets = np.array(
+            [
+                1.1,
+                1.9,
+                3.2,
+                3.8,
+                5.1,
+                5.9,
+                7.2,
+                7.8,
+                9.1,
+                9.9,
+                11.2,
+                11.8,
+                13.1,
+                13.9,
+                15.2,
+                0.0,
+                0.0,
+                0.0,
+            ]
+        )
+
+        results = MetricRegistry.compute("forecasting", predictions, targets)
+
+        assert "r2_prod" in results
+        assert results["r2_prod"] > results.get("r2", -999.0)
+
+    def test_negative_r2_not_clipped(self) -> None:
+        """Negative R² values must not be clipped to 0."""
+        predictions = np.ones(10) * 5.0
+        targets = np.arange(10, dtype=float)
+
+        results = MetricRegistry.compute("forecasting", predictions, targets)
+
+        assert results.get("r2_prod", results.get("r2", 0.0)) < 0
+
+    def test_mase_uses_y_train(self) -> None:
+        """MASE denominator should use y_train, not evaluation targets."""
+        predictions = np.array([1.0, 2.0, 3.0])
+        targets = np.array([1.1, 2.1, 3.1])
+        y_train_small = np.array([0.0, 0.0, 0.0])
+        y_train_normal = np.arange(1.0, 11.0)
+
+        metrics_with_train = MetricRegistry.compute(
+            "forecasting", predictions, targets, y_train=y_train_normal
+        )
+        metrics_with_small_train = MetricRegistry.compute(
+            "forecasting", predictions, targets, y_train=y_train_small
+        )
+        metrics_without_train = MetricRegistry.compute(
+            "forecasting", predictions, targets
+        )
+
+        assert "mase" in metrics_with_train
+        assert np.isfinite(metrics_with_train["mase"])
+        assert metrics_with_small_train["mase"] == pytest.approx(float("inf"))
+        assert metrics_with_train["mase"] != pytest.approx(
+            metrics_without_train["mase"]
+        )
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -215,6 +309,7 @@ class TestConfusionMatrix:
     def test_confusion_matrix_serializable(self) -> None:
         """Confusion matrix should be JSON-serializable (list of lists)."""
         import json
+
         preds = np.array([0, 1, 0, 1])
         targets = np.array([0, 0, 1, 1])
         results = MetricRegistry.compute("classification", preds, targets)

@@ -119,7 +119,9 @@ class Trainer:
         device: Override device (default: from config or CPU).
     """
 
-    def __init__(self, cfg: DictConfig | None = None, device: str | None = None) -> None:
+    def __init__(
+        self, cfg: DictConfig | None = None, device: str | None = None
+    ) -> None:
         self.cfg = cfg
         if device:
             self.device = torch.device(device)
@@ -156,10 +158,14 @@ class Trainer:
             Training history dict with per-epoch losses and metrics,
             plus cost tracker results.
         """
-        cfg_t = self.cfg.training if self.cfg and hasattr(self.cfg, "training") else None
+        cfg_t = (
+            self.cfg.training if self.cfg and hasattr(self.cfg, "training") else None
+        )
         max_epochs = max_epochs or (cfg_t.max_epochs if cfg_t else 10)
         patience = patience or (cfg_t.early_stopping_patience if cfg_t else 10)
-        gradient_clip_val = gradient_clip_val or (cfg_t.gradient_clip_val if cfg_t else 1.0)
+        gradient_clip_val = gradient_clip_val or (
+            cfg_t.gradient_clip_val if cfg_t else 1.0
+        )
 
         model = model.to(self.device)
         optimizer = model.configure_optimizers(self.cfg)
@@ -172,7 +178,11 @@ class Trainer:
             scheduler_name = cfg_t.scheduler
 
         scheduler = self._build_scheduler(
-            optimizer, scheduler_name, max_epochs, len(train_loader), cfg_t,
+            optimizer,
+            scheduler_name,
+            max_epochs,
+            len(train_loader),
+            cfg_t,
         )
         scheduler_per_batch = scheduler_name == "onecycle"
 
@@ -214,7 +224,9 @@ class Trainer:
 
                     train_losses.append(loss.item())
 
-                avg_train_loss = float(np.mean(train_losses)) if train_losses else float('nan')
+                avg_train_loss = (
+                    float(np.mean(train_losses)) if train_losses else float("nan")
+                )
 
                 # ── Validate ──
                 model.eval()
@@ -226,7 +238,15 @@ class Trainer:
                     if not (np.isnan(val_loss_item) or np.isinf(val_loss_item)):
                         val_losses.append(val_loss_item)
 
-                avg_val_loss = float(np.mean(val_losses)) if val_losses else float('nan')
+                avg_val_loss = (
+                    float(np.mean(val_losses)) if val_losses else float("nan")
+                )
+                if np.isnan(avg_val_loss):
+                    logger.warning(
+                        "Epoch %d: all validation losses are NaN — "
+                        "model may have diverged. Consider reducing lr or adding gradient clipping.",
+                        epoch + 1,
+                    )
 
                 # Step per-epoch schedulers
                 if scheduler and not scheduler_per_batch:
@@ -242,25 +262,38 @@ class Trainer:
                 current_lr = optimizer.param_groups[0]["lr"]
                 logger.info(
                     "Epoch %d/%d — train_loss=%.6f, val_loss=%.6f, lr=%.2e",
-                    epoch + 1, max_epochs, avg_train_loss, avg_val_loss, current_lr,
+                    epoch + 1,
+                    max_epochs,
+                    avg_train_loss,
+                    avg_val_loss,
+                    current_lr,
                 )
 
                 # ── Checkpoint best (skip if val loss is NaN) ──
-                if not np.isnan(avg_val_loss) and avg_val_loss <= early_stopping.best_loss:
+                if (
+                    not np.isnan(avg_val_loss)
+                    and avg_val_loss <= early_stopping.best_loss
+                ):
                     best_state = copy.deepcopy(model.state_dict())
                     if checkpoint_dir:
                         self.save_checkpoint(model, optimizer, epoch, checkpoint_dir)
 
                 # ── Early stopping ──
                 if early_stopping.step(avg_val_loss, epoch):
-                    logger.info("Early stopping at epoch %d (best: %d)", epoch + 1, early_stopping.best_epoch + 1)
+                    logger.info(
+                        "Early stopping at epoch %d (best: %d)",
+                        epoch + 1,
+                        early_stopping.best_epoch + 1,
+                    )
                     history["stopped_early"] = True
                     break
 
             # Restore best model weights
             if best_state is not None:
                 model.load_state_dict(best_state)
-                logger.info("Restored best model from epoch %d", early_stopping.best_epoch + 1)
+                logger.info(
+                    "Restored best model from epoch %d", early_stopping.best_epoch + 1
+                )
 
             history["epochs_run"] = epoch + 1
             history["best_epoch"] = early_stopping.best_epoch
@@ -329,7 +362,8 @@ class Trainer:
 
         if name == "cosine":
             return torch.optim.lr_scheduler.CosineAnnealingLR(
-                optimizer, T_max=max_epochs,
+                optimizer,
+                T_max=max_epochs,
             )
 
         if name in ("reduceonplateau", "reduce_on_plateau"):
@@ -340,7 +374,10 @@ class Trainer:
             if cfg_t and hasattr(cfg_t, "scheduler_factor"):
                 factor = cfg_t.scheduler_factor
             return torch.optim.lr_scheduler.ReduceLROnPlateau(
-                optimizer, mode="min", patience=patience, factor=factor,
+                optimizer,
+                mode="min",
+                patience=patience,
+                factor=factor,
             )
 
         logger.warning("Unknown scheduler %r — training without LR schedule", name)
@@ -369,11 +406,14 @@ class Trainer:
             path.mkdir(parents=True, exist_ok=True)
             path = path / "checkpoint.pt"
 
-        torch.save({
-            "model_state_dict": model.state_dict(),
-            "optimizer_state_dict": optimizer.state_dict(),
-            "epoch": epoch,
-        }, path)
+        torch.save(
+            {
+                "model_state_dict": model.state_dict(),
+                "optimizer_state_dict": optimizer.state_dict(),
+                "epoch": epoch,
+            },
+            path,
+        )
 
         logger.info("Checkpoint saved: %s", path)
         return path

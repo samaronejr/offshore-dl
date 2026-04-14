@@ -12,21 +12,32 @@ from __future__ import annotations
 import argparse
 import json
 import logging
-import sys
 from pathlib import Path
 
 import numpy as np
 import torch
 from omegaconf import OmegaConf
 
-from offshore_dl.data.datasets import CDFDataset, GanymedeDataset, InnerMongoliaDataset, SPEBergDataset, ThreeWDataset, VolveDataset
+from offshore_dl.data.datasets import (
+    CDFDataset,
+    GanymedeDataset,
+    InnerMongoliaDataset,
+    ThreeWFeatureDataset,
+    SPEBergDataset,
+    ThreeWMultiScaleDataset,
+    ThreeWDataset,
+    ThreeWWaveletDataset,
+    VolveDataset,
+)
 from offshore_dl.evaluation.cv import (
     GroupedExpandingWindowCV,
+    SlidingWindowCV,
     StratifiedGroupKFoldSKLearn,
-    TemporalSplitCV,
 )
 from offshore_dl.models.chronos_wrapper import ChronosWrapper
+from offshore_dl.models.convtran import ConvTranModel
 from offshore_dl.models.deeponet import DeepONetModel
+from offshore_dl.models.inception_time import InceptionTimeModel
 from offshore_dl.models.lstm import LSTMModel
 from offshore_dl.models.patchtst import PatchTSTModel
 from offshore_dl.models.tcn import TCNModel
@@ -43,6 +54,18 @@ try:
     from offshore_dl.models.fkmad import FKMADModel
 except (ImportError, ModuleNotFoundError, RuntimeError):
     FKMADModel = None
+try:
+    from offshore_dl.models.mambasl import MambaSLModel
+except (ImportError, ModuleNotFoundError, RuntimeError):
+    MambaSLModel = None
+try:
+    from offshore_dl.models.convtimenet import ConvTimeNetModel
+except (ImportError, ModuleNotFoundError, RuntimeError):
+    ConvTimeNetModel = None
+try:
+    from sklearn.ensemble import RandomForestClassifier as RandomForestModel
+except ImportError:
+    RandomForestModel = None
 from offshore_dl.training.experiment import ExperimentRunner
 from offshore_dl.utils.config import load_merged_config
 from offshore_dl.utils.reproducibility import set_global_seed
@@ -59,6 +82,8 @@ MODEL_REGISTRY: dict[str, type] = {
     "deeponet": DeepONetModel,
     "patchtst": PatchTSTModel,
     "tcn": TCNModel,
+    "inception_time": InceptionTimeModel,
+    "convtran": ConvTranModel,
     "chronos": ChronosWrapper,
 }
 
@@ -68,6 +93,12 @@ if TiRexWrapper is not None:
     MODEL_REGISTRY["tirex"] = TiRexWrapper
 if FKMADModel is not None:
     MODEL_REGISTRY["fkmad"] = FKMADModel
+if RandomForestModel is not None:
+    MODEL_REGISTRY["random_forest"] = RandomForestModel
+if MambaSLModel is not None:
+    MODEL_REGISTRY["mambasl"] = MambaSLModel
+if ConvTimeNetModel is not None:
+    MODEL_REGISTRY["convtimenet"] = ConvTimeNetModel
 
 DATASET_REGISTRY: dict[str, dict] = {
     "3w": {
@@ -82,9 +113,60 @@ DATASET_REGISTRY: dict[str, dict] = {
         ),
         "model_kwargs": lambda ds, cfg: {
             "task": "classification",
-            "n_vars": 27,
+            "n_vars": ds.n_vars,
             "n_classes": cfg.data.n_classes,
             "window_size": cfg.data.preprocessing.window_size,
+        },
+    },
+    "3w_multiscale": {
+        "class": ThreeWMultiScaleDataset,
+        "config": "configs/data/3w_multiscale.yaml",
+        "task": "classification",
+        "cv_factory": lambda cfg, ds: StratifiedGroupKFoldSKLearn(
+            n_folds=5,
+            labels=np.array([w["class_id"] for w in ds._inner._windows]),
+            groups=np.array([w["instance_id"] for w in ds._inner._windows]),
+            seed=42,
+        ),
+        "model_kwargs": lambda ds, cfg: {
+            "task": "classification",
+            "n_vars": ds.n_vars,
+            "n_classes": cfg.data.n_classes,
+            "window_size": ds.window_size,
+        },
+    },
+    "3w_features": {
+        "class": ThreeWFeatureDataset,
+        "config": "configs/data/3w.yaml",
+        "task": "classification",
+        "cv_factory": lambda cfg, ds: StratifiedGroupKFoldSKLearn(
+            n_folds=5,
+            labels=np.array([w["class_id"] for w in ds._inner._windows]),
+            groups=np.array([w["instance_id"] for w in ds._inner._windows]),
+            seed=42,
+        ),
+        "model_kwargs": lambda ds, cfg: {
+            "task": "classification",
+            "n_vars": ds.n_vars,
+            "n_classes": cfg.data.n_classes,
+            "window_size": ds.window_size,
+        },
+    },
+    "3w_wavelet": {
+        "class": ThreeWWaveletDataset,
+        "config": "configs/data/3w_wavelet.yaml",
+        "task": "classification",
+        "cv_factory": lambda cfg, ds: StratifiedGroupKFoldSKLearn(
+            n_folds=5,
+            labels=np.array([w["class_id"] for w in ds._inner._windows]),
+            groups=np.array([w["instance_id"] for w in ds._inner._windows]),
+            seed=42,
+        ),
+        "model_kwargs": lambda ds, cfg: {
+            "task": "classification",
+            "n_vars": ds.n_vars,
+            "n_classes": cfg.data.n_classes,
+            "window_size": ds.window_size,
         },
     },
     "ganymede": {
@@ -101,6 +183,7 @@ DATASET_REGISTRY: dict[str, dict] = {
             "n_vars": ds[0][0].shape[-1],  # infer from actual data
             "horizon": ds.horizon,
             "window_size": ds[0][0].shape[0],  # actual input window length
+            "target_channel": ds._target_col_idx,
         },
     },
     "spe_berg": {
@@ -117,6 +200,7 @@ DATASET_REGISTRY: dict[str, dict] = {
             "n_vars": ds[0][0].shape[-1],
             "horizon": ds.horizon,
             "window_size": ds[0][0].shape[0],
+            "target_channel": ds._target_col_idx,
         },
     },
     "volve": {
@@ -157,12 +241,13 @@ DATASET_REGISTRY: dict[str, dict] = {
         "class": CDFDataset,
         "config": "configs/data/cdf.yaml",
         "task": "anomaly",
-        "cv_factory": lambda cfg, ds: TemporalSplitCV(
+        "cv_factory": lambda cfg, ds: SlidingWindowCV(
+            n_splits=3,
             train_ratio=cfg.data.preprocessing.train_ratio,
         ),
         "model_kwargs": lambda ds, cfg: {
             "task": "anomaly",
-            "n_vars": 11,
+            "n_vars": ds.n_vars,
             "window_size": cfg.data.preprocessing.window_size,
         },
     },
@@ -227,12 +312,29 @@ def build_experiment(
     # Add architecture params from model config
     if hasattr(cfg, "model") and hasattr(cfg.model, "architecture"):
         arch = OmegaConf.to_container(cfg.model.architecture, resolve=True)
-        model_kwargs.update(arch)
+        if isinstance(arch, dict):
+            model_kwargs.update(arch)
+        else:
+            flat_model_cfg = OmegaConf.to_container(cfg.model, resolve=True)
+            for reserved_key in (
+                "architecture",
+                "training",
+                "optuna_search_space",
+                "name",
+            ):
+                flat_model_cfg.pop(reserved_key, None)
+            model_kwargs.update(flat_model_cfg)
+
+    for key in ("loss_type", "focal_gamma"):
+        if hasattr(cfg, "model") and hasattr(cfg.model, key):
+            model_kwargs[key] = getattr(cfg.model, key)
 
     # Add training params
     if hasattr(cfg, "model") and hasattr(cfg.model, "training"):
-        model_kwargs["lr"] = cfg.model.training.lr
-        model_kwargs["weight_decay"] = cfg.model.training.weight_decay
+        if hasattr(cfg.model.training, "lr"):
+            model_kwargs["lr"] = cfg.model.training.lr
+        if hasattr(cfg.model.training, "weight_decay"):
+            model_kwargs["weight_decay"] = cfg.model.training.weight_decay
 
     runner = ExperimentRunner(
         model_class=model_class,
@@ -269,9 +371,17 @@ def run_and_save(
     Returns:
         Results dict.
     """
-    runner, cfg = build_experiment(model_name, dataset_name, max_epochs, batch_size, device, dataset_kwargs)
+    runner, cfg = build_experiment(
+        model_name, dataset_name, max_epochs, batch_size, device, dataset_kwargs
+    )
 
-    logger.info("Running %s on %s (max_epochs=%s, device=%s)", model_name, dataset_name, cfg.training.max_epochs, device)
+    logger.info(
+        "Running %s on %s (max_epochs=%s, device=%s)",
+        model_name,
+        dataset_name,
+        cfg.training.max_epochs,
+        device,
+    )
 
     results = runner.run(use_mlflow=use_mlflow)
 
@@ -285,9 +395,15 @@ def run_and_save(
         well_name = dataset_kwargs.get("well_name")
         if well_name:
             safe_name = well_name.replace("/", "_")
-            out_path = Path(output_dir) / model_name / f"ganymede_h{horizon}_{mode}_{safe_name}.json"
+            out_path = (
+                Path(output_dir)
+                / model_name
+                / f"ganymede_h{horizon}_{mode}_{safe_name}.json"
+            )
         else:
-            out_path = Path(output_dir) / model_name / f"ganymede_h{horizon}_{mode}.json"
+            out_path = (
+                Path(output_dir) / model_name / f"ganymede_h{horizon}_{mode}.json"
+            )
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -297,19 +413,19 @@ def run_and_save(
     logger.info("Results saved to %s", out_path)
 
     # Print summary
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"  {model_name.upper()} on {dataset_name.upper()}")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"  Folds: {results['n_folds']}")
-    print(f"  Aggregate metrics:")
+    print("  Aggregate metrics:")
     for key, val in sorted(results.get("aggregate", {}).items()):
         print(f"    {key}: {val:.6f}")
     if results.get("cost"):
-        print(f"  Cost:")
+        print("  Cost:")
         for key, val in sorted(results["cost"].items()):
             print(f"    {key}: {val:.4f}")
     print(f"  Results saved: {out_path}")
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
     return results
 
@@ -339,20 +455,56 @@ def main() -> None:
         description="Run offshore DL experiments",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    parser.add_argument("--model", type=str, required=True, choices=list(MODEL_REGISTRY.keys()), help="Model name")
-    parser.add_argument("--dataset", type=str, required=True, choices=list(DATASET_REGISTRY.keys()), help="Dataset name")
-    parser.add_argument("--max-epochs", type=int, default=None, help="Max training epochs")
+    parser.add_argument(
+        "--model",
+        type=str,
+        required=True,
+        choices=list(MODEL_REGISTRY.keys()),
+        help="Model name",
+    )
+    parser.add_argument(
+        "--dataset",
+        type=str,
+        required=True,
+        choices=list(DATASET_REGISTRY.keys()),
+        help="Dataset name",
+    )
+    parser.add_argument(
+        "--max-epochs", type=int, default=None, help="Max training epochs"
+    )
     parser.add_argument("--batch-size", type=int, default=None, help="Batch size")
     parser.add_argument("--device", type=str, default="cpu", help="Compute device")
-    parser.add_argument("--no-mlflow", action="store_true", help="Disable MLflow logging")
-    parser.add_argument("--output-dir", type=str, default="results", help="Output directory for results")
-    parser.add_argument("--max-instances", type=int, default=None, help="Max instances per class (3W only)")
-    parser.add_argument("--horizon", type=int, default=None, help="Forecast horizon in days (Ganymede only)")
-    parser.add_argument("--mode", type=str, default=None, choices=["multi_well", "per_well"], help="Ganymede well mode")
+    parser.add_argument(
+        "--no-mlflow", action="store_true", help="Disable MLflow logging"
+    )
+    parser.add_argument(
+        "--output-dir", type=str, default="results", help="Output directory for results"
+    )
+    parser.add_argument(
+        "--max-instances",
+        type=int,
+        default=None,
+        help="Max instances per class (3W only)",
+    )
+    parser.add_argument(
+        "--horizon",
+        type=int,
+        default=None,
+        help="Forecast horizon in days (Ganymede only)",
+    )
+    parser.add_argument(
+        "--mode",
+        type=str,
+        default=None,
+        choices=["multi_well", "per_well"],
+        help="Ganymede well mode",
+    )
 
     args = parser.parse_args()
 
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s: %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s: %(message)s"
+    )
 
     # Build dataset kwargs from CLI
     ds_kwargs = {}

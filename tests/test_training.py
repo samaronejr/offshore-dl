@@ -6,9 +6,22 @@ import numpy as np
 import pytest
 import torch
 import torch.nn as nn
+from omegaconf import OmegaConf
+from torch.utils.data import DataLoader
 
+from offshore_dl.evaluation.cv import ExpandingWindowCV, TemporalSplitCV
+from offshore_dl.evaluation.metrics import MetricRegistry
 from offshore_dl.models.base import BaseModel, model_summary
 from offshore_dl.models.dummy import DummyModel
+from offshore_dl.training.experiment import ExperimentRunner, NormalizedSubset
+from offshore_dl.training.optuna_utils import (
+    convergence_callback,
+    create_study,
+    run_hpo,
+)
+from offshore_dl.training.trainer import CostTracker, EarlyStopping, Trainer
+
+import time
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -52,7 +65,9 @@ class TestDummyModelClassification:
         batch = (torch.randn(4, 100, 27), torch.randint(0, 10, (4,)), [{}] * 4)
         scores = model.predict_scores(batch)
         assert scores.shape == (4, 10)
-        torch.testing.assert_close(scores.sum(dim=-1), torch.ones(4), atol=1e-6, rtol=0.0)
+        torch.testing.assert_close(
+            scores.sum(dim=-1), torch.ones(4), atol=1e-6, rtol=0.0
+        )
 
 
 class TestDummyModelForecasting:
@@ -131,12 +146,10 @@ class TestModelSummary:
 # Trainer Tests
 # ═══════════════════════════════════════════════════════════════════
 
-from torch.utils.data import DataLoader, TensorDataset
 
-from offshore_dl.training.trainer import CostTracker, EarlyStopping, Trainer
-
-
-def _make_classification_loaders(n_train=40, n_val=20, n_vars=27, window=50, n_classes=10, batch_size=8):
+def _make_classification_loaders(
+    n_train=40, n_val=20, n_vars=27, window=50, n_classes=10, batch_size=8
+):
     """Create tiny train/val DataLoaders for classification testing."""
     X_train = torch.randn(n_train, window, n_vars)
     y_train = torch.randint(0, n_classes, (n_train,))
@@ -147,8 +160,12 @@ def _make_classification_loaders(n_train=40, n_val=20, n_vars=27, window=50, n_c
     class SimpleDS(torch.utils.data.Dataset):
         def __init__(self, X, y):
             self.X, self.y = X, y
-        def __len__(self): return len(self.X)
-        def __getitem__(self, i): return self.X[i], self.y[i], {}
+
+        def __len__(self):
+            return len(self.X)
+
+        def __getitem__(self, i):
+            return self.X[i], self.y[i], {}
 
     train_loader = DataLoader(SimpleDS(X_train, y_train), batch_size=batch_size)
     val_loader = DataLoader(SimpleDS(X_val, y_val), batch_size=batch_size)
@@ -162,7 +179,9 @@ class TestTrainer:
         model = DummyModel(task="classification", n_vars=27, n_classes=10)
         train_loader, val_loader = _make_classification_loaders()
         trainer = Trainer(device="cpu")
-        history = trainer.fit(model, train_loader, val_loader, max_epochs=3, patience=10)
+        history = trainer.fit(
+            model, train_loader, val_loader, max_epochs=3, patience=10
+        )
         assert "train_loss" in history
         assert "val_loss" in history
         assert len(history["train_loss"]) == 3
@@ -219,8 +238,12 @@ class TestTrainer:
             def __init__(self, n):
                 self.X = torch.randn(n, 30, 10)
                 self.y = torch.randn(n, 7)
-            def __len__(self): return len(self.X)
-            def __getitem__(self, i): return self.X[i], self.y[i], {}
+
+            def __len__(self):
+                return len(self.X)
+
+            def __getitem__(self, i):
+                return self.X[i], self.y[i], {}
 
         train_loader = DataLoader(ForecastDS(20), batch_size=4)
         val_loader = DataLoader(ForecastDS(10), batch_size=4)
@@ -245,20 +268,16 @@ class TestCostTracker:
         assert tracker.results["param_count"] > 0
 
 
-import time
-
-
 # ═══════════════════════════════════════════════════════════════════
 # ExperimentRunner Tests
 # ═══════════════════════════════════════════════════════════════════
 
-from offshore_dl.evaluation.cv import TemporalSplitCV
-from offshore_dl.evaluation.metrics import MetricRegistry
-from offshore_dl.training.experiment import ExperimentRunner, NormalizedSubset
 
-
-def _make_tiny_dataset(task="classification", n=40, n_vars=10, window=20, n_classes=3, horizon=5):
+def _make_tiny_dataset(
+    task="classification", n=40, n_vars=10, window=20, n_classes=3, horizon=5
+):
     """Create a tiny in-memory dataset for experiment testing."""
+
     class TinyDS(torch.utils.data.Dataset):
         def __init__(self):
             self.X = torch.randn(n, window, n_vars)
@@ -268,10 +287,18 @@ def _make_tiny_dataset(task="classification", n=40, n_vars=10, window=20, n_clas
                 self.y = torch.randn(n, horizon)
             elif task == "anomaly":
                 self.y = self.X.clone()  # reconstruction target
-        def __len__(self): return n
+
+        def __len__(self):
+            return n
+
         def __getitem__(self, i):
-            metadata = {"instance_id": f"instance_{i // 2}"} if task == "classification" else {}
+            metadata = (
+                {"instance_id": f"instance_{i // 2}"}
+                if task == "classification"
+                else {}
+            )
             return self.X[i], self.y[i], metadata
+
     return TinyDS()
 
 
@@ -298,14 +325,17 @@ class _ScoreAwareModel(BaseModel):
         super().__init__(task="classification", n_vars=1)
         self.n_classes = 3
         self.dummy = nn.Parameter(torch.tensor(0.0))
-        self.logit_table = torch.tensor([
-            [4.0, 1.0, 0.5],
-            [3.0, 2.9, 2.8],
-            [0.5, 1.0, 4.0],
-            [3.5, 1.0, 0.5],
-            [1.0, 4.0, 0.5],
-            [2.8, 2.9, 2.7],
-        ], dtype=torch.float32)
+        self.logit_table = torch.tensor(
+            [
+                [4.0, 1.0, 0.5],
+                [3.0, 2.9, 2.8],
+                [0.5, 1.0, 4.0],
+                [3.5, 1.0, 0.5],
+                [1.0, 4.0, 0.5],
+                [2.8, 2.9, 2.7],
+            ],
+            dtype=torch.float32,
+        )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         codes = x[:, 0, 0].long()
@@ -318,13 +348,42 @@ class _ScoreAwareModel(BaseModel):
 class TestExperimentRunner:
     """Tests for the ExperimentRunner orchestration."""
 
+    def test_normalized_subset_uses_train_stats(self) -> None:
+        """Validation subset must use training mean/std, not its own."""
+        data = [
+            (torch.tensor([[float(i)]]), torch.tensor(float(i)), {}) for i in range(20)
+        ]
+        train_idx = list(range(10))
+        val_idx = list(range(10, 20))
+
+        train_vals = torch.stack([data[i][0] for i in train_idx])
+        mean = train_vals.mean(dim=0)
+        std = train_vals.std(dim=0)
+
+        train_subset = NormalizedSubset(data, train_idx, mean, std)
+        val_subset = NormalizedSubset(data, val_idx, mean, std)
+
+        train_item = train_subset[0][0]
+        val_item = val_subset[0][0]
+        expected = (torch.tensor([[10.0]]) - mean) / std
+
+        assert train_item.shape == torch.Size([1, 1])
+        assert torch.allclose(val_item, expected, atol=1e-5)
+
     def test_classification_experiment(self) -> None:
         ds = _make_tiny_dataset("classification", n_classes=3)
         cv = TemporalSplitCV(train_ratio=0.7)
-        cfg = OmegaConf.create({
-            "training": {"batch_size": 8, "max_epochs": 2, "early_stopping_patience": 5, "gradient_clip_val": 1.0},
-            "mlflow": {"tracking_uri": "mlruns", "experiment_prefix": "test"},
-        })
+        cfg = OmegaConf.create(
+            {
+                "training": {
+                    "batch_size": 8,
+                    "max_epochs": 2,
+                    "early_stopping_patience": 5,
+                    "gradient_clip_val": 1.0,
+                },
+                "mlflow": {"tracking_uri": "mlruns", "experiment_prefix": "test"},
+            }
+        )
         runner = ExperimentRunner(
             model_class=DummyModel,
             dataset=ds,
@@ -340,9 +399,16 @@ class TestExperimentRunner:
     def test_forecasting_experiment(self) -> None:
         ds = _make_tiny_dataset("forecasting", horizon=5)
         cv = TemporalSplitCV(train_ratio=0.7)
-        cfg = OmegaConf.create({
-            "training": {"batch_size": 8, "max_epochs": 2, "early_stopping_patience": 5, "gradient_clip_val": 1.0},
-        })
+        cfg = OmegaConf.create(
+            {
+                "training": {
+                    "batch_size": 8,
+                    "max_epochs": 2,
+                    "early_stopping_patience": 5,
+                    "gradient_clip_val": 1.0,
+                },
+            }
+        )
         runner = ExperimentRunner(
             model_class=DummyModel,
             dataset=ds,
@@ -356,9 +422,16 @@ class TestExperimentRunner:
     def test_anomaly_experiment(self) -> None:
         ds = _make_tiny_dataset("anomaly")
         cv = TemporalSplitCV(train_ratio=0.7)
-        cfg = OmegaConf.create({
-            "training": {"batch_size": 8, "max_epochs": 2, "early_stopping_patience": 5, "gradient_clip_val": 1.0},
-        })
+        cfg = OmegaConf.create(
+            {
+                "training": {
+                    "batch_size": 8,
+                    "max_epochs": 2,
+                    "early_stopping_patience": 5,
+                    "gradient_clip_val": 1.0,
+                },
+            }
+        )
         runner = ExperimentRunner(
             model_class=DummyModel,
             dataset=ds,
@@ -371,11 +444,18 @@ class TestExperimentRunner:
 
     def test_aggregate_metrics(self) -> None:
         ds = _make_tiny_dataset("classification", n_classes=3, n=60)
-        from offshore_dl.evaluation.cv import ExpandingWindowCV
+
         cv = ExpandingWindowCV(n_splits=2, min_train_ratio=0.4)
-        cfg = OmegaConf.create({
-            "training": {"batch_size": 8, "max_epochs": 2, "early_stopping_patience": 5, "gradient_clip_val": 1.0},
-        })
+        cfg = OmegaConf.create(
+            {
+                "training": {
+                    "batch_size": 8,
+                    "max_epochs": 2,
+                    "early_stopping_patience": 5,
+                    "gradient_clip_val": 1.0,
+                },
+            }
+        )
         runner = ExperimentRunner(
             model_class=DummyModel,
             dataset=ds,
@@ -391,10 +471,20 @@ class TestExperimentRunner:
         """MLflow runs are logged when enabled."""
         ds = _make_tiny_dataset("classification", n_classes=3)
         cv = TemporalSplitCV(train_ratio=0.7)
-        cfg = OmegaConf.create({
-            "training": {"batch_size": 8, "max_epochs": 2, "early_stopping_patience": 5, "gradient_clip_val": 1.0},
-            "mlflow": {"tracking_uri": str(tmp_path / "mlruns"), "experiment_prefix": "test"},
-        })
+        cfg = OmegaConf.create(
+            {
+                "training": {
+                    "batch_size": 8,
+                    "max_epochs": 2,
+                    "early_stopping_patience": 5,
+                    "gradient_clip_val": 1.0,
+                },
+                "mlflow": {
+                    "tracking_uri": str(tmp_path / "mlruns"),
+                    "experiment_prefix": "test",
+                },
+            }
+        )
         runner = ExperimentRunner(
             model_class=DummyModel,
             dataset=ds,
@@ -402,21 +492,25 @@ class TestExperimentRunner:
             cfg=cfg,
             model_kwargs={"task": "classification", "n_vars": 10, "n_classes": 3},
         )
-        results = runner.run(use_mlflow=True)
+        runner.run(use_mlflow=True)
         # Check MLflow directory was created
         mlruns_dir = tmp_path / "mlruns"
         assert mlruns_dir.exists()
 
     def test_nested_classification(self) -> None:
         """run_nested: inner CV + retrain + held-out test for classification."""
-        import numpy as np
-
         ds = _make_tiny_dataset("classification", n=80, n_classes=3)
         cv = TemporalSplitCV(train_ratio=0.7)
-        cfg = OmegaConf.create({
-            "training": {"batch_size": 8, "max_epochs": 2,
-                         "early_stopping_patience": 5, "gradient_clip_val": 1.0},
-        })
+        cfg = OmegaConf.create(
+            {
+                "training": {
+                    "batch_size": 8,
+                    "max_epochs": 2,
+                    "early_stopping_patience": 5,
+                    "gradient_clip_val": 1.0,
+                },
+            }
+        )
         runner = ExperimentRunner(
             model_class=DummyModel,
             dataset=ds,
@@ -451,14 +545,18 @@ class TestExperimentRunner:
 
     def test_nested_forecasting(self) -> None:
         """run_nested: inner CV + retrain + held-out test for forecasting."""
-        import numpy as np
-
         ds = _make_tiny_dataset("forecasting", n=80, horizon=5)
         cv = TemporalSplitCV(train_ratio=0.7)
-        cfg = OmegaConf.create({
-            "training": {"batch_size": 8, "max_epochs": 2,
-                         "early_stopping_patience": 5, "gradient_clip_val": 1.0},
-        })
+        cfg = OmegaConf.create(
+            {
+                "training": {
+                    "batch_size": 8,
+                    "max_epochs": 2,
+                    "early_stopping_patience": 5,
+                    "gradient_clip_val": 1.0,
+                },
+            }
+        )
         runner = ExperimentRunner(
             model_class=DummyModel,
             dataset=ds,
@@ -487,13 +585,21 @@ class TestExperimentRunner:
         assert len(train_idx) == 18
         assert len(val_idx) == 2
 
-    def test_classification_metrics_use_probability_scores_and_instance_ids(self) -> None:
+    def test_classification_metrics_use_probability_scores_and_instance_ids(
+        self,
+    ) -> None:
         ds = _ScoreAwareDataset()
         cv = TemporalSplitCV(train_ratio=0.5)
-        cfg = OmegaConf.create({
-            "training": {"batch_size": 2, "max_epochs": 1,
-                         "early_stopping_patience": 5, "gradient_clip_val": 1.0},
-        })
+        cfg = OmegaConf.create(
+            {
+                "training": {
+                    "batch_size": 2,
+                    "max_epochs": 1,
+                    "early_stopping_patience": 5,
+                    "gradient_clip_val": 1.0,
+                },
+            }
+        )
         runner = ExperimentRunner(
             model_class=_ScoreAwareModel,
             dataset=ds,
@@ -512,7 +618,9 @@ class TestExperimentRunner:
         expected_model = _ScoreAwareModel()
         val_logits = expected_model.forward(val_features)
         val_preds = expected_model._extract_predictions(val_logits).detach().numpy()
-        val_probs = expected_model._extract_prediction_scores(val_logits).detach().numpy()
+        val_probs = (
+            expected_model._extract_prediction_scores(val_logits).detach().numpy()
+        )
         val_instance_ids = np.array(["inst_d", "inst_e", "inst_f"])
         expected = MetricRegistry.compute(
             "classification",
@@ -526,23 +634,23 @@ class TestExperimentRunner:
         assert metrics["edr"] == pytest.approx(expected["edr"], rel=1e-5)
 
 
-from omegaconf import OmegaConf
-
-
 # ═══════════════════════════════════════════════════════════════════
 # Optuna Tests
 # ═══════════════════════════════════════════════════════════════════
-
-from offshore_dl.training.optuna_utils import convergence_callback, create_study, run_hpo
 
 
 class TestOptunaIntegration:
     """Tests for Optuna HPO integration."""
 
     def test_create_study(self, tmp_path) -> None:
-        cfg = OmegaConf.create({
-            "optuna": {"storage": f"sqlite:///{tmp_path}/test.db", "pruner": "median"},
-        })
+        cfg = OmegaConf.create(
+            {
+                "optuna": {
+                    "storage": f"sqlite:///{tmp_path}/test.db",
+                    "pruner": "median",
+                },
+            }
+        )
         study = create_study(cfg, "test_study")
         assert study.study_name == "test_study"
 
@@ -566,23 +674,32 @@ class TestOptunaIntegration:
     def test_run_hpo(self, tmp_path) -> None:
         ds = _make_tiny_dataset("classification", n=40, n_classes=3)
         cv = TemporalSplitCV(train_ratio=0.7)
-        cfg = OmegaConf.create({
-            "training": {"batch_size": 8, "max_epochs": 2, "early_stopping_patience": 5, "gradient_clip_val": 1.0},
-            "optuna": {
-                "storage": f"sqlite:///{tmp_path}/optuna.db",
-                "pruner": "median",
-                "n_trials_min": 2,
-                "convergence_patience": 20,
-                "convergence_threshold": 0.005,
-            },
-        })
+        cfg = OmegaConf.create(
+            {
+                "training": {
+                    "batch_size": 8,
+                    "max_epochs": 2,
+                    "early_stopping_patience": 5,
+                    "gradient_clip_val": 1.0,
+                },
+                "optuna": {
+                    "storage": f"sqlite:///{tmp_path}/optuna.db",
+                    "pruner": "median",
+                    "n_trials_min": 2,
+                    "convergence_patience": 20,
+                    "convergence_threshold": 0.005,
+                },
+            }
+        )
         result = run_hpo(
             model_class=DummyModel,
             dataset=ds,
             cv_strategy=cv,
             cfg=cfg,
             model_kwargs={"task": "classification", "n_vars": 10, "n_classes": 3},
-            search_space={"lr": {"type": "float", "low": 0.001, "high": 0.1, "log": True}},
+            search_space={
+                "lr": {"type": "float", "low": 0.001, "high": 0.1, "log": True}
+            },
             n_trials=2,
             study_name="test_hpo",
         )

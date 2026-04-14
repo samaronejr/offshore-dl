@@ -8,10 +8,18 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import numpy as np
 import pytest
 import torch
 
-from offshore_dl.data.datasets import CDFDataset, ThreeWDataset
+from offshore_dl.data.datasets import (
+    CDFDataset,
+    GanymedeDataset,
+    InnerMongoliaDataset,
+    SPEBergDataset,
+    ThreeWDataset,
+    VolveDataset,
+)
 
 # ═══════════════════════════════════════════════════════════════════
 # 3W Dataset Tests
@@ -164,7 +172,7 @@ class TestCDFDatasetPrediction:
 
     def test_prediction_shapes(self, dataset: CDFDataset) -> None:
         inp, target, _ = dataset[0]
-        assert inp.shape[0] == 48   # window_size
+        assert inp.shape[0] == 48  # window_size
         assert target.shape[0] == 12  # prediction_horizon
         assert inp.shape[1] == target.shape[1]  # same n_vars
 
@@ -177,8 +185,6 @@ class TestCDFDatasetPrediction:
 # ═══════════════════════════════════════════════════════════════════
 # Ganymede Dataset Tests
 # ═══════════════════════════════════════════════════════════════════
-
-from offshore_dl.data.datasets import GanymedeDataset
 
 
 class TestGanymedeDatasetMultiWell:
@@ -231,6 +237,38 @@ class TestGanymedeDatasetMultiWell:
             inp, target, _ = dataset[i]
             assert not torch.isnan(inp).any()
             assert not torch.isnan(target).any()
+
+
+@pytest.mark.parametrize(
+    ("dataset_cls", "well_name"),
+    [
+        (GanymedeDataset, "well-a"),
+        (SPEBergDataset, "well_1"),
+        (VolveDataset, "NO_15_9-F-1_C"),
+        (InnerMongoliaDataset, "58-25"),
+    ],
+)
+def test_forecasting_datasets_honor_gap(dataset_cls, well_name: str) -> None:
+    dataset = dataset_cls.__new__(dataset_cls)
+    dataset._samples = [(0, 0)]
+    dataset._well_data = [(well_name, None)]
+    dataset._arrays = [np.arange(30, dtype=np.float32).reshape(10, 3)]
+    dataset.input_window = 3
+    dataset.gap = 1
+    dataset.horizon = 2
+    dataset._target_col_idx = 1
+    dataset.mode = "multi_well"
+
+    inp, target, meta = dataset[0]
+
+    assert torch.equal(
+        inp,
+        torch.tensor([[0, 1, 2], [3, 4, 5], [6, 7, 8]], dtype=torch.float32),
+    )
+    assert torch.equal(target, torch.tensor([13, 16], dtype=torch.float32))
+    assert meta["target_start"] == 4
+    assert meta["target_end"] == 6
+    assert meta["gap"] == 1
 
 
 class TestGanymedeDatasetPerWell:

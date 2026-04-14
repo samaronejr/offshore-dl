@@ -35,7 +35,19 @@ TRACK_DISPLAY_NAME = {
     "cdf": "CDF Anomaly Detection",
 }
 
-ALL_MODELS = ["lstm", "deeponet", "patchtst", "chronos", "timesfm", "tirex"]
+ALL_MODELS = [
+    "lstm",
+    "deeponet",
+    "patchtst",
+    "tcn",
+    "chronos",
+    "timesfm",
+    "tirex",
+    "random_forest",
+    "fkmad",
+    "mambasl",
+    "convtimenet",
+]
 ALL_TRACKS = ["3w", "ganymede", "cdf"]
 
 
@@ -52,6 +64,11 @@ def load_all_results(results_dir: str | Path = "results") -> dict[str, dict[str,
         all_results[model] = {}
         for track in ALL_TRACKS:
             path = results_dir / model / f"{track}.json"
+            # TiRex 3W has a non-standard result path
+            if model == "tirex" and track == "3w":
+                alt_path = results_dir / "tirex_3w_nested.json"
+                if not path.exists() and alt_path.exists():
+                    path = alt_path
             if path.exists():
                 with open(path) as f:
                     all_results[model][track] = json.load(f)
@@ -149,12 +166,19 @@ def build_comparison_table(all_results: dict) -> dict[str, list[dict]]:
                 elif isinstance(v, (int, float)) and not k.endswith("_std"):
                     all_metrics[k] = v
 
-            entries.append({
-                "model": model,
-                "primary_value": value,
-                "all_metrics": all_metrics,
-                "n_folds": result.get("n_folds", 0),
-            })
+            test_metrics = result.get("test_metrics", {})
+            for k, v in test_metrics.items():
+                if isinstance(v, (int, float)) and k not in all_metrics:
+                    all_metrics[k] = v
+
+            entries.append(
+                {
+                    "model": model,
+                    "primary_value": value,
+                    "all_metrics": all_metrics,
+                    "n_folds": result.get("n_folds", 0),
+                }
+            )
 
         # Sort: min → ascending, max → descending
         reverse = direction == "max"
@@ -191,7 +215,10 @@ def run_statistical_tests(all_results: dict) -> dict[str, dict]:
                     model_folds[model] = folds
 
         if len(model_folds) < 2:
-            test_results[track] = {"status": "insufficient_folds", "n_models": len(model_folds)}
+            test_results[track] = {
+                "status": "insufficient_folds",
+                "n_models": len(model_folds),
+            }
             continue
 
         track_tests: dict[str, Any] = {"n_models": len(model_folds)}
@@ -200,7 +227,7 @@ def run_statistical_tests(all_results: dict) -> dict[str, dict]:
         model_names = sorted(model_folds.keys())
         pairwise: list[dict] = []
         for i, m1 in enumerate(model_names):
-            for m2 in model_names[i + 1:]:
+            for m2 in model_names[i + 1 :]:
                 v1 = model_folds[m1]
                 v2 = model_folds[m2]
                 n = min(len(v1), len(v2))
@@ -208,24 +235,34 @@ def run_statistical_tests(all_results: dict) -> dict[str, dict]:
                     continue
                 try:
                     stat, p_value = stats.wilcoxon(v1[:n], v2[:n])
-                    pairwise.append({
-                        "model_a": m1, "model_b": m2,
-                        "statistic": float(stat), "p_value": float(p_value),
-                        "significant": bool(p_value < 0.05),
-                    })
+                    pairwise.append(
+                        {
+                            "model_a": m1,
+                            "model_b": m2,
+                            "statistic": float(stat),
+                            "p_value": float(p_value),
+                            "significant": bool(p_value < 0.05),
+                        }
+                    )
                 except ValueError:
                     # All differences are zero
-                    pairwise.append({
-                        "model_a": m1, "model_b": m2,
-                        "statistic": 0.0, "p_value": 1.0,
-                        "significant": False, "note": "identical values",
-                    })
+                    pairwise.append(
+                        {
+                            "model_a": m1,
+                            "model_b": m2,
+                            "statistic": 0.0,
+                            "p_value": 1.0,
+                            "significant": False,
+                            "note": "identical values",
+                        }
+                    )
 
         # Apply Holm correction for multiple comparisons
         if pairwise:
             raw_pvals = [r["p_value"] for r in pairwise]
             try:
                 from statsmodels.stats.multitest import multipletests
+
                 _, corrected_pvals, _, _ = multipletests(raw_pvals, method="holm")
                 for r, cp in zip(pairwise, corrected_pvals):
                     r["p_value_uncorrected"] = r["p_value"]
@@ -250,7 +287,7 @@ def run_statistical_tests(all_results: dict) -> dict[str, dict]:
             )
 
         # Warn if Wilcoxon cannot reach significance
-        min_wilcoxon_p = 2.0 / (2 ** n_folds) if n_folds > 0 else 1.0
+        min_wilcoxon_p = 2.0 / (2**n_folds) if n_folds > 0 else 1.0
         if min_wilcoxon_p > 0.05:
             track_tests["wilcoxon_warning"] = (
                 f"With n={n_folds} paired observations, minimum achievable "
@@ -266,9 +303,14 @@ def run_statistical_tests(all_results: dict) -> dict[str, dict]:
                 try:
                     stat, p_value = stats.friedmanchisquare(*aligned)
                     # Kendall's W (coefficient of concordance) = chi2 / (n * (k - 1))
-                    kendalls_w = stat / (min_folds * (n_models - 1)) if min_folds > 0 and n_models > 1 else 0.0
+                    kendalls_w = (
+                        stat / (min_folds * (n_models - 1))
+                        if min_folds > 0 and n_models > 1
+                        else 0.0
+                    )
                     track_tests["friedman"] = {
-                        "statistic": float(stat), "p_value": float(p_value),
+                        "statistic": float(stat),
+                        "p_value": float(p_value),
                         "significant": bool(p_value < 0.05),
                         "models": model_names,
                         "kendalls_w": float(kendalls_w),
@@ -288,11 +330,11 @@ def format_comparison_table(track: str, entries: list[dict]) -> str:
     arrow = "↑" if direction == "max" else "↓"
 
     lines = [
-        f"\n{'='*70}",
+        f"\n{'=' * 70}",
         f"  {display} — Primary metric: {metric_name} ({arrow} better)",
-        f"{'='*70}",
+        f"{'=' * 70}",
         f"  {'Rank':>4s}  {'Model':<12s}  {metric_name:<15s}  {'Folds':>5s}  Other metrics",
-        f"  {'-'*4}  {'-'*12}  {'-'*15}  {'-'*5}  {'-'*30}",
+        f"  {'-' * 4}  {'-' * 12}  {'-' * 15}  {'-' * 5}  {'-' * 30}",
     ]
 
     for entry in entries:
@@ -304,13 +346,16 @@ def format_comparison_table(track: str, entries: list[dict]) -> str:
         # Select a few other metrics to show
         other = entry.get("all_metrics", {})
         other_str = ", ".join(
-            f"{k}={v:.4f}" for k, v in sorted(other.items())
+            f"{k}={v:.4f}"
+            for k, v in sorted(other.items())
             if k != metric_name and isinstance(v, (int, float))
         )[:50]
 
-        lines.append(f"  {rank:>4d}  {model:<12s}  {val:<15.4f}  {n_folds:>5}  {other_str}")
+        lines.append(
+            f"  {rank:>4d}  {model:<12s}  {val:<15.4f}  {n_folds:>5}  {other_str}"
+        )
 
-    lines.append(f"{'='*70}")
+    lines.append(f"{'=' * 70}")
     return "\n".join(lines)
 
 
@@ -329,13 +374,17 @@ def format_test_results(track: str, test_result: dict) -> str:
         lines.append("  Wilcoxon signed-rank (pairwise):")
         for pw in pairwise:
             sig = "✓" if pw["significant"] else "✗"
-            lines.append(f"    {pw['model_a']:>10s} vs {pw['model_b']:<10s}  p={pw['p_value']:.4f} {sig}")
+            lines.append(
+                f"    {pw['model_a']:>10s} vs {pw['model_b']:<10s}  p={pw['p_value']:.4f} {sig}"
+            )
 
     # Friedman
     friedman = test_result.get("friedman")
     if friedman and "statistic" in friedman:
         sig = "✓" if friedman["significant"] else "✗"
-        lines.append(f"  Friedman χ²={friedman['statistic']:.4f}, p={friedman['p_value']:.4f} {sig}")
+        lines.append(
+            f"  Friedman χ²={friedman['statistic']:.4f}, p={friedman['p_value']:.4f} {sig}"
+        )
 
     return "\n".join(lines)
 
@@ -361,7 +410,6 @@ def generate_latex_table(track: str, entries: list[dict]) -> str:
     else:
         show_metrics = list(all_metric_keys)[:4]
 
-    n_cols = len(show_metrics) + 1  # model + metrics
     col_spec = "l" + "r" * len(show_metrics)
 
     lines = [
@@ -415,11 +463,13 @@ def generate_latex_table(track: str, entries: list[dict]) -> str:
         row += r" \\"
         lines.append(row)
 
-    lines.extend([
-        r"    \bottomrule",
-        r"  \end{tabular}",
-        r"\end{table}",
-    ])
+    lines.extend(
+        [
+            r"    \bottomrule",
+            r"  \end{tabular}",
+            r"\end{table}",
+        ]
+    )
 
     return "\n".join(lines)
 
@@ -524,11 +574,13 @@ def generate_multihorizon_table(
             f"    Seasonal Naive & {bl_val} & {bl_val} & {bl_val} & {bl_val}" + r" \\"
         )
 
-    lines.extend([
-        r"    \bottomrule",
-        r"  \end{tabular}",
-        r"\end{table}",
-    ])
+    lines.extend(
+        [
+            r"    \bottomrule",
+            r"  \end{tabular}",
+            r"\end{table}",
+        ]
+    )
     return "\n".join(lines)
 
 
@@ -567,7 +619,7 @@ def load_perwell_results(
             # ganymede_h30_per_well_49_22-Z01Z.json → 49_22-Z01Z
             stem = pw_path.stem  # ganymede_h30_per_well_49_22-Z01Z
             prefix = "ganymede_h30_per_well_"
-            well_name = stem[len(prefix):]
+            well_name = stem[len(prefix) :]
             with open(pw_path) as f:
                 wells[well_name] = json.load(f)
         perwell[model] = wells
@@ -637,7 +689,7 @@ def generate_perwell_table(
         header_sub = "    "
         for m in models_with_pw:
             header_top += f" & \\multicolumn{{2}}{{c}}{{{m.upper()}}}"
-            header_sub += f" & MW & PW"
+            header_sub += " & MW & PW"
         header_top += r" \\"
         header_sub += r" \\"
 
@@ -675,11 +727,13 @@ def generate_perwell_table(
             row += r" \\"
             lines.append(row)
 
-    lines.extend([
-        r"    \bottomrule",
-        r"  \end{tabular}",
-        r"\end{table}",
-    ])
+    lines.extend(
+        [
+            r"    \bottomrule",
+            r"  \end{tabular}",
+            r"\end{table}",
+        ]
+    )
     return "\n".join(lines)
 
 
@@ -690,7 +744,9 @@ def main() -> None:
     parser.add_argument("--output-dir", default="reports", help="Output directory")
     args = parser.parse_args()
 
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s: %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s: %(message)s"
+    )
 
     # Load all results
     all_results = load_all_results(args.results_dir)

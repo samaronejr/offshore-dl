@@ -2,18 +2,30 @@
 
 import torch
 import pytest
+from omegaconf import OmegaConf
+from torch.utils.data import Dataset
 
+from offshore_dl.evaluation.cv import TemporalSplitCV
 from offshore_dl.models.patchtst import PatchTSTModel
-from offshore_dl.models.base import model_summary
+from offshore_dl.models.base import FocalLoss, model_summary
+from offshore_dl.training.experiment import ExperimentRunner
 
 
 # Use small architecture for fast tests
-SMALL_KWARGS = {"patch_len": 8, "stride": 4, "d_model": 32, "n_heads": 4, "n_layers": 1, "d_ff": 64}
+SMALL_KWARGS = {
+    "patch_len": 8,
+    "stride": 4,
+    "d_model": 32,
+    "n_heads": 4,
+    "n_layers": 1,
+    "d_ff": 64,
+}
 
 
 # ═══════════════════════════════════════════════════════════════════
 # Classification (3W)
 # ═══════════════════════════════════════════════════════════════════
+
 
 class TestPatchTSTClassification:
     """PatchTST for 3W 10-class classification."""
@@ -21,7 +33,10 @@ class TestPatchTSTClassification:
     @pytest.fixture
     def model(self):
         return PatchTSTModel(
-            task="classification", n_vars=27, n_classes=10, window_size=64,
+            task="classification",
+            n_vars=27,
+            n_classes=10,
+            window_size=64,
             **SMALL_KWARGS,
         )
 
@@ -46,10 +61,22 @@ class TestPatchTSTClassification:
         assert preds.shape == (4,)
         assert preds.dtype == torch.int64
 
+    def test_focal_loss_can_be_selected(self) -> None:
+        model = PatchTSTModel(
+            task="classification",
+            n_vars=27,
+            n_classes=10,
+            window_size=64,
+            loss_type="focal",
+            **SMALL_KWARGS,
+        )
+        assert isinstance(model._loss_fn, FocalLoss)
+
 
 # ═══════════════════════════════════════════════════════════════════
 # Forecasting (Ganymede)
 # ═══════════════════════════════════════════════════════════════════
+
 
 class TestPatchTSTForecasting:
     """PatchTST for Ganymede gas production forecasting."""
@@ -57,7 +84,10 @@ class TestPatchTSTForecasting:
     @pytest.fixture
     def model(self):
         return PatchTSTModel(
-            task="forecasting", n_vars=10, horizon=14, window_size=48,
+            task="forecasting",
+            n_vars=10,
+            horizon=14,
+            window_size=48,
             **SMALL_KWARGS,
         )
 
@@ -86,13 +116,16 @@ class TestPatchTSTForecasting:
 # Anomaly Detection (CDF)
 # ═══════════════════════════════════════════════════════════════════
 
+
 class TestPatchTSTAnomaly:
     """PatchTST for CDF unsupervised anomaly detection."""
 
     @pytest.fixture
     def model(self):
         return PatchTSTModel(
-            task="anomaly", n_vars=11, window_size=48,
+            task="anomaly",
+            n_vars=11,
+            window_size=48,
             **SMALL_KWARGS,
         )
 
@@ -120,17 +153,33 @@ class TestPatchTSTAnomaly:
 # Model Summary + Misc
 # ═══════════════════════════════════════════════════════════════════
 
+
 class TestPatchTSTMisc:
     def test_param_count_reasonable(self) -> None:
         model = PatchTSTModel(
-            task="forecasting", n_vars=10, horizon=14, window_size=48,
-            d_model=64, n_heads=4, n_layers=2, d_ff=128, patch_len=8, stride=4,
+            task="forecasting",
+            n_vars=10,
+            horizon=14,
+            window_size=48,
+            d_model=64,
+            n_heads=4,
+            n_layers=2,
+            d_ff=128,
+            patch_len=8,
+            stride=4,
         )
         summary = model_summary(model)
         assert summary["param_count"] > 10_000
 
     def test_configure_optimizers(self) -> None:
-        model = PatchTSTModel(task="classification", n_vars=11, n_classes=5, window_size=32, lr=0.002, **SMALL_KWARGS)
+        model = PatchTSTModel(
+            task="classification",
+            n_vars=11,
+            n_classes=5,
+            window_size=32,
+            lr=0.002,
+            **SMALL_KWARGS,
+        )
         optimizer = model.configure_optimizers()
         assert isinstance(optimizer, torch.optim.AdamW)
         assert optimizer.param_groups[0]["lr"] == 0.002
@@ -140,15 +189,11 @@ class TestPatchTSTMisc:
 # Integration: PatchTST through ExperimentRunner
 # ═══════════════════════════════════════════════════════════════════
 
-from omegaconf import OmegaConf
-from torch.utils.data import Dataset
-
-from offshore_dl.evaluation.cv import TemporalSplitCV
-from offshore_dl.training.experiment import ExperimentRunner
-
 
 class _TinyDataset(Dataset):
-    def __init__(self, task="classification", n=40, n_vars=10, window=32, n_classes=3, horizon=8):
+    def __init__(
+        self, task="classification", n=40, n_vars=10, window=32, n_classes=3, horizon=8
+    ):
         self.X = torch.randn(n, window, n_vars)
         if task == "classification":
             self.y = torch.randint(0, n_classes, (n,))
@@ -168,16 +213,26 @@ class TestPatchTSTIntegration:
     def test_forecasting_pipeline(self) -> None:
         ds = _TinyDataset("forecasting", n=32, n_vars=10, horizon=8, window=32)
         cv = TemporalSplitCV(train_ratio=0.7)
-        cfg = OmegaConf.create({
-            "training": {"batch_size": 8, "max_epochs": 2, "early_stopping_patience": 5, "gradient_clip_val": 1.0},
-        })
+        cfg = OmegaConf.create(
+            {
+                "training": {
+                    "batch_size": 8,
+                    "max_epochs": 2,
+                    "early_stopping_patience": 5,
+                    "gradient_clip_val": 1.0,
+                },
+            }
+        )
         runner = ExperimentRunner(
             model_class=PatchTSTModel,
             dataset=ds,
             cv_strategy=cv,
             cfg=cfg,
             model_kwargs={
-                "task": "forecasting", "n_vars": 10, "horizon": 8, "window_size": 32,
+                "task": "forecasting",
+                "n_vars": 10,
+                "horizon": 8,
+                "window_size": 32,
                 **SMALL_KWARGS,
             },
         )
@@ -187,16 +242,25 @@ class TestPatchTSTIntegration:
     def test_anomaly_pipeline(self) -> None:
         ds = _TinyDataset("anomaly", n=32, n_vars=10, window=32)
         cv = TemporalSplitCV(train_ratio=0.7)
-        cfg = OmegaConf.create({
-            "training": {"batch_size": 8, "max_epochs": 2, "early_stopping_patience": 5, "gradient_clip_val": 1.0},
-        })
+        cfg = OmegaConf.create(
+            {
+                "training": {
+                    "batch_size": 8,
+                    "max_epochs": 2,
+                    "early_stopping_patience": 5,
+                    "gradient_clip_val": 1.0,
+                },
+            }
+        )
         runner = ExperimentRunner(
             model_class=PatchTSTModel,
             dataset=ds,
             cv_strategy=cv,
             cfg=cfg,
             model_kwargs={
-                "task": "anomaly", "n_vars": 10, "window_size": 32,
+                "task": "anomaly",
+                "n_vars": 10,
+                "window_size": 32,
                 **SMALL_KWARGS,
             },
         )
