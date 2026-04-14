@@ -1,18 +1,18 @@
-"""PyTorch Dataset implementations for all three experimental tracks.
+"""PyTorch Dataset implementations for all experimental tracks.
 
 - ``ThreeWDataset`` — 3W v2.0.0 anomaly classification (T02)
 - ``ThreeWFeatureDataset`` — 3W with statistical feature extraction (T02-v2)
 - ``CDFDataset`` — CDF unsupervised anomaly discovery (T03)
 - ``GanymedeDataset`` — NSTA Ganymede gas production forecasting (T04)
 - ``SPEBergDataset`` — SPE Bergen Eagle Ford shale gas production forecasting (T05)
+- ``VolveDataset`` — Volve Norwegian North Sea oil production forecasting (T06)
+- ``InnerMongoliaDataset`` — Inner Mongolia gas production forecasting (T07)
 """
 
 from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Any
-
 import numpy as np
 import pandas as pd
 import torch
@@ -62,9 +62,7 @@ class ThreeWDataset(BaseDataset):
         self.window_stride = window_stride or self.cfg.data.preprocessing.window_stride
 
         # Use sensor columns from config or default
-        self.sensor_columns = list(
-            self.cfg.data.get("sensor_columns", SENSOR_COLUMNS)
-        )
+        self.sensor_columns = list(self.cfg.data.get("sensor_columns", SENSOR_COLUMNS))
         self.n_vars = len(self.sensor_columns)
 
         should_cache = cache_in_memory
@@ -91,7 +89,9 @@ class ThreeWDataset(BaseDataset):
             processed_dir = Path(self.cfg.data.paths.raw)
             logger.info("Processed dir not found, using raw: %s", processed_dir)
 
-        class_range = self._class_ids if self._class_ids else range(self.cfg.data.n_classes)
+        class_range = (
+            self._class_ids if self._class_ids else range(self.cfg.data.n_classes)
+        )
 
         for class_id in class_range:
             class_dir = processed_dir / str(class_id)
@@ -100,14 +100,18 @@ class ThreeWDataset(BaseDataset):
 
             parquet_files_all = sorted(class_dir.glob("*.parquet"))
             if self._max_instances_per_class is not None:
-                parquet_files_all = parquet_files_all[:self._max_instances_per_class]
+                parquet_files_all = parquet_files_all[: self._max_instances_per_class]
 
             for pf in parquet_files_all:
                 instance_id = pf.stem
-                well_id = instance_id.split("_")[0] if "_" in instance_id else instance_id
+                well_id = (
+                    instance_id.split("_")[0] if "_" in instance_id else instance_id
+                )
                 source_type = (
-                    "simulated" if instance_id.startswith("SIMULATED")
-                    else "drawn" if instance_id.startswith("DRAWN")
+                    "simulated"
+                    if instance_id.startswith("SIMULATED")
+                    else "drawn"
+                    if instance_id.startswith("DRAWN")
                     else "real"
                 )
 
@@ -147,8 +151,10 @@ class ThreeWDataset(BaseDataset):
 
         logger.info(
             "ThreeWDataset: %d windows from %d class directories, w=%d, s=%d",
-            len(self._windows), self.cfg.data.n_classes,
-            self.window_size, self.window_stride,
+            len(self._windows),
+            self.cfg.data.n_classes,
+            self.window_size,
+            self.window_stride,
         )
 
     def _load_instance(self, path: Path) -> pd.DataFrame | None:
@@ -180,7 +186,19 @@ class ThreeWDataset(BaseDataset):
                 # Convert to float64 first to avoid float32 overflow during
                 # feature extraction (e.g. energy = sum(x²) on Pa-scale
                 # pressures ~1e7 would overflow float32).
-                features[:, i] = vals.astype(np.float32)
+                # Clamp to valid float32 range before cast to prevent silent overflow
+                _f32_max = float(np.finfo(np.float32).max)
+                _overflows = np.abs(vals) > _f32_max
+                if np.any(_overflows):
+                    logger.warning(
+                        "Float32 overflow in column %r: %d value(s) clamped "
+                        "(max |val| = %.3e, float32 max = %.3e)",
+                        col,
+                        int(np.sum(_overflows)),
+                        float(np.max(np.abs(vals[_overflows]))),
+                        _f32_max,
+                    )
+                features[:, i] = np.clip(vals, -_f32_max, _f32_max).astype(np.float32)
 
         # Replace NaN/Inf with 0
         np.nan_to_num(features, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
@@ -208,7 +226,7 @@ class ThreeWDataset(BaseDataset):
             features = self._extract_features(df)
             if self._cache_in_memory:
                 self._feature_cache[file_path] = features
-        window_data = features[w["start"]:w["end"]]
+        window_data = features[w["start"] : w["end"]]
 
         tensor = torch.from_numpy(window_data)  # [w, n_vars]
         label = int(w.get("label", w["class_id"]))
@@ -270,7 +288,10 @@ class ThreeWFeatureDataset(BaseDataset):
         base_config: str | Path = "configs/base.yaml",
         **kwargs,
     ) -> None:
-        from offshore_dl.data.feature_extractor import N_FEATURES, extract_window_features
+        from offshore_dl.data.feature_extractor import (
+            N_FEATURES,
+            extract_window_features,
+        )
 
         self._inner = ThreeWDataset(config, base_config=base_config, **kwargs)
         self.n_features = N_FEATURES  # 14
@@ -286,13 +307,17 @@ class ThreeWFeatureDataset(BaseDataset):
         logger.info(
             "ThreeWFeatureDataset: pre-computing features for %d windows "
             "(720, %d) → (%d, %d) …",
-            n, self.n_vars, self.n_features, self.n_vars,
+            n,
+            self.n_vars,
+            self.n_features,
+            self.n_vars,
         )
         self._feature_cache: list[np.ndarray] = [None] * n
         self._labels: list[int] = [0] * n
         self._metadata: list[dict] = [{}] * n
 
         import warnings
+
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", RuntimeWarning)
             for i in range(n):
@@ -301,10 +326,13 @@ class ThreeWFeatureDataset(BaseDataset):
                 self._labels[i] = label
                 self._metadata[i] = meta
                 if (i + 1) % 50000 == 0:
-                    logger.info("  … extracted %d / %d (%.0f%%)", i + 1, n, 100 * (i + 1) / n)
+                    logger.info(
+                        "  … extracted %d / %d (%.0f%%)", i + 1, n, 100 * (i + 1) / n
+                    )
 
         logger.info(
-            "ThreeWFeatureDataset: %d windows pre-computed", n,
+            "ThreeWFeatureDataset: %d windows pre-computed",
+            n,
         )
 
     def __getitem__(self, index: int) -> tuple[torch.Tensor, int, dict]:
@@ -319,6 +347,187 @@ class ThreeWFeatureDataset(BaseDataset):
         meta["class"] = "ThreeWFeatureDataset"
         meta["n_features"] = self.n_features
         meta["original_window_size"] = self._inner.window_size
+        return meta
+
+
+class ThreeWWindowDataset(ThreeWFeatureDataset):
+    """3W feature dataset with a configurable raw window size."""
+
+    def __init__(
+        self,
+        config: str | Path | DictConfig,
+        base_config: str | Path = "configs/base.yaml",
+        window_size: int | None = None,
+        **kwargs,
+    ) -> None:
+        if window_size is not None:
+            kwargs["window_size"] = window_size
+        super().__init__(config, base_config=base_config, **kwargs)
+        self.raw_window_size = self._inner.window_size
+
+    def get_metadata(self) -> dict:
+        meta = super().get_metadata()
+        meta["class"] = "ThreeWWindowDataset"
+        return meta
+
+
+class ThreeWMultiScaleDataset(BaseDataset):
+    """3W dataset with stacked multi-scale statistical descriptors."""
+
+    def __init__(
+        self,
+        config: str | Path | DictConfig,
+        base_config: str | Path = "configs/base.yaml",
+        **kwargs,
+    ) -> None:
+        from offshore_dl.data.feature_extractor import (
+            MultiScaleFeatureExtractor,
+            N_FEATURES,
+        )
+
+        self._inner = ThreeWDataset(config, base_config=base_config, **kwargs)
+        self.cfg = self._inner.cfg
+        self.n_vars = self._inner.n_vars
+        self.sensor_columns = self._inner.sensor_columns
+        self.scales = list(
+            self.cfg.data.preprocessing.get("feature_scales", [360, 720])
+        )
+        self.extractor = MultiScaleFeatureExtractor(scales=self.scales)
+        self.n_features = N_FEATURES * len(self.scales)
+        self.window_size = self.n_features
+
+        n = len(self._inner)
+        logger.info(
+            "ThreeWMultiScaleDataset: pre-computing features for %d windows %s → (%d, %d) …",
+            n,
+            self.scales,
+            self.n_features,
+            self.n_vars,
+        )
+        self._feature_cache: list[np.ndarray] = [None] * n
+        self._labels: list[int] = [0] * n
+        self._metadata: list[dict] = [{}] * n
+
+        import warnings
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+            for i in range(n):
+                raw_tensor, label, meta = self._inner[i]
+                self._feature_cache[i] = self.extractor.extract(raw_tensor.numpy())
+                self._labels[i] = label
+                self._metadata[i] = meta
+                if (i + 1) % 50000 == 0:
+                    logger.info(
+                        "  … extracted %d / %d (%.0f%%)", i + 1, n, 100 * (i + 1) / n
+                    )
+
+        logger.info("ThreeWMultiScaleDataset: %d windows pre-computed", n)
+
+    def __getitem__(self, index: int) -> tuple[torch.Tensor, int, dict]:
+        features = self._feature_cache[index]
+        return torch.from_numpy(features), self._labels[index], self._metadata[index]
+
+    def __len__(self) -> int:
+        return len(self._inner)
+
+    def get_metadata(self) -> dict:
+        meta = self._inner.get_metadata()
+        meta["class"] = "ThreeWMultiScaleDataset"
+        meta["n_features"] = self.n_features
+        meta["feature_scales"] = list(self.scales)
+        meta["original_window_size"] = self._inner.window_size
+        return meta
+
+
+class ThreeWWaveletDataset(ThreeWFeatureDataset):
+    """3W dataset with statistical + wavelet energy features."""
+
+    def __init__(
+        self,
+        config: str | Path | DictConfig,
+        base_config: str | Path = "configs/base.yaml",
+        **kwargs,
+    ) -> None:
+        from offshore_dl.data.feature_extractor import WaveletFeatureExtractor
+
+        super().__init__(config, base_config=base_config, **kwargs)
+        self.wavelet_scales = list(
+            self.cfg.data.preprocessing.get("wavelet_scales", [30, 90, 180, 360])
+        )
+        self.wavelet_extractor = WaveletFeatureExtractor(scales=self.wavelet_scales)
+        self.n_wavelet_features = len(self.wavelet_scales)
+        self.n_stat_features = self.n_features
+        self.n_features = self.n_stat_features + self.n_wavelet_features
+        self.window_size = self.n_features
+        self._wavelet_cache: list[np.ndarray | None] = [None] * len(self._inner)
+
+    def __getitem__(self, index: int) -> tuple[torch.Tensor, int, dict]:
+        stat_features, label, metadata = super().__getitem__(index)
+        wavelet_features = self._wavelet_cache[index]
+        if wavelet_features is None:
+            raw_tensor, _raw_label, _raw_meta = self._inner[index]
+            wavelet_features = self.wavelet_extractor.extract(raw_tensor.numpy())
+            self._wavelet_cache[index] = wavelet_features
+
+        combined = np.concatenate(
+            [stat_features.numpy(), wavelet_features],
+            axis=0,
+        ).astype(np.float32, copy=False)
+        return torch.from_numpy(combined), label, metadata
+
+    def get_metadata(self) -> dict:
+        meta = super().get_metadata()
+        meta["class"] = "ThreeWWaveletDataset"
+        meta["n_features"] = self.n_features
+        meta["n_stat_features"] = self.n_stat_features
+        meta["n_wavelet_features"] = self.n_wavelet_features
+        meta["wavelet_scales"] = list(self.wavelet_scales)
+        return meta
+
+
+class ThreeWPhysicsDataset(ThreeWFeatureDataset):
+    """3W dataset with statistical + physics-informed cross-sensor features."""
+
+    def __init__(
+        self,
+        config: str | Path | DictConfig,
+        base_config: str | Path = "configs/base.yaml",
+        **kwargs,
+    ) -> None:
+        from offshore_dl.data.feature_extractor import PhysicsFeatureExtractor
+
+        super().__init__(config, base_config=base_config, **kwargs)
+        self.physics_extractor = PhysicsFeatureExtractor(
+            sensor_columns=self.sensor_columns
+        )
+        self.n_physics_features = 4
+        self.n_stat_features = self.n_features
+        self.n_features = self.n_stat_features
+        self.n_vars = self.n_vars + self.n_physics_features
+        self.window_size = self.n_features
+        self._physics_cache: list[np.ndarray | None] = [None] * len(self._inner)
+
+    def __getitem__(self, index: int) -> tuple[torch.Tensor, int, dict]:
+        stat_features, label, metadata = super().__getitem__(index)
+        physics_features = self._physics_cache[index]
+        if physics_features is None:
+            raw_tensor, _raw_label, _raw_meta = self._inner[index]
+            physics_features = self.physics_extractor.extract(raw_tensor.numpy())
+            self._physics_cache[index] = physics_features
+
+        combined = np.concatenate(
+            [stat_features.numpy(), physics_features],
+            axis=1,
+        ).astype(np.float32, copy=False)
+        return torch.from_numpy(combined), label, metadata
+
+    def get_metadata(self) -> dict:
+        meta = super().get_metadata()
+        meta["class"] = "ThreeWPhysicsDataset"
+        meta["n_features"] = self.n_features
+        meta["n_stat_features"] = self.n_stat_features
+        meta["n_physics_features"] = self.n_physics_features
         return meta
 
 
@@ -356,7 +565,9 @@ class CDFDataset(BaseDataset):
         self.mode = mode or self.cfg.data.preprocessing.get("mode", "reconstruction")
         self.window_size = window_size or self.cfg.data.preprocessing.window_size
         self.window_stride = window_stride or self.cfg.data.preprocessing.window_stride
-        self.prediction_horizon = self.cfg.data.preprocessing.get("prediction_horizon", 12)
+        self.prediction_horizon = self.cfg.data.preprocessing.get(
+            "prediction_horizon", 12
+        )
 
         self._load_data()
 
@@ -368,6 +579,7 @@ class CDFDataset(BaseDataset):
         if not processed_path.exists():
             # Run preprocessing if not done yet
             from offshore_dl.data.preprocess_cdf import preprocess_cdf
+
             preprocess_cdf(self.cfg)
 
         self._df = pd.read_parquet(processed_path)
@@ -389,8 +601,11 @@ class CDFDataset(BaseDataset):
 
         logger.info(
             "CDFDataset (%s): %d windows, w=%d, stride=%d, n_vars=%d",
-            self.mode, len(self._starts), self.window_size,
-            self.window_stride, self.n_vars,
+            self.mode,
+            len(self._starts),
+            self.window_size,
+            self.window_stride,
+            self.n_vars,
         )
 
     def __getitem__(self, index: int) -> tuple[torch.Tensor, torch.Tensor, dict]:
@@ -431,7 +646,9 @@ class CDFDataset(BaseDataset):
             "window_stride": self.window_stride,
             "mode": self.mode,
             "columns": self.columns,
-            "prediction_horizon": self.prediction_horizon if self.mode == "prediction" else None,
+            "prediction_horizon": self.prediction_horizon
+            if self.mode == "prediction"
+            else None,
         }
 
 
@@ -471,6 +688,7 @@ class GanymedeDataset(BaseDataset):
         self.well_name = well_name
         self.horizon = horizon or self.cfg.data.forecasting.default_horizon
         self.input_window = input_window or self.cfg.data.forecasting.input_window
+        self.gap = self.cfg.data.forecasting.get("gap", 0)
         self.target_col = self.cfg.data.target_column
         self.filter_shutdowns = filter_shutdowns
 
@@ -482,6 +700,7 @@ class GanymedeDataset(BaseDataset):
 
         if not processed_dir.exists() or not any(processed_dir.glob("*.parquet")):
             from offshore_dl.data.preprocess_ganymede import preprocess_ganymede
+
             preprocess_ganymede(self.cfg)
 
         # Load wells
@@ -505,7 +724,7 @@ class GanymedeDataset(BaseDataset):
 
         for well_idx, (name, df) in enumerate(self._well_data):
             n = len(df)
-            total_needed = self.input_window + self.horizon
+            total_needed = self.input_window + self.gap + self.horizon
 
             for start in range(0, max(0, n - total_needed + 1)):
                 self._samples.append((well_idx, start))
@@ -546,21 +765,27 @@ class GanymedeDataset(BaseDataset):
             for well_idx, start in self._samples:
                 arr = self._arrays[well_idx]
                 input_end = start + self.input_window
-                target_end = input_end + self.horizon
-                target_vals = arr[input_end:target_end, self._target_col_idx]
+                target_start = input_end + self.gap
+                target_end = target_start + self.horizon
+                target_vals = arr[target_start:target_end, self._target_col_idx]
                 if np.any(target_vals > 0.01):
                     filtered.append((well_idx, start))
             self._samples = filtered
             logger.info(
                 "  Filtered shutdowns: %d → %d samples (%.0f%% removed)",
-                original_n, len(filtered),
+                original_n,
+                len(filtered),
                 100 * (1 - len(filtered) / original_n) if original_n > 0 else 0,
             )
 
         logger.info(
             "GanymedeDataset (%s): %d samples, %d wells, input=%d, horizon=%d, n_vars=%d",
-            self.mode, len(self._samples), len(self._well_data),
-            self.input_window, self.horizon, self.n_vars,
+            self.mode,
+            len(self._samples),
+            len(self._well_data),
+            self.input_window,
+            self.horizon,
+            self.n_vars,
         )
 
     def __getitem__(self, index: int) -> tuple[torch.Tensor, torch.Tensor, dict]:
@@ -569,14 +794,15 @@ class GanymedeDataset(BaseDataset):
         well_name, _ = self._well_data[well_idx]
         arr = self._arrays[well_idx]
         input_end = start + self.input_window
-        target_end = input_end + self.horizon
+        target_start = input_end + self.gap
+        target_end = target_start + self.horizon
 
         # Input: all features over the input window
         input_data = arr[start:input_end]
         input_tensor = torch.from_numpy(input_data.copy())
 
         # Target: only the gas production column over the horizon
-        target_data = arr[input_end:target_end, self._target_col_idx]
+        target_data = arr[target_start:target_end, self._target_col_idx]
         target_tensor = torch.from_numpy(target_data.copy())
 
         metadata = {
@@ -584,7 +810,9 @@ class GanymedeDataset(BaseDataset):
             "well_idx": well_idx,
             "start_idx": start,
             "input_end": input_end,
+            "target_start": target_start,
             "target_end": target_end,
+            "gap": self.gap,
             "horizon": self.horizon,
             "mode": self.mode,
         }
@@ -654,6 +882,7 @@ class SPEBergDataset(BaseDataset):
         self.well_name = well_name
         self.horizon = horizon or self.cfg.data.forecasting.default_horizon
         self.input_window = input_window or self.cfg.data.forecasting.input_window
+        self.gap = self.cfg.data.forecasting.get("gap", 0)
         self.target_col = self.cfg.data.target_column
         self.filter_shutdowns = filter_shutdowns
 
@@ -665,6 +894,7 @@ class SPEBergDataset(BaseDataset):
 
         if not processed_dir.exists() or not any(processed_dir.glob("*.parquet")):
             from offshore_dl.data.preprocess_spe_berg import preprocess_spe_berg
+
             preprocess_spe_berg(self.cfg)
 
         # Load wells
@@ -690,7 +920,7 @@ class SPEBergDataset(BaseDataset):
 
         # Build sample index: (well_idx, start_idx)
         self._samples: list[tuple[int, int]] = []
-        total_needed = self.input_window + self.horizon
+        total_needed = self.input_window + self.gap + self.horizon
 
         for well_idx, (name, df) in enumerate(self._well_data):
             n = len(df)
@@ -732,21 +962,27 @@ class SPEBergDataset(BaseDataset):
             for well_idx, start in self._samples:
                 arr = self._arrays[well_idx]
                 input_end = start + self.input_window
-                target_end = input_end + self.horizon
-                target_vals = arr[input_end:target_end, self._target_col_idx]
+                target_start = input_end + self.gap
+                target_end = target_start + self.horizon
+                target_vals = arr[target_start:target_end, self._target_col_idx]
                 if np.any(target_vals > 0.01):
                     filtered.append((well_idx, start))
             self._samples = filtered
             logger.info(
                 "  Filtered shutdowns: %d → %d samples (%.0f%% removed)",
-                original_n, len(filtered),
+                original_n,
+                len(filtered),
                 100 * (1 - len(filtered) / original_n) if original_n > 0 else 0,
             )
 
         logger.info(
             "SPEBergDataset (%s): %d samples, %d wells, input=%d, horizon=%d, n_vars=%d",
-            self.mode, len(self._samples), len(self._well_data),
-            self.input_window, self.horizon, self.n_vars,
+            self.mode,
+            len(self._samples),
+            len(self._well_data),
+            self.input_window,
+            self.horizon,
+            self.n_vars,
         )
 
     def __getitem__(self, index: int) -> tuple[torch.Tensor, torch.Tensor, dict]:
@@ -759,14 +995,15 @@ class SPEBergDataset(BaseDataset):
         well_name, _ = self._well_data[well_idx]
         arr = self._arrays[well_idx]
         input_end = start + self.input_window
-        target_end = input_end + self.horizon
+        target_start = input_end + self.gap
+        target_end = target_start + self.horizon
 
         # Input: all features over the input window
         input_data = arr[start:input_end]
         input_tensor = torch.from_numpy(input_data.copy())
 
         # Target: only Gas_Volume_MMscf over the forecast horizon
-        target_data = arr[input_end:target_end, self._target_col_idx]
+        target_data = arr[target_start:target_end, self._target_col_idx]
         target_tensor = torch.from_numpy(target_data.copy())
 
         metadata = {
@@ -774,7 +1011,9 @@ class SPEBergDataset(BaseDataset):
             "well_idx": well_idx,
             "start_idx": start,
             "input_end": input_end,
+            "target_start": target_start,
             "target_end": target_end,
+            "gap": self.gap,
             "horizon": self.horizon,
             "mode": self.mode,
         }
@@ -850,6 +1089,7 @@ class VolveDataset(BaseDataset):
         self.well_name = well_name
         self.horizon = horizon or self.cfg.data.forecasting.default_horizon
         self.input_window = input_window or self.cfg.data.forecasting.input_window
+        self.gap = self.cfg.data.forecasting.get("gap", 0)
         self.target_col = self.cfg.data.target_column
         self.filter_shutdowns = filter_shutdowns
 
@@ -861,6 +1101,7 @@ class VolveDataset(BaseDataset):
 
         if not processed_dir.exists() or not any(processed_dir.glob("*.parquet")):
             from offshore_dl.data.preprocess_volve import preprocess_volve
+
             preprocess_volve(self.cfg)
 
         # Load wells
@@ -873,7 +1114,8 @@ class VolveDataset(BaseDataset):
                 self._well_data.append((self.well_name, df))
             else:
                 logger.warning(
-                    "VolveDataset: well parquet not found: %s — loading all wells instead", path
+                    "VolveDataset: well parquet not found: %s — loading all wells instead",
+                    path,
                 )
                 for p in sorted(processed_dir.glob("*.parquet")):
                     df = pd.read_parquet(p)
@@ -886,7 +1128,7 @@ class VolveDataset(BaseDataset):
 
         # Build sample index: (well_idx, start_idx)
         self._samples: list[tuple[int, int]] = []
-        total_needed = self.input_window + self.horizon
+        total_needed = self.input_window + self.gap + self.horizon
 
         for well_idx, (name, df) in enumerate(self._well_data):
             n = len(df)
@@ -928,21 +1170,27 @@ class VolveDataset(BaseDataset):
             for well_idx, start in self._samples:
                 arr = self._arrays[well_idx]
                 input_end = start + self.input_window
-                target_end = input_end + self.horizon
-                target_vals = arr[input_end:target_end, self._target_col_idx]
+                target_start = input_end + self.gap
+                target_end = target_start + self.horizon
+                target_vals = arr[target_start:target_end, self._target_col_idx]
                 if np.any(target_vals > 0.01):
                     filtered.append((well_idx, start))
             self._samples = filtered
             logger.info(
                 "VolveDataset: filtered shutdowns: %d → %d samples (%.0f%% removed)",
-                original_n, len(filtered),
+                original_n,
+                len(filtered),
                 100 * (1 - len(filtered) / original_n) if original_n > 0 else 0,
             )
 
         logger.info(
             "VolveDataset (%s): %d samples, %d wells, input=%d, horizon=%d, n_vars=%d",
-            self.mode, len(self._samples), len(self._well_data),
-            self.input_window, self.horizon, self.n_vars,
+            self.mode,
+            len(self._samples),
+            len(self._well_data),
+            self.input_window,
+            self.horizon,
+            self.n_vars,
         )
 
     def __getitem__(self, index: int) -> tuple[torch.Tensor, torch.Tensor, dict]:
@@ -955,14 +1203,15 @@ class VolveDataset(BaseDataset):
         well_name, _ = self._well_data[well_idx]
         arr = self._arrays[well_idx]
         input_end = start + self.input_window
-        target_end = input_end + self.horizon
+        target_start = input_end + self.gap
+        target_end = target_start + self.horizon
 
         # Input: all features over the input window
         input_data = arr[start:input_end]
         input_tensor = torch.from_numpy(input_data.copy())
 
         # Target: only BORE_OIL_VOL over the forecast horizon
-        target_data = arr[input_end:target_end, self._target_col_idx]
+        target_data = arr[target_start:target_end, self._target_col_idx]
         target_tensor = torch.from_numpy(target_data.copy())
 
         metadata = {
@@ -970,7 +1219,9 @@ class VolveDataset(BaseDataset):
             "well_idx": well_idx,
             "start_idx": start,
             "input_end": input_end,
+            "target_start": target_start,
             "target_end": target_end,
+            "gap": self.gap,
             "horizon": self.horizon,
             "mode": self.mode,
         }
@@ -989,6 +1240,208 @@ class VolveDataset(BaseDataset):
 
         return {
             "class": "VolveDataset",
+            "length": len(self),
+            "n_vars": self.n_vars,
+            "input_window": self.input_window,
+            "horizon": self.horizon,
+            "mode": self.mode,
+            "well_counts": well_counts,
+            "target_col": self.target_col,
+            "target_col_idx": self._target_col_idx,
+        }
+
+
+class InnerMongoliaDataset(BaseDataset):
+    """Inner Mongolia Shanxi Formation gas production forecasting dataset.
+
+    Supports per-well and multi-well modes with configurable forecast horizons.
+    Reads preprocessed per-well parquets from ``data/processed/inner_mongolia/``
+    (produced by ``preprocess_inner_mongolia``).
+
+    Returns ``(input_tensor[w, n_vars], target_tensor[h], metadata)`` where
+    the target is the ``daily_gas_volume_1e4m3`` column over the forecast horizon.
+
+    If the preprocessed parquets are missing, preprocessing is run automatically.
+
+    29 gas wells from the Inner Mongolia Shanxi Formation (56-14X excluded —
+    only 177 production days, below the 180-day minimum).
+
+    Args:
+        config: Path to Inner Mongolia YAML config or pre-loaded DictConfig.
+        base_config: Path to base config.
+        mode: ``"per_well"`` or ``"multi_well"``. Overrides config default.
+        well_name: Specific well filename stem to load (per_well mode only,
+            e.g. ``"54-16X"``).
+        horizon: Override forecast horizon from config.
+        input_window: Override input window size from config.
+        filter_shutdowns: If True, drop samples whose target window is all-zero
+            (well offline / shutdown).
+    """
+
+    def __init__(
+        self,
+        config: str | Path | DictConfig,
+        base_config: str | Path = "configs/base.yaml",
+        mode: str = "multi_well",
+        well_name: str | None = None,
+        horizon: int | None = None,
+        input_window: int | None = None,
+        filter_shutdowns: bool = False,
+    ) -> None:
+        if isinstance(config, (str, Path)):
+            self.cfg = load_merged_config(base_config, config)
+        else:
+            self.cfg = config
+
+        self.mode = mode
+        self.well_name = well_name
+        self.horizon = horizon or self.cfg.data.forecasting.default_horizon
+        self.input_window = input_window or self.cfg.data.forecasting.input_window
+        self.gap = self.cfg.data.forecasting.get("gap", 0)
+        self.target_col = self.cfg.data.target_column
+        self.filter_shutdowns = filter_shutdowns
+
+        self._load_data()
+
+    def _load_data(self) -> None:
+        """Load processed Inner Mongolia parquets and build sample index."""
+        processed_dir = Path(self.cfg.data.paths.processed)
+
+        if not processed_dir.exists() or not any(processed_dir.glob("*.parquet")):
+            from offshore_dl.data.preprocess_inner_mongolia import (
+                preprocess_inner_mongolia,
+            )
+
+            preprocess_inner_mongolia(self.cfg)
+
+        # Load wells
+        self._well_data: list[tuple[str, pd.DataFrame]] = []
+
+        if self.mode == "per_well" and self.well_name:
+            path = processed_dir / f"{self.well_name}.parquet"
+            if path.exists():
+                df = pd.read_parquet(path)
+                self._well_data.append((self.well_name, df))
+            else:
+                logger.warning(
+                    "InnerMongoliaDataset: well parquet not found: %s — loading all wells",
+                    path,
+                )
+                for p in sorted(processed_dir.glob("*.parquet")):
+                    df = pd.read_parquet(p)
+                    self._well_data.append((p.stem, df))
+        else:
+            for path in sorted(processed_dir.glob("*.parquet")):
+                df = pd.read_parquet(path)
+                self._well_data.append((path.stem, df))
+
+        # Build sample index: (well_idx, start_idx)
+        self._samples: list[tuple[int, int]] = []
+        total_needed = self.input_window + self.gap + self.horizon
+
+        for well_idx, (name, df) in enumerate(self._well_data):
+            n = len(df)
+            for start in range(0, max(0, n - total_needed + 1)):
+                self._samples.append((well_idx, start))
+
+        # Align all wells to a common sorted column set (union, fill missing with 0)
+        if self._well_data:
+            all_cols: list[set[str]] = [set(df.columns) for _, df in self._well_data]
+            self._common_columns: list[str] = sorted(set.union(*all_cols))
+        else:
+            self._common_columns = []
+
+        # Compute target column index in the ALIGNED (sorted) column order
+        if self.target_col in self._common_columns:
+            self._target_col_idx = self._common_columns.index(self.target_col)
+        else:
+            self._target_col_idx = 0
+            logger.warning(
+                "InnerMongoliaDataset: target '%s' not in aligned columns, using col 0",
+                self.target_col,
+            )
+
+        # Precompute numpy arrays with aligned columns
+        self._arrays: list[np.ndarray] = []
+        for _, df in self._well_data:
+            aligned = df.reindex(columns=self._common_columns, fill_value=0.0)
+            arr = aligned.values.astype(np.float32)
+            np.nan_to_num(arr, copy=False, nan=0.0)
+            self._arrays.append(arr)
+
+        self.n_vars = len(self._common_columns)
+
+        # Filter shutdown windows
+        if self.filter_shutdowns and self._arrays:
+            original_n = len(self._samples)
+            filtered = []
+            for well_idx, start in self._samples:
+                arr = self._arrays[well_idx]
+                input_end = start + self.input_window
+                target_start = input_end + self.gap
+                target_end = target_start + self.horizon
+                target_vals = arr[target_start:target_end, self._target_col_idx]
+                if np.any(target_vals > 0.01):
+                    filtered.append((well_idx, start))
+            self._samples = filtered
+            logger.info(
+                "InnerMongoliaDataset: filtered shutdowns: %d → %d samples (%.0f%% removed)",
+                original_n,
+                len(filtered),
+                100 * (1 - len(filtered) / original_n) if original_n > 0 else 0,
+            )
+
+        logger.info(
+            "InnerMongoliaDataset (%s): %d samples, %d wells, input=%d, horizon=%d, n_vars=%d",
+            self.mode,
+            len(self._samples),
+            len(self._well_data),
+            self.input_window,
+            self.horizon,
+            self.n_vars,
+        )
+
+    def __getitem__(self, index: int) -> tuple[torch.Tensor, torch.Tensor, dict]:
+        """Return a single forecasting sample."""
+        well_idx, start = self._samples[index]
+        well_name, _ = self._well_data[well_idx]
+        arr = self._arrays[well_idx]
+        input_end = start + self.input_window
+        target_start = input_end + self.gap
+        target_end = target_start + self.horizon
+
+        input_data = arr[start:input_end]
+        input_tensor = torch.from_numpy(input_data.copy())
+
+        target_data = arr[target_start:target_end, self._target_col_idx]
+        target_tensor = torch.from_numpy(target_data.copy())
+
+        metadata = {
+            "well_name": well_name,
+            "well_idx": well_idx,
+            "start_idx": start,
+            "input_end": input_end,
+            "target_start": target_start,
+            "target_end": target_end,
+            "gap": self.gap,
+            "horizon": self.horizon,
+            "mode": self.mode,
+        }
+
+        return input_tensor, target_tensor, metadata
+
+    def __len__(self) -> int:
+        return len(self._samples)
+
+    def get_metadata(self) -> dict:
+        """Return dataset-level metadata."""
+        well_counts: dict[str, int] = {}
+        for well_idx, _ in self._samples:
+            name = self._well_data[well_idx][0]
+            well_counts[name] = well_counts.get(name, 0) + 1
+
+        return {
+            "class": "InnerMongoliaDataset",
             "length": len(self),
             "n_vars": self.n_vars,
             "input_window": self.input_window,

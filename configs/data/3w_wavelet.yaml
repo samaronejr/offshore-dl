@@ -1,0 +1,52 @@
+# ─── 3W v2.0.0 Wavelet Feature Dataset Configuration ───
+
+data:
+  name: "3w_wavelet"
+  task: "classification"
+  n_classes: 10
+  n_features: 18
+
+  paths:
+    raw: "${paths.raw_data}/3w"
+    processed: "${paths.processed_data}/3w"
+    folds: "${paths.raw_data}/3w/folds/folds_clf_02.csv"
+
+  sensor_columns:
+    - "ABER-CKGL"
+    - "ABER-CKP"
+    - "ESTADO-DHSV"
+    - "ESTADO-M1"
+    - "ESTADO-M2"
+    - "ESTADO-PXO"
+    - "ESTADO-SDV-GL"
+    - "ESTADO-SDV-P"
+    - "ESTADO-W1"
+    - "ESTADO-W2"
+    - "ESTADO-XO"
+    - "P-ANULAR"
+    - "P-JUS-BS"
+    - "P-JUS-CKGL"
+    - "P-JUS-CKP"
+    - "P-MON-CKGL"
+    - "P-MON-CKP"
+    - "P-MON-SDV-P"
+    - "P-PDG"
+    - "PT-P"
+    - "P-TPT"
+    - "QBS"
+    - "QGL"
+    - "T-JUS-CKP"
+    - "T-MON-CKP"
+    - "T-PDG"
+    - "T-TPT"
+
+  label_column: "class"
+  timestamp_column: "timestamp"
+
+  preprocessing:
+    frozen_value_window: 60
+    forward_fill_limit: 300
+    window_size: 720
+    window_stride: 360
+    cache_in_memory: false
+    wavelet_scales: [30, 90, 180, 360]

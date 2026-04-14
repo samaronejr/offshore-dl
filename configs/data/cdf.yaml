@@ -3,7 +3,7 @@
 
 data:
   name: "cdf"
-  task: "anomaly_unsupervised"
+  task: "anomaly"
 
   paths:
     raw: "${paths.raw_data}/CogniteDataFusion/23-KA-9101_2019-09-01_2020-03-01_1h.csv"

@@ -11,7 +11,13 @@ from collections import defaultdict
 
 import numpy as np
 import torch
+from torch.utils.data._utils.collate import default_collate
 from torch.utils.data import DataLoader, Dataset, Sampler
+
+from offshore_dl.data.transforms import (
+    feature_dropout_augment,
+    gaussian_noise_augment,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -106,6 +112,7 @@ def create_dataloader(
     persistent_workers: bool = True,
     drop_last: bool = False,
     labels: np.ndarray | list[int] | None = None,
+    augment: bool = False,
 ) -> DataLoader:
     """Create a DataLoader with GPU-optimized defaults.
 
@@ -120,11 +127,37 @@ def create_dataloader(
         persistent_workers: Keep workers alive between epochs.
         drop_last: Drop incomplete final batch.
         labels: Required when ``balanced=True``. Array of class labels.
+        augment: Apply 3W feature-matrix augmentation at collation time.
 
     Returns:
         Configured DataLoader.
     """
     sampler = None
+
+    def worker_init_fn(worker_id: int) -> None:
+        np.random.seed(42 + worker_id)
+
+    loader_worker_init_fn = worker_init_fn if num_workers > 0 else None
+
+    def collate_fn(batch):
+        collated = default_collate(batch)
+        if not augment:
+            return collated
+
+        features = collated[0]
+        if (
+            torch.is_tensor(features)
+            and features.ndim == 3
+            and features.shape[-1] == 27
+        ):
+            augmented = []
+            for sample in features:
+                sample_np = sample.cpu().numpy()
+                sample_np = gaussian_noise_augment(sample_np)
+                sample_np = feature_dropout_augment(sample_np)
+                augmented.append(torch.from_numpy(sample_np))
+            collated = (torch.stack(augmented, dim=0), *collated[1:])
+        return collated
 
     if balanced:
         if labels is None:
@@ -140,10 +173,12 @@ def create_dataloader(
             batch_size=batch_size,
             sampler=sampler,
             num_workers=num_workers,
+            worker_init_fn=loader_worker_init_fn,
             pin_memory=pin_memory,
             prefetch_factor=prefetch_factor if num_workers > 0 else None,
             persistent_workers=persistent_workers and num_workers > 0,
             drop_last=drop_last,
+            collate_fn=collate_fn,
         )
 
     return DataLoader(
@@ -151,8 +186,10 @@ def create_dataloader(
         batch_size=batch_size,
         shuffle=shuffle,
         num_workers=num_workers,
+        worker_init_fn=loader_worker_init_fn,
         pin_memory=pin_memory,
         prefetch_factor=prefetch_factor if num_workers > 0 else None,
         persistent_workers=persistent_workers and num_workers > 0,
         drop_last=drop_last,
+        collate_fn=collate_fn,
     )

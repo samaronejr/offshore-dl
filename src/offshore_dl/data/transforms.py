@@ -119,7 +119,7 @@ def sliding_window_segmentation(
 
         if labels is not None:
             window_labels = labels[start:end]
-            # Majority vote — exclude NaN-like values (-1, NaN)
+            # Majority vote — exclude NaN values
             valid = window_labels[~pd.isna(window_labels)]
             if len(valid) > 0:
                 counts = Counter(valid.astype(int))
@@ -223,8 +223,14 @@ def detect_shutdowns(
 ) -> pd.DataFrame:
     """Flag periods where gas production is zero for consecutive days.
 
+    Uses a **causal** rolling count: a day is flagged as shutdown only when
+    it has been zero for at least ``zero_days_threshold`` consecutive days
+    *up to and including* that day.  The original non-causal implementation
+    used ``groupby.transform("sum")`` which labels the first day of a zero
+    run using the *total* run length (future information).
+
     Args:
-        df: Daily production DataFrame.
+        df: Daily production DataFrame (must be sorted by date ascending).
         gas_column: Column containing gas production values.
         zero_days_threshold: Minimum consecutive zero days to flag.
 
@@ -234,9 +240,11 @@ def detect_shutdowns(
     df = df.copy()
     is_zero = (df[gas_column] == 0) | df[gas_column].isna()
 
-    # Count consecutive zeros using cumsum trick
-    groups = (~is_zero).cumsum()
-    consecutive = is_zero.groupby(groups).transform("sum")
+    # Causal consecutive-zero counter: reset to 0 on any non-zero day.
+    # Each day only sees its own history, not future days.
+    consecutive = is_zero.astype(int).groupby(
+        (~is_zero).cumsum()
+    ).cumcount() + is_zero.astype(int)
 
     df["is_shutdown"] = (consecutive >= zero_days_threshold) & is_zero
     return df
@@ -330,3 +338,48 @@ def log_transform(
             continue
         df[col] = np.log(df[col] + eps)
     return df
+
+
+def gaussian_noise_augment(
+    features: np.ndarray,
+    sigma_frac: float = 0.02,
+) -> np.ndarray:
+    """Add Gaussian noise scaled by the feature standard deviation."""
+    x = np.asarray(features, dtype=np.float32).copy()
+    scale = float(np.std(x))
+    if scale == 0.0 or not np.isfinite(scale):
+        scale = 1.0
+    noise = np.random.normal(0.0, sigma_frac * scale, size=x.shape).astype(np.float32)
+    out = x + noise
+    np.nan_to_num(out, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+    return out
+
+
+def feature_dropout_augment(
+    features: np.ndarray,
+    drop_prob: float = 0.1,
+) -> np.ndarray:
+    """Randomly zero out whole sensor columns."""
+    x = np.asarray(features, dtype=np.float32).copy()
+    if drop_prob <= 0:
+        return x
+    drop_mask = np.random.random(x.shape[-1]) < drop_prob
+    if np.any(drop_mask):
+        x[:, drop_mask] = 0.0
+    np.nan_to_num(x, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+    return x
+
+
+def time_feature_warp_augment(
+    features: np.ndarray,
+    scale_range: tuple = (0.9, 1.1),
+) -> np.ndarray:
+    """Apply per-row scaling across the feature axis."""
+    x = np.asarray(features, dtype=np.float32).copy()
+    low, high = scale_range
+    if low > high:
+        low, high = high, low
+    scales = np.random.uniform(low, high, size=(x.shape[0], 1)).astype(np.float32)
+    out = x * scales
+    np.nan_to_num(out, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
+    return out
