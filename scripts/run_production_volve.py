@@ -63,7 +63,14 @@ TREE_MODELS: list[str] = []
 ALL_MODELS = TRAINED_MODELS + FM_MODELS + TREE_MODELS
 
 # Volve: 6 wells (Norwegian North Sea)
-WELLS = ["NO_15_9-F-1_C", "NO_15_9-F-5_AH", "NO_15_9-F-11_H", "NO_15_9-F-12_H", "NO_15_9-F-14_H", "NO_15_9-F-15_D"]
+WELLS = [
+    "NO_15_9-F-1_C",
+    "NO_15_9-F-5_AH",
+    "NO_15_9-F-11_H",
+    "NO_15_9-F-12_H",
+    "NO_15_9-F-14_H",
+    "NO_15_9-F-15_D",
+]
 
 FM_WRAPPER_MAP = {
     "chronos": ("offshore_dl.models.chronos_wrapper", "ChronosWrapper"),
@@ -170,6 +177,7 @@ def _load_fm_class(model_name: str):
     """Dynamically import an FM wrapper class."""
     module_path, class_name = FM_WRAPPER_MAP[model_name]
     import importlib
+
     mod = importlib.import_module(module_path)
     return getattr(mod, class_name)
 
@@ -226,7 +234,9 @@ def _run_trained_model(
     # Save results
     if well:
         safe_name = _safe_well(well)
-        out_path = RESULTS_DIR / model_name / f"volve_h{horizon}_{mode}_{safe_name}.json"
+        out_path = (
+            RESULTS_DIR / model_name / f"volve_h{horizon}_{mode}_{safe_name}.json"
+        )
     else:
         out_path = RESULTS_DIR / model_name / f"volve_h{horizon}_{mode}.json"
 
@@ -237,11 +247,12 @@ def _run_trained_model(
     # Print summary
     tm = results.get("test_metrics", {})
     metric_str = ", ".join(
-        f"{k}={v:.4f}" for k, v in sorted(tm.items())
-        if isinstance(v, (int, float))
+        f"{k}={v:.4f}" for k, v in sorted(tm.items()) if isinstance(v, (int, float))
     )
-    print(f"\n  {model_name.upper()} on VOLVE h{horizon} {mode}"
-          f"{(' ' + well) if well else ''}")
+    print(
+        f"\n  {model_name.upper()} on VOLVE h{horizon} {mode}"
+        f"{(' ' + well) if well else ''}"
+    )
     print(f"  TEST: {metric_str}")
     print(f"  Results saved: {out_path}\n")
 
@@ -269,13 +280,23 @@ def _run_fm_multi_well(
     (BORE_OIL_VOL) does NOT sort to index 0 in the common columns.
     """
     set_global_seed(42)
-    dataset = VolveDataset("configs/data/volve.yaml", horizon=horizon, mode="multi_well", filter_shutdowns=False)
+    dataset = VolveDataset(
+        "configs/data/volve.yaml",
+        horizon=horizon,
+        mode="multi_well",
+        filter_shutdowns=False,
+    )
     n_vars = dataset.n_vars
 
     fm_class = _load_fm_class(model_name)
     # D028: pass target_channel so FM predicts the correct channel
-    model = fm_class(task="forecasting", n_vars=n_vars, horizon=horizon, window_size=90,
-                     target_channel=dataset._target_col_idx)
+    model = fm_class(
+        task="forecasting",
+        n_vars=n_vars,
+        horizon=horizon,
+        window_size=90,
+        target_channel=dataset._target_col_idx,
+    )
 
     # Temporal holdout: last 20%
     n = len(dataset)
@@ -283,7 +304,9 @@ def _run_fm_multi_well(
     train_pool, test_indices = holdout.split(n)
 
     # ── Evaluate on held-out test set (primary metric) ──
-    test_metrics = _zero_shot_evaluate(model, dataset, test_indices, max_samples=max_samples)
+    test_metrics = _zero_shot_evaluate(
+        model, dataset, test_indices, max_samples=max_samples
+    )
 
     # ── Inner CV on train pool (for variance estimates) ──
     cv = _make_inner_cv(dataset, train_pool)
@@ -291,8 +314,16 @@ def _run_fm_multi_well(
     cv_fold_results = []
     for fold_idx, (local_train, local_val) in enumerate(inner_splits):
         global_val = train_pool[local_val]
-        logger.info("  ── %s h%d multi_well inner fold %d/%d", model_name, horizon, fold_idx + 1, len(inner_splits))
-        metrics = _zero_shot_evaluate(model, dataset, global_val, max_samples=max_samples)
+        logger.info(
+            "  ── %s h%d multi_well inner fold %d/%d",
+            model_name,
+            horizon,
+            fold_idx + 1,
+            len(inner_splits),
+        )
+        metrics = _zero_shot_evaluate(
+            model, dataset, global_val, max_samples=max_samples
+        )
         cv_fold_results.append({"fold_idx": fold_idx, "metrics": metrics})
 
     cv_agg = _aggregate(cv_fold_results)
@@ -341,16 +372,30 @@ def _run_fm_per_well(
         )
 
         if len(dataset) == 0:
-            logger.warning("  ── %s h%d per_well %s: empty dataset, skipping", model_name, horizon, well)
-            per_well_results.append({
-                "well": well, "status": "skipped", "reason": "empty dataset",
-            })
+            logger.warning(
+                "  ── %s h%d per_well %s: empty dataset, skipping",
+                model_name,
+                horizon,
+                well,
+            )
+            per_well_results.append(
+                {
+                    "well": well,
+                    "status": "skipped",
+                    "reason": "empty dataset",
+                }
+            )
             continue
 
         n_vars = dataset.n_vars  # varies per well
         # D028: pass target_channel so FM predicts the correct channel
-        model = fm_class(task="forecasting", n_vars=n_vars, horizon=horizon, window_size=90,
-                         target_channel=dataset._target_col_idx)
+        model = fm_class(
+            task="forecasting",
+            n_vars=n_vars,
+            horizon=horizon,
+            window_size=90,
+            target_channel=dataset._target_col_idx,
+        )
 
         # Temporal holdout: last 20%
         n = len(dataset)
@@ -358,7 +403,9 @@ def _run_fm_per_well(
         train_pool, test_idx = holdout.split(n)
 
         # Evaluate on held-out test
-        test_metrics = _zero_shot_evaluate(model, dataset, test_idx, max_samples=max_samples)
+        test_metrics = _zero_shot_evaluate(
+            model, dataset, test_idx, max_samples=max_samples
+        )
 
         # Inner CV for variance
         cv = _make_inner_cv(dataset, train_pool)
@@ -366,8 +413,17 @@ def _run_fm_per_well(
         cv_fold_results = []
         for fold_idx, (local_train, local_val) in enumerate(inner_splits):
             global_val = train_pool[local_val]
-            logger.info("  ── %s h%d per_well %s inner fold %d/%d", model_name, horizon, well, fold_idx + 1, len(inner_splits))
-            metrics = _zero_shot_evaluate(model, dataset, global_val, max_samples=max_samples)
+            logger.info(
+                "  ── %s h%d per_well %s inner fold %d/%d",
+                model_name,
+                horizon,
+                well,
+                fold_idx + 1,
+                len(inner_splits),
+            )
+            metrics = _zero_shot_evaluate(
+                model, dataset, global_val, max_samples=max_samples
+            )
             cv_fold_results.append({"fold_idx": fold_idx, "metrics": metrics})
 
         cv_agg = _aggregate(cv_fold_results)
@@ -386,7 +442,14 @@ def _run_fm_per_well(
         out_path.write_text(json.dumps(_make_serializable(result), indent=2))
         logger.info("  Saved %s", out_path)
 
-        per_well_results.append({"well": well, "status": "ok", "test_metrics": test_metrics, "cv_aggregate": cv_agg})
+        per_well_results.append(
+            {
+                "well": well,
+                "status": "ok",
+                "test_metrics": test_metrics,
+                "cv_aggregate": cv_agg,
+            }
+        )
 
     return per_well_results
 
@@ -404,33 +467,37 @@ def _build_plan(models: list[str], multi_well_only: bool = False) -> list[dict]:
         is_tree = model in TREE_MODELS
         for horizon in HORIZONS:
             # multi_well
-            plan.append({
-                "model": model,
-                "horizon": horizon,
-                "mode": "multi_well",
-                "well": None,
-                "is_fm": is_fm,
-                "is_tree": is_tree,
-            })
+            plan.append(
+                {
+                    "model": model,
+                    "horizon": horizon,
+                    "mode": "multi_well",
+                    "well": None,
+                    "is_fm": is_fm,
+                    "is_tree": is_tree,
+                }
+            )
             # per_well: individual wells
             if not multi_well_only:
                 for well in WELLS:
-                    plan.append({
-                        "model": model,
-                        "horizon": horizon,
-                        "mode": "per_well",
-                        "well": well,
-                        "is_fm": is_fm,
-                        "is_tree": is_tree,
-                    })
+                    plan.append(
+                        {
+                            "model": model,
+                            "horizon": horizon,
+                            "mode": "per_well",
+                            "well": well,
+                            "is_fm": is_fm,
+                            "is_tree": is_tree,
+                        }
+                    )
     return plan
 
 
 def _print_plan(plan: list[dict]) -> None:
     """Print sweep plan without executing."""
-    print(f"\n{'═'*70}")
+    print(f"\n{'═' * 70}")
     print(f"  VOLVE PRODUCTION SWEEP PLAN — {len(plan)} runs")
-    print(f"{'═'*70}")
+    print(f"{'═' * 70}")
     for i, run in enumerate(plan, 1):
         well_str = f" well={run['well']}" if run["well"] else ""
         if run["is_fm"]:
@@ -439,29 +506,61 @@ def _print_plan(plan: list[dict]) -> None:
             tag = " [tree]"
         else:
             tag = " [trained]"
-        print(f"  {i:4d}. {run['model']:10s} h={run['horizon']:2d} {run['mode']:12s}{well_str}{tag}")
-    print(f"{'═'*70}")
+        print(
+            f"  {i:4d}. {run['model']:10s} h={run['horizon']:2d} {run['mode']:12s}{well_str}{tag}"
+        )
+    print(f"{'═' * 70}")
     print(f"  Total runs: {len(plan)}")
     n_trained = sum(1 for r in plan if not r["is_fm"] and not r.get("is_tree"))
     n_fm = sum(1 for r in plan if r["is_fm"])
     n_tree = sum(1 for r in plan if r.get("is_tree"))
     print(f"  Trained: {n_trained}, Zero-shot FM: {n_fm}, Tree: {n_tree}")
-    print(f"{'═'*70}\n")
+    print(f"{'═' * 70}\n")
 
 
 def main() -> None:
+    set_global_seed(42)
+
     parser = argparse.ArgumentParser(
         description="Production sweep: Volve Norwegian North Sea oil forecasting",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument("--device", type=str, default="cuda", help="Compute device")
-    parser.add_argument("--max-epochs", type=int, default=None, help="Override max training epochs (None = use config)")
-    parser.add_argument("--models", nargs="+", default=ALL_MODELS, choices=ALL_MODELS, help="Models to run")
-    parser.add_argument("--dry-run", action="store_true", help="Print plan without executing")
-    parser.add_argument("--max-samples", type=int, default=None, help="Cap val samples per FM fold (for smoke tests)")
-    parser.add_argument("--no-mlflow", action="store_true", help="Disable MLflow tracking")
-    parser.add_argument("--skip-existing", action="store_true", help="Skip runs whose result JSON already exists")
-    parser.add_argument("--multi-well-only", action="store_true", help="Run only multi_well mode, skip per_well")
+    parser.add_argument(
+        "--max-epochs",
+        type=int,
+        default=None,
+        help="Override max training epochs (None = use config)",
+    )
+    parser.add_argument(
+        "--models",
+        nargs="+",
+        default=ALL_MODELS,
+        choices=ALL_MODELS,
+        help="Models to run",
+    )
+    parser.add_argument(
+        "--dry-run", action="store_true", help="Print plan without executing"
+    )
+    parser.add_argument(
+        "--max-samples",
+        type=int,
+        default=None,
+        help="Cap val samples per FM fold (for smoke tests)",
+    )
+    parser.add_argument(
+        "--no-mlflow", action="store_true", help="Disable MLflow tracking"
+    )
+    parser.add_argument(
+        "--skip-existing",
+        action="store_true",
+        help="Skip runs whose result JSON already exists",
+    )
+    parser.add_argument(
+        "--multi-well-only",
+        action="store_true",
+        help="Run only multi_well mode, skip per_well",
+    )
 
     args = parser.parse_args()
 
@@ -473,7 +572,12 @@ def main() -> None:
 
     logger.info("═" * 70)
     logger.info("VOLVE PRODUCTION SWEEP — %d runs", len(plan))
-    logger.info("  device=%s  max_epochs=%s  models=%s", args.device, args.max_epochs, args.models)
+    logger.info(
+        "  device=%s  max_epochs=%s  models=%s",
+        args.device,
+        args.max_epochs,
+        args.models,
+    )
     logger.info("═" * 70)
 
     sweep_start = time.time()
@@ -503,7 +607,9 @@ def main() -> None:
         # Compute expected output path for skip check
         if well:
             _skip_safe = _safe_well(well)
-            out_path = RESULTS_DIR / model / f"volve_h{horizon}_per_well_{_skip_safe}.json"
+            out_path = (
+                RESULTS_DIR / model / f"volve_h{horizon}_per_well_{_skip_safe}.json"
+            )
         elif mode == "multi_well" and is_fm:
             # FM multi_well uses a different naming convention (no mode prefix)
             out_path = RESULTS_DIR / model / f"volve_h{horizon}_multi_well.json"
@@ -512,14 +618,18 @@ def main() -> None:
 
         if args.skip_existing and out_path.exists():
             logger.info("  SKIP (exists): %s", out_path)
-            all_status[model].append({"run": run_label, "status": "skipped", "reason": "exists"})
+            all_status[model].append(
+                {"run": run_label, "status": "skipped", "reason": "exists"}
+            )
             continue
 
         start = time.time()
         try:
             if is_fm:
                 if mode == "multi_well":
-                    result = _run_fm_multi_well(model, horizon, max_samples=args.max_samples)
+                    result = _run_fm_multi_well(
+                        model, horizon, max_samples=args.max_samples
+                    )
                     agg = result.get("aggregate", {})
                 else:
                     # per_well individual run
@@ -534,18 +644,27 @@ def main() -> None:
                     )
                     if len(dataset) == 0:
                         elapsed = time.time() - start
-                        all_status[model].append({
-                            "run": run_label, "status": "skipped",
-                            "reason": "empty dataset", "elapsed": round(elapsed, 1),
-                        })
+                        all_status[model].append(
+                            {
+                                "run": run_label,
+                                "status": "skipped",
+                                "reason": "empty dataset",
+                                "elapsed": round(elapsed, 1),
+                            }
+                        )
                         logger.warning("  Skipped: empty dataset")
                         continue
 
                     n_vars = dataset.n_vars
                     fm_class = _load_fm_class(model)
                     # D028: pass target_channel so FM predicts the correct channel
-                    fm_model = fm_class(task="forecasting", n_vars=n_vars, horizon=horizon, window_size=90,
-                                        target_channel=dataset._target_col_idx)
+                    fm_model = fm_class(
+                        task="forecasting",
+                        n_vars=n_vars,
+                        horizon=horizon,
+                        window_size=90,
+                        target_channel=dataset._target_col_idx,
+                    )
 
                     # Temporal holdout
                     n_ds = len(dataset)
@@ -553,7 +672,9 @@ def main() -> None:
                     pw_train_pool, pw_test_idx = holdout.split(n_ds)
 
                     # Evaluate on held-out test
-                    test_metrics = _zero_shot_evaluate(fm_model, dataset, pw_test_idx, max_samples=args.max_samples)
+                    test_metrics = _zero_shot_evaluate(
+                        fm_model, dataset, pw_test_idx, max_samples=args.max_samples
+                    )
 
                     # Inner CV for variance
                     cv = _make_inner_cv(dataset, pw_train_pool)
@@ -561,7 +682,9 @@ def main() -> None:
                     fold_results = []
                     for fold_idx, (local_train, local_val) in enumerate(inner_splits):
                         global_val = pw_train_pool[local_val]
-                        metrics = _zero_shot_evaluate(fm_model, dataset, global_val, max_samples=args.max_samples)
+                        metrics = _zero_shot_evaluate(
+                            fm_model, dataset, global_val, max_samples=args.max_samples
+                        )
                         fold_results.append({"fold_idx": fold_idx, "metrics": metrics})
 
                     cv_agg = _aggregate(fold_results)
@@ -575,29 +698,45 @@ def main() -> None:
                         "well": well,
                     }
 
-                    out_path = RESULTS_DIR / model / f"volve_h{horizon}_per_well_{safe}.json"
+                    out_path = (
+                        RESULTS_DIR / model / f"volve_h{horizon}_per_well_{safe}.json"
+                    )
                     out_path.parent.mkdir(parents=True, exist_ok=True)
-                    out_path.write_text(json.dumps(_make_serializable(result), indent=2))
+                    out_path.write_text(
+                        json.dumps(_make_serializable(result), indent=2)
+                    )
                     logger.info("  Saved %s", out_path)
             elif is_tree:
                 # Tree model — sklearn-style fit/predict (placeholder for future models)
                 raise NotImplementedError(f"No tree-model runner for {model}")
             else:
                 # Trained model — uses nested CV
-                result = _run_trained_model(model, horizon, mode, well, args.max_epochs, args.device, use_mlflow=not args.no_mlflow)
+                result = _run_trained_model(
+                    model,
+                    horizon,
+                    mode,
+                    well,
+                    args.max_epochs,
+                    args.device,
+                    use_mlflow=not args.no_mlflow,
+                )
 
             # Extract primary metrics (test_metrics for nested, fall back to aggregate)
             tm = result.get("test_metrics", result.get("aggregate", {}))
             elapsed = time.time() - start
             metric_str = ", ".join(
-                f"{k}={v:.4f}" for k, v in sorted(tm.items())
+                f"{k}={v:.4f}"
+                for k, v in sorted(tm.items())
                 if isinstance(v, (int, float))
             )
-            all_status[model].append({
-                "run": run_label, "status": "ok",
-                "elapsed": round(elapsed, 1),
-                "test_metrics": tm,
-            })
+            all_status[model].append(
+                {
+                    "run": run_label,
+                    "status": "ok",
+                    "elapsed": round(elapsed, 1),
+                    "test_metrics": tm,
+                }
+            )
             logger.info("✓ %s: %s (%.1fs)", run_label, metric_str, elapsed)
 
         except ImportError as e:
@@ -619,21 +758,31 @@ def main() -> None:
                     stub_path = out_path
                     stub_path.parent.mkdir(parents=True, exist_ok=True)
                     stub_path.write_text(json.dumps(stub, indent=2))
-                    logger.warning("  UNAVAILABLE %s → stub written: %s", run_label, stub_path)
+                    logger.warning(
+                        "  UNAVAILABLE %s → stub written: %s", run_label, stub_path
+                    )
                 except Exception:
                     pass
-            all_status[model].append({
-                "run": run_label, "status": "unavailable",
-                "elapsed": round(elapsed, 1), "error": str(e),
-            })
+            all_status[model].append(
+                {
+                    "run": run_label,
+                    "status": "unavailable",
+                    "elapsed": round(elapsed, 1),
+                    "error": str(e),
+                }
+            )
             logger.error("✗ %s unavailable: %s (%.1fs)", run_label, e, elapsed)
 
         except Exception as e:
             elapsed = time.time() - start
-            all_status[model].append({
-                "run": run_label, "status": "error",
-                "elapsed": round(elapsed, 1), "error": str(e),
-            })
+            all_status[model].append(
+                {
+                    "run": run_label,
+                    "status": "error",
+                    "elapsed": round(elapsed, 1),
+                    "error": str(e),
+                }
+            )
             logger.error("✗ %s failed: %s (%.1fs)", run_label, e, elapsed)
             traceback.print_exc()
 
@@ -648,19 +797,21 @@ def main() -> None:
     total_elapsed = time.time() - sweep_start
     n_ok = sum(1 for sts in all_status.values() for s in sts if s["status"] == "ok")
     n_err = sum(1 for sts in all_status.values() for s in sts if s["status"] == "error")
-    n_skip = sum(1 for sts in all_status.values() for s in sts if s["status"] == "skipped")
+    n_skip = sum(
+        1 for sts in all_status.values() for s in sts if s["status"] == "skipped"
+    )
 
-    print(f"\n{'═'*70}")
+    print(f"\n{'═' * 70}")
     print(f"  VOLVE PRODUCTION SWEEP COMPLETE")
-    print(f"{'═'*70}")
-    print(f"  Total time: {total_elapsed:.0f}s ({total_elapsed/60:.1f} min)")
+    print(f"{'═' * 70}")
+    print(f"  Total time: {total_elapsed:.0f}s ({total_elapsed / 60:.1f} min)")
     print(f"  OK: {n_ok}  Errors: {n_err}  Skipped: {n_skip}")
     for model, statuses in all_status.items():
         ok = sum(1 for s in statuses if s["status"] == "ok")
         err = sum(1 for s in statuses if s["status"] == "error")
         skip = sum(1 for s in statuses if s["status"] == "skipped")
         print(f"    {model:12s} — ok={ok}, err={err}, skip={skip}")
-    print(f"{'═'*70}\n")
+    print(f"{'═' * 70}\n")
 
 
 if __name__ == "__main__":
