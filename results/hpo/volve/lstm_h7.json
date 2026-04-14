@@ -1,0 +1,50 @@
+{
+  "hpo": {
+    "best_params": {
+      "hidden_size": 256,
+      "num_layers": 2,
+      "dropout": 0.17310662280639566,
+      "lr": 0.006104469154991706
+    },
+    "best_value": 2.095391457347565,
+    "n_trials": 3
+  },
+  "test_metrics": {
+    "mae": 7.536750652416034,
+    "rmse": 12.448480133418204,
+    "r2": -0.24085520141217454,
+    "r2_prod": -0.24085520141217454,
+    "mase": 8.412990267566125
+  },
+  "cv_aggregate": {
+    "mae_mean": 2.1987672066443587,
+    "mae_std": 0.8597016681025613,
+    "mase_mean": 3.5081159246226012,
+    "mase_std": 1.1302909124811504,
+    "r2_mean": 0.17172688242694004,
+    "r2_std": 0.2326959018276228,
+    "r2_prod_mean": 0.17172688242694004,
+    "r2_prod_std": 0.2326959018276228,
+    "rmse_mean": 5.181327221079727,
+    "rmse_std": 1.4734779896487848
+  },
+  "baseline_kwargs": {
+    "task": "forecasting",
+    "n_vars": 73,
+    "window_size": 90,
+    "hidden_size": 256,
+    "num_layers": 2,
+    "dropout": 0.3,
+    "bidirectional": true
+  },
+  "best_kwargs": {
+    "task": "forecasting",
+    "n_vars": 73,
+    "window_size": 90,
+    "hidden_size": 256,
+    "num_layers": 2,
+    "dropout": 0.17310662280639566,
+    "bidirectional": true,
+    "horizon": 7
+  }
+}

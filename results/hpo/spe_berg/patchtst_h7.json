@@ -1,0 +1,59 @@
+{
+  "hpo": {
+    "best_params": {
+      "d_model": 128,
+      "n_heads": 16,
+      "n_layers": 4,
+      "lr": 0.0005848962438318827,
+      "dropout": 0.2237137389438221
+    },
+    "best_value": 3.419070024094436,
+    "n_trials": 30
+  },
+  "test_metrics": {
+    "mae": 3.6034868466861214,
+    "rmse": 6.608726457125604,
+    "r2": -0.510573977038673,
+    "r2_prod": -0.5094099001957308,
+    "mase": 6.34729069768595
+  },
+  "cv_aggregate": {
+    "mae_mean": 3.5597159093656408,
+    "mae_std": 0.6108121053808497,
+    "mase_mean": 10.639766958118583,
+    "mase_std": 1.3209643080804325,
+    "r2_mean": -0.2742957635769374,
+    "r2_std": 0.1693312369407539,
+    "r2_prod_mean": -0.27424254152647726,
+    "r2_prod_std": 0.1693757463708282,
+    "rmse_mean": 4.506246604145486,
+    "rmse_std": 0.6050310468233442
+  },
+  "baseline_kwargs": {
+    "task": "forecasting",
+    "n_vars": 67,
+    "window_size": 90,
+    "pretrained": false,
+    "d_model": 256,
+    "d_ff": 512,
+    "n_heads": 8,
+    "n_layers": 3,
+    "patch_len": 8,
+    "stride": 4,
+    "dropout": 0.15
+  },
+  "best_kwargs": {
+    "task": "forecasting",
+    "n_vars": 67,
+    "window_size": 90,
+    "pretrained": false,
+    "d_model": 128,
+    "d_ff": 512,
+    "n_heads": 16,
+    "n_layers": 4,
+    "patch_len": 8,
+    "stride": 4,
+    "dropout": 0.2237137389438221,
+    "horizon": 7
+  }
+}

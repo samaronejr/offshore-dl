@@ -1,7 +1,154 @@
 {
-  "mambasl": {
-    "status": "error",
-    "error": "API request to http://localhost:5000/api/2.0/mlflow/experiments/get-by-name failed with exception HTTPConnectionPool(host='localhost', port=5000): Max retries exceeded with url: /api/2.0/mlflow/experiments/get-by-name?experiment_name=offshore-dl-classification-nested (Caused by NewConnectionError(\"HTTPConnection(host='localhost', port=5000): Failed to establish a new connection: [Errno 111] Connection refused\"))",
-    "elapsed": 35645.4
+  "patchtst": {
+    "status": "ok",
+    "elapsed": 208053.3,
+    "best_params": {
+      "d_model": 128,
+      "n_heads": 16,
+      "n_layers": 4,
+      "lr": 6.813404348545254e-05,
+      "dropout": 0.24342220800410075
+    },
+    "test_metrics": {
+      "f1_macro": 0.9624391844947653,
+      "f1_weighted": 0.9649269369075356,
+      "accuracy": 0.9647356377213056,
+      "auc_pr": 0.9308685217415034,
+      "edr": 1.0,
+      "confusion_matrix": [
+        [
+          6116,
+          0,
+          0,
+          0,
+          46,
+          0,
+          0,
+          1,
+          396,
+          0
+        ],
+        [
+          271,
+          4587,
+          2,
+          1,
+          41,
+          0,
+          6,
+          8,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          370,
+          0,
+          0,
+          0,
+          0,
+          0,
+          27,
+          0
+        ],
+        [
+          1,
+          28,
+          3,
+          2657,
+          0,
+          0,
+          0,
+          3,
+          0,
+          4
+        ],
+        [
+          97,
+          0,
+          0,
+          13,
+          1803,
+          0,
+          0,
+          0,
+          0,
+          1
+        ],
+        [
+          1,
+          0,
+          1,
+          0,
+          0,
+          7208,
+          36,
+          0,
+          5,
+          10
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          1,
+          3158,
+          0,
+          0,
+          0
+        ],
+        [
+          195,
+          1,
+          1,
+          1,
+          47,
+          2,
+          7,
+          5408,
+          0,
+          8
+        ],
+        [
+          28,
+          0,
+          3,
+          0,
+          0,
+          9,
+          29,
+          104,
+          3538,
+          20
+        ],
+        [
+          0,
+          0,
+          1,
+          0,
+          0,
+          4,
+          0,
+          0,
+          0,
+          5206
+        ]
+      ],
+      "class_labels": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ]
+    }
   }
 }

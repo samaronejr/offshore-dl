@@ -1,36 +1,1298 @@
 [
   {
     "run": "chronos h7 multi_well",
+    "status": "error",
+    "elapsed": 0.3,
+    "error": "torch.cat(): expected a non-empty list of Tensors"
+  },
+  {
+    "run": "chronos h7 per_well well_1",
     "status": "skipped",
-    "reason": "exists"
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_2",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_3",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_4",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_5",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_6",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_7",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_8",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_9",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_10",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_11",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_12",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_13",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_14",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_15",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_16",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_17",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_18",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_19",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_20",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_21",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_22",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_23",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_24",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_25",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_26",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_27",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_28",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_29",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_30",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_31",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_32",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_33",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_34",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_35",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_36",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_37",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_38",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_39",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_40",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_41",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_42",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_43",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_44",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_45",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_46",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_47",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_48",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_49",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_50",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.1
+  },
+  {
+    "run": "chronos h7 per_well well_51",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_52",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h7 per_well well_53",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "chronos h14 multi_well",
+    "status": "error",
+    "elapsed": 0.0,
+    "error": "torch.cat(): expected a non-empty list of Tensors"
+  },
+  {
+    "run": "chronos h14 per_well well_1",
     "status": "skipped",
-    "reason": "exists"
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_2",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_3",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_4",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_5",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_6",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_7",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_8",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_9",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_10",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_11",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_12",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_13",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_14",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_15",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_16",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_17",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_18",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_19",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_20",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_21",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_22",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_23",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_24",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_25",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_26",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_27",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_28",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_29",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_30",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_31",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_32",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_33",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_34",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_35",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_36",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_37",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_38",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_39",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_40",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_41",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.2
+  },
+  {
+    "run": "chronos h14 per_well well_42",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_43",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_44",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_45",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_46",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_47",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_48",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_49",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_50",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_51",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_52",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h14 per_well well_53",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "chronos h30 multi_well",
-    "status": "ok",
-    "elapsed": 2522.6,
-    "test_metrics": {
-      "mae": 0.9291272535769964,
-      "rmse": 3.743860928647681,
-      "r2": -0.1260165804930573,
-      "r2_prod": -0.12609681456474253,
-      "mase": 0.9587916700066694
-    }
+    "status": "error",
+    "elapsed": 0.0,
+    "error": "torch.cat(): expected a non-empty list of Tensors"
+  },
+  {
+    "run": "chronos h30 per_well well_1",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_2",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_3",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_4",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_5",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_6",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_7",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_8",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_9",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_10",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_11",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_12",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_13",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_14",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_15",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_16",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_17",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_18",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_19",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_20",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_21",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_22",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_23",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_24",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_25",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_26",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_27",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_28",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_29",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_30",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_31",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_32",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_33",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_34",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_35",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_36",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_37",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_38",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_39",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_40",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_41",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_42",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_43",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_44",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_45",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_46",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_47",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_48",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_49",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_50",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_51",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_52",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h30 per_well well_53",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "chronos h90 multi_well",
-    "status": "ok",
-    "elapsed": 7667.7,
-    "test_metrics": {
-      "mae": 1.4794950830061462,
-      "rmse": 4.831678549278146,
-      "r2": -0.1719272582068352,
-      "r2_prod": -0.1713975516130899,
-      "mase": 1.5236309996100064
-    }
+    "status": "error",
+    "elapsed": 0.0,
+    "error": "torch.cat(): expected a non-empty list of Tensors"
+  },
+  {
+    "run": "chronos h90 per_well well_1",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.1
+  },
+  {
+    "run": "chronos h90 per_well well_2",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_3",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_4",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_5",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_6",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_7",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_8",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_9",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_10",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_11",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_12",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_13",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_14",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_15",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_16",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_17",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_18",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_19",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_20",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_21",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_22",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_23",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_24",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_25",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_26",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_27",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_28",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_29",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_30",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_31",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_32",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_33",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_34",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_35",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_36",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_37",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_38",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_39",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_40",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_41",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_42",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_43",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_44",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_45",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_46",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_47",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_48",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_49",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_50",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_51",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_52",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
+  },
+  {
+    "run": "chronos h90 per_well well_53",
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   }
 ]

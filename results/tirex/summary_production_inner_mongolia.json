@@ -1,0 +1,26 @@
+[
+  {
+    "run": "tirex h7 multi_well",
+    "status": "unavailable",
+    "elapsed": 0.3,
+    "error": "TiRex is not installed. Requires GPU with CUDA \u22658.0. Install via: pip install git+https://github.com/NX-AI/tirex"
+  },
+  {
+    "run": "tirex h14 multi_well",
+    "status": "unavailable",
+    "elapsed": 0.3,
+    "error": "TiRex is not installed. Requires GPU with CUDA \u22658.0. Install via: pip install git+https://github.com/NX-AI/tirex"
+  },
+  {
+    "run": "tirex h30 multi_well",
+    "status": "unavailable",
+    "elapsed": 0.3,
+    "error": "TiRex is not installed. Requires GPU with CUDA \u22658.0. Install via: pip install git+https://github.com/NX-AI/tirex"
+  },
+  {
+    "run": "tirex h90 multi_well",
+    "status": "unavailable",
+    "elapsed": 0.3,
+    "error": "TiRex is not installed. Requires GPU with CUDA \u22658.0. Install via: pip install git+https://github.com/NX-AI/tirex"
+  }
+]

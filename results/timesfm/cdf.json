@@ -1,56 +1,57 @@
 {
   "test_metrics": {
-    "error_mean": 24.883854904818566,
-    "error_std": 20.99467930569682,
-    "error_p50": 19.065597229080186,
-    "error_p95": 64.8879068101957,
-    "error_p99": 90.24242635169134
+    "error_std": 0.17977325835693328,
+    "error_p50": 0.2252698169612014,
+    "error_p95": 0.6075030315787977,
+    "error_p99": 0.7349201029650393,
+    "forecast_error_mean": 0.26334288919074095
   },
   "cv_aggregate": {
-    "error_mean_mean": 23.650403009151038,
-    "error_mean_std": 3.6546654777173297,
-    "error_p50_mean": 15.803878931137552,
-    "error_p50_std": 1.6847417661170314,
-    "error_p95_mean": 70.23812902046163,
-    "error_p95_std": 15.551422593169681,
-    "error_p99_mean": 117.2661369957137,
-    "error_p99_std": 35.55641491179128,
-    "error_std_mean": 25.310976499410287,
-    "error_std_std": 7.023291175753903
+    "error_p50_mean": 0.7132647617084741,
+    "error_p50_std": 0.42820960745584674,
+    "error_p95_mean": 2.2856512628368617,
+    "error_p95_std": 1.1856588850936876,
+    "error_p99_mean": 2.790278249989051,
+    "error_p99_std": 1.3317520784203234,
+    "error_std_mean": 0.7144536821217177,
+    "error_std_std": 0.35115827116299614,
+    "forecast_error_mean_mean": 0.9403249483857601,
+    "forecast_error_mean_std": 0.5239785634452208
   },
   "cv_fold_results": [
     {
       "fold_idx": 0,
       "metrics": {
-        "error_mean": 26.6293641473148,
-        "error_std": 33.74200545760462,
-        "error_p50": 16.080391382909035,
-        "error_p95": 83.2274967613326,
-        "error_p99": 162.62011616172384
+        "error_std": 0.2575073126068668,
+        "error_p50": 0.11493697461806467,
+        "error_p95": 0.6828012941095234,
+        "error_p99": 0.9928426045342832,
+        "forecast_error_mean": 0.20339947457373422
       }
     },
     {
       "fold_idx": 1,
       "metrics": {
-        "error_mean": 18.503161850034484,
-        "error_std": 16.54812857765682,
-        "error_p50": 13.616186715580458,
-        "error_p95": 48.3737554564657,
-        "error_p99": 75.78355270193126
+        "error_std": 0.7744982213057893,
+        "error_p50": 1.093348963414583,
+        "error_p95": 2.660655714140164,
+        "error_p99": 3.2018983177413913,
+        "forecast_error_mean": 1.241438320332876
       }
     },
     {
       "fold_idx": 2,
       "metrics": {
-        "error_mean": 25.818683030103834,
-        "error_std": 25.642795462969424,
-        "error_p50": 17.71505869492316,
-        "error_p95": 79.11313484358658,
-        "error_p99": 113.39474212348598
+        "error_std": 1.1113555124524972,
+        "error_p50": 0.9315083470927747,
+        "error_p95": 3.513496780260897,
+        "error_p99": 4.176093827691479,
+        "forecast_error_mean": 1.37613705025067
       }
     }
   ],
-  "n_train": 3456,
-  "n_test": 864,
+  "metric_note": "FM error is one-step-ahead forecasting error on normalized inputs; trained model error is multi-step reconstruction error.",
+  "n_train": 3417,
+  "n_test": 855,
   "n_cv_folds": 3
 }

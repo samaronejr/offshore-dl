@@ -1,0 +1,60 @@
+{
+  "hpo": {
+    "best_params": {
+      "rank": 128,
+      "lr": 0.00016547276870099061,
+      "dropout": 0.12737251829270207,
+      "branch_width": 256,
+      "branch_type": "mlp",
+      "loss_type": "focal",
+      "focal_gamma": 1.6760769932651245
+    },
+    "best_value": 1.1383400339781684,
+    "n_trials": 30
+  },
+  "test_metrics": {
+    "mae": 3.057397495266281,
+    "rmse": 6.3139982929621565,
+    "r2": -0.3893806649675937,
+    "r2_prod": -0.3869435705057105,
+    "mase": 2.569053474273441
+  },
+  "cv_aggregate": {
+    "mae_mean": 1.230223314821628,
+    "mae_std": 0.10298877535666559,
+    "mase_mean": 1.6312884841468955,
+    "mase_std": 0.1123084118943764,
+    "r2_mean": 0.36324060279879583,
+    "r2_std": 0.01794353130161549,
+    "r2_prod_mean": 0.36343255727539087,
+    "r2_prod_std": 0.017738999191510955,
+    "rmse_mean": 3.145607520485834,
+    "rmse_std": 0.2473068312582668
+  },
+  "baseline_kwargs": {
+    "task": "forecasting",
+    "n_vars": 67,
+    "window_size": 90,
+    "rank": 128,
+    "branch_hidden": [
+      128,
+      128
+    ],
+    "dropout": 0.2
+  },
+  "best_kwargs": {
+    "task": "forecasting",
+    "n_vars": 67,
+    "window_size": 90,
+    "rank": 128,
+    "branch_hidden": [
+      256,
+      256
+    ],
+    "dropout": 0.12737251829270207,
+    "horizon": 14,
+    "branch_type": "mlp",
+    "loss_type": "focal",
+    "focal_gamma": 1.6760769932651245
+  }
+}

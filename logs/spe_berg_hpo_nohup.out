@@ -12,3 +12,15 @@
 2026-04-08 13:49:12 [DONE] deeponet h7 in 9115s
 2026-04-08 13:49:12 [PROGRESS] done=5 failed=0 remaining=11
 2026-04-08 13:49:12 [START] deeponet h14 (trial 6/16)
+2026-04-08 16:29:09 [DONE] deeponet h14 in 9597s
+2026-04-08 16:29:09 [PROGRESS] done=6 failed=0 remaining=10
+2026-04-08 16:29:09 [START] deeponet h30 (trial 7/16)
+2026-04-08 18:32:23 [DONE] deeponet h30 in 7394s
+2026-04-08 18:32:23 [PROGRESS] done=7 failed=0 remaining=9
+2026-04-08 18:32:23 [START] deeponet h90 (trial 8/16)
+2026-04-08 20:40:28 [DONE] deeponet h90 in 7685s
+2026-04-08 20:40:28 [PROGRESS] done=8 failed=0 remaining=8
+2026-04-08 20:40:28 [START] patchtst h7 (trial 9/16)
+2026-04-11 04:21:41 [DONE] patchtst h7 in 200473s
+2026-04-11 04:21:41 [PROGRESS] done=9 failed=0 remaining=7
+2026-04-11 04:21:41 [START] patchtst h14 (trial 10/16)

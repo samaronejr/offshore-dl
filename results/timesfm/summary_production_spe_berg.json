@@ -1,9 +1,9 @@
 [
   {
     "run": "timesfm h7 multi_well",
-    "status": "unavailable",
-    "elapsed": 1.5,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "error",
+    "elapsed": 0.0,
+    "error": "torch.cat(): expected a non-empty list of Tensors"
   },
   {
     "run": "timesfm h7 per_well well_1",
@@ -73,261 +73,261 @@
   },
   {
     "run": "timesfm h7 per_well well_12",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_13",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_14",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_15",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_16",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_17",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_18",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_19",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_20",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_21",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_22",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_23",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_24",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_25",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_26",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_27",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_28",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_29",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_30",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_31",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_32",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_33",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_34",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_35",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_36",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_37",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_38",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.2
   },
   {
     "run": "timesfm h7 per_well well_39",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_40",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_41",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_42",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_43",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_44",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_45",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_46",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_47",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_48",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_49",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_50",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_51",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_52",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h7 per_well well_53",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 multi_well",
-    "status": "unavailable",
-    "elapsed": 0.3,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "error",
+    "elapsed": 0.0,
+    "error": "torch.cat(): expected a non-empty list of Tensors"
   },
   {
     "run": "timesfm h14 per_well well_1",
@@ -397,261 +397,261 @@
   },
   {
     "run": "timesfm h14 per_well well_12",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 per_well well_13",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 per_well well_14",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 per_well well_15",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 per_well well_16",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 per_well well_17",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.1
   },
   {
     "run": "timesfm h14 per_well well_18",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 per_well well_19",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 per_well well_20",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 per_well well_21",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 per_well well_22",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 per_well well_23",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 per_well well_24",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 per_well well_25",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 per_well well_26",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 per_well well_27",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 per_well well_28",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 per_well well_29",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 per_well well_30",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 per_well well_31",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 per_well well_32",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 per_well well_33",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 per_well well_34",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 per_well well_35",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 per_well well_36",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 per_well well_37",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 per_well well_38",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 per_well well_39",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 per_well well_40",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 per_well well_41",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 per_well well_42",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 per_well well_43",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 per_well well_44",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 per_well well_45",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 per_well well_46",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 per_well well_47",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 per_well well_48",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 per_well well_49",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 per_well well_50",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.1
   },
   {
     "run": "timesfm h14 per_well well_51",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 per_well well_52",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h14 per_well well_53",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 multi_well",
-    "status": "unavailable",
-    "elapsed": 0.4,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "error",
+    "elapsed": 0.0,
+    "error": "torch.cat(): expected a non-empty list of Tensors"
   },
   {
     "run": "timesfm h30 per_well well_1",
@@ -721,261 +721,261 @@
   },
   {
     "run": "timesfm h30 per_well well_12",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_13",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_14",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_15",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_16",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_17",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_18",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_19",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_20",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_21",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_22",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_23",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_24",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_25",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_26",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_27",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_28",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_29",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_30",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_31",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_32",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_33",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_34",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_35",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_36",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_37",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_38",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_39",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_40",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_41",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_42",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_43",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_44",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_45",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_46",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_47",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_48",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_49",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_50",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_51",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_52",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h30 per_well well_53",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 multi_well",
-    "status": "unavailable",
-    "elapsed": 0.3,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "error",
+    "elapsed": 0.0,
+    "error": "torch.cat(): expected a non-empty list of Tensors"
   },
   {
     "run": "timesfm h90 per_well well_1",
@@ -1045,254 +1045,254 @@
   },
   {
     "run": "timesfm h90 per_well well_12",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_13",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_14",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_15",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_16",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_17",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_18",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_19",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_20",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_21",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_22",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_23",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_24",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_25",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_26",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_27",
-    "status": "unavailable",
-    "elapsed": 0.1,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_28",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_29",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_30",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_31",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_32",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_33",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_34",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_35",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_36",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_37",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_38",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_39",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.2
   },
   {
     "run": "timesfm h90 per_well well_40",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_41",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_42",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_43",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_44",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_45",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_46",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_47",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_48",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_49",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_50",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_51",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_52",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   },
   {
     "run": "timesfm h90 per_well well_53",
-    "status": "unavailable",
-    "elapsed": 0.0,
-    "error": "TimesFM is not installed. Requires Python <3.12 and JAX. Install via: pip install timesfm (in a Python 3.11 environment)"
+    "status": "skipped",
+    "reason": "empty dataset",
+    "elapsed": 0.0
   }
 ]

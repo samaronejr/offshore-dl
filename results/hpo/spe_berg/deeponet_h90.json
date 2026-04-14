@@ -1,0 +1,60 @@
+{
+  "hpo": {
+    "best_params": {
+      "rank": 128,
+      "lr": 0.0024457599895346947,
+      "dropout": 0.1663859608937682,
+      "branch_width": 128,
+      "branch_type": "attention",
+      "loss_type": "focal",
+      "focal_gamma": 0.5045832206246854
+    },
+    "best_value": 1.3006031335733548,
+    "n_trials": 30
+  },
+  "test_metrics": {
+    "mae": 2.9473147741980945,
+    "rmse": 5.609411813437487,
+    "r2": -0.16031301131643683,
+    "r2_prod": -0.1601952003628282,
+    "mase": 2.1974569469006298
+  },
+  "cv_aggregate": {
+    "mae_mean": 1.4651454423796988,
+    "mae_std": 0.26488646272614963,
+    "mase_mean": 1.8400094776997724,
+    "mase_std": 0.15304821721692272,
+    "r2_mean": 0.14410028270947328,
+    "r2_std": 0.09978489925041678,
+    "r2_prod_mean": 0.14409856559633902,
+    "r2_prod_std": 0.09979221394840666,
+    "rmse_mean": 3.4944130480474747,
+    "rmse_std": 0.31041273907562145
+  },
+  "baseline_kwargs": {
+    "task": "forecasting",
+    "n_vars": 67,
+    "window_size": 90,
+    "rank": 128,
+    "branch_hidden": [
+      128,
+      128
+    ],
+    "dropout": 0.2
+  },
+  "best_kwargs": {
+    "task": "forecasting",
+    "n_vars": 67,
+    "window_size": 90,
+    "rank": 128,
+    "branch_hidden": [
+      128,
+      128
+    ],
+    "dropout": 0.1663859608937682,
+    "horizon": 90,
+    "branch_type": "attention",
+    "loss_type": "focal",
+    "focal_gamma": 0.5045832206246854
+  }
+}
