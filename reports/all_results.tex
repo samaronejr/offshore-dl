@@ -1,7 +1,7 @@
 % ============================================================
 %  ALL RESULTS — Offshore Deep Learning Benchmark
 %  Models: LSTM, DeepONet, PatchTST, Random Forest, FKM-AD, ConvTimeNet (feat.), ConvTimeNet (raw), MambaSL, TiRex, Chronos, TimesFM, TCN
-%  Datasets: 3W (classification), Ganymede (forecasting), SPE BERG (forecasting), CDF (anomaly detection)
+%  Datasets: 3W (classification), Ganymede (forecasting), SPE BERG (forecasting), Volve (forecasting), Inner Mongolia (forecasting), CDF (anomaly detection)
 %  Generated: 2026-04-02
 % ============================================================
 %
@@ -396,7 +396,6 @@ Inner CV: 3-fold expanding window. Units: Gas\_Volume\_MMscf.
 %% --------------------------------------------------
 %%  Table: SPE BERG multi-well — all models (main)
 %% --------------------------------------------------
-% TODO: populate after production runs
 \begin{table}[ht]
 \centering
 \caption{SPE BERG forecasting — held-out test (multi-well, MMscf).
@@ -443,7 +442,6 @@ FM = foundation model (zero-shot).}
 %% --------------------------------------------------
 %%  Table: SPE BERG CV aggregates — all models
 %% --------------------------------------------------
-% TODO: populate after production runs
 \begin{table}[ht]
 \centering
 \caption{SPE BERG 3-fold expanding window CV (multi-well, mean $\pm$ std). Top: $\rp$, bottom: MAE.}
@@ -457,17 +455,17 @@ FM = foundation model (zero-shot).}
 TimesFM\fm    & $\rp$ & N/A & N/A & N/A & N/A \\
 TiRex\fm      & $\rp$ & N/A & N/A & N/A & N/A \\
 Chronos\fm    & $\rp$ & $-$0.118 $\pm$ .04 & $-$0.144 $\pm$ .08 & $-$0.242 $\pm$ .20 & $-$0.470 $\pm$ .20 \\
-PatchTST      & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+PatchTST      & $\rp$ & \textit{pending} & \textit{pending} & \textit{pending} & \textit{pending} \\
 LSTM          & $\rp$ & \best{$.252 \pm .00$} & \best{$.222 \pm .02$} & \best{$.129 \pm .03$} & \best{$.034 \pm .02$} \\
-TCN           & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+TCN           & $\rp$ & \textit{pending} & \textit{pending} & \textit{pending} & \textit{pending} \\
 DeepONet      & $\rp$ & $.223 \pm .02$ & $.147 \pm .02$ & $.048 \pm .03$ & $-$0.012 $\pm$ .03 \\
 \midrule
 TimesFM\fm    & MAE & N/A & N/A & N/A & N/A \\
 TiRex\fm      & MAE & N/A & N/A & N/A & N/A \\
 Chronos\fm    & MAE & \best{$.439 \pm .02$} & \best{$.674 \pm .03$} & \best{$.881 \pm .05$} & $1.066 \pm .09$ \\
-PatchTST      & MAE & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+PatchTST      & MAE & \textit{pending} & \textit{pending} & \textit{pending} & \textit{pending} \\
 LSTM          & MAE & $.532 \pm .02$ & $.818 \pm .04$ & $.991 \pm .07$ & \best{$.989 \pm .20$} \\
-TCN           & MAE & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+TCN           & MAE & \textit{pending} & \textit{pending} & \textit{pending} & \textit{pending} \\
 DeepONet      & MAE & $.637 \pm .01$ & $1.044 \pm .17$ & $1.211 \pm .06$ & $1.475 \pm .44$ \\
 \bottomrule
 \end{tabular}
@@ -476,7 +474,6 @@ DeepONet      & MAE & $.637 \pm .01$ & $1.044 \pm .17$ & $1.211 \pm .06$ & $1.47
 %% --------------------------------------------------
 %%  Table: SPE BERG Friedman test summary
 %% --------------------------------------------------
-% TODO: populate after production runs
 \begin{table}[ht]
 \centering
 \caption{SPE BERG Friedman test summary per horizon.
@@ -492,6 +489,235 @@ $h{=}7$    & 6.00 & 0.050 & LSTM, DeepONet, Chronos & Chronos, LSTM, DeepONet \\
 $h{=}14$   & 6.00 & 0.050 & LSTM, DeepONet, Chronos & Chronos, LSTM, DeepONet \\
 $h{=}30$   & 4.67 & 0.097 & LSTM, DeepONet, Chronos & Chronos, LSTM, DeepONet \\
 $h{=}90$   & 4.67 & 0.097 & LSTM, DeepONet, Chronos & LSTM, Chronos, DeepONet \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%% ************************************************************
+%%  PART III-B — VOLVE OIL PRODUCTION FORECASTING
+%% ************************************************************
+\newpage
+\section{Volve Oil Production Forecasting}
+
+Dataset: Equinor Volve field — 6 producing wells (F-1~C, F-5~AH, F-11~H, F-12~H, F-14~H, F-15~D)
+from the Norwegian North Sea, operated 2007--2016.
+73 features per timestep, target: BORE\_OIL\_VOL (oil rate, Sm$^3$/day).
+Horizons: $h \in \{7, 14, 30, 90\}$ days.
+Inner CV: 3-fold expanding window.
+
+%% --------------------------------------------------
+%%  Table: Volve multi-well — all models (main)
+%% --------------------------------------------------
+\begin{table}[ht]
+\centering
+\caption{Volve oil forecasting --- held-out test (multi-well, Sm$^3$/day).
+Best values per column in \textbf{bold}.
+FM = foundation model (zero-shot).}
+\label{tab:volve_main}
+\small
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{@{}ll rrrr @{}}
+\toprule
+\textbf{Model} & \textbf{Metric} & $\boldsymbol{h{=}7}$ & $\boldsymbol{h{=}14}$ & $\boldsymbol{h{=}30}$ & $\boldsymbol{h{=}90}$ \\
+\midrule
+\multirow{2}{*}{LSTM}
+ & $\rp$ & $-$0.005 & $\cdots$ & $\cdots$ & $\cdots$ \\
+ & MAE   & 3.011 & $\cdots$ & $\cdots$ & $\cdots$ \\
+\midrule
+\multirow{2}{*}{DeepONet}
+ & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+ & MAE   & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+\midrule
+\multirow{2}{*}{PatchTST}
+ & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+ & MAE   & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+\midrule
+\multirow{2}{*}{TCN}
+ & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+ & MAE   & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+\midrule
+\multirow{2}{*}{Chronos\fm}
+ & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+ & MAE   & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+\midrule
+\multirow{2}{*}{TimesFM\fm}
+ & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+ & MAE   & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+\midrule
+\multirow{2}{*}{TiRex\fm}
+ & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+ & MAE   & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%% --------------------------------------------------
+%%  Table: Volve CV aggregates — all models
+%% --------------------------------------------------
+\begin{table}[ht]
+\centering
+\caption{Volve 3-fold expanding window CV (multi-well, mean $\pm$ std). Top: $\rp$, bottom: MAE.}
+\label{tab:volve_cv}
+\scriptsize
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{@{}ll rrrr @{}}
+\toprule
+\textbf{Model} & \textbf{Metric} & $\boldsymbol{h{=}7}$ & $\boldsymbol{h{=}14}$ & $\boldsymbol{h{=}30}$ & $\boldsymbol{h{=}90}$ \\
+\midrule
+LSTM          & $\rp$ & $.131 \pm .05$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+DeepONet      & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+PatchTST      & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+TCN           & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+Chronos\fm    & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+TimesFM\fm    & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+TiRex\fm      & $\rp$ & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+\midrule
+LSTM          & MAE & $1.695 \pm .18$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+DeepONet      & MAE & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+PatchTST      & MAE & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+TCN           & MAE & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+Chronos\fm    & MAE & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+TimesFM\fm    & MAE & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+TiRex\fm      & MAE & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%% --------------------------------------------------
+%%  Table: Volve Friedman test summary
+%% --------------------------------------------------
+\begin{table}[ht]
+\centering
+\caption{Volve Friedman test summary per horizon.
+$\chi^2$: test statistic; $p$: p-value; ranks from lowest (best) to highest (worst) for $\rp$ and MAE.
+Requires $\geq 3$ models with complete results per horizon.}
+\label{tab:volve_friedman}
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}l rr l l@{}}
+\toprule
+\textbf{Horizon} & $\boldsymbol{\chi^2}$ & $\boldsymbol{p}$ & \textbf{Rank order ($\rp \uparrow$)} & \textbf{Rank order (MAE $\downarrow$)} \\
+\midrule
+$h{=}7$    & $\cdots$ & $\cdots$ & (insufficient models) & (insufficient models) \\
+$h{=}14$   & $\cdots$ & $\cdots$ & (insufficient models) & (insufficient models) \\
+$h{=}30$   & $\cdots$ & $\cdots$ & (insufficient models) & (insufficient models) \\
+$h{=}90$   & $\cdots$ & $\cdots$ & (insufficient models) & (insufficient models) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%% ************************************************************
+%%  PART III-C — INNER MONGOLIA GAS PRODUCTION FORECASTING
+%% ************************************************************
+\newpage
+\section{Inner Mongolia Gas Production Forecasting}
+
+Dataset: 29 onshore gas wells from Inner Mongolia, China (public Hugging Face dataset).
+10 raw features per timestep, 56 columns after EMA/ROC preprocessing.
+Target: \texttt{liquid\_severity} (gas production proxy).
+Horizons: $h \in \{7, 14, 30, 90\}$ days.
+Inner CV: 3-fold expanding window. Units: production severity index.
+
+Note: TimesFM and TiRex are unavailable in Python 3.13 (see Section notes); results include 5 models
+(4 trained + Chronos).
+
+%% --------------------------------------------------
+%%  Table: Inner Mongolia multi-well — all models (main)
+%% --------------------------------------------------
+\begin{table}[ht]
+\centering
+\caption{Inner Mongolia gas forecasting — held-out test (multi-well).
+Best values per column in \textbf{bold}.
+FM = foundation model (zero-shot).}
+\label{tab:im_main}
+\small
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{@{}ll rrrr @{}}
+\toprule
+\textbf{Model} & \textbf{Metric} & $\boldsymbol{h{=}7}$ & $\boldsymbol{h{=}14}$ & $\boldsymbol{h{=}30}$ & $\boldsymbol{h{=}90}$ \\
+\midrule
+\multirow{2}{*}{LSTM}
+ & $\rp$ & \best{.069} & \best{$-$0.060} & \best{$-$0.119} & \best{$-$0.359} \\
+ & MAE   & \best{2.692} & 4.263 & 5.699 & 7.234 \\
+\midrule
+\multirow{2}{*}{DeepONet}
+ & $\rp$ & $-$0.758 & $-$0.575 & $-$1.440 & $-$0.927 \\
+ & MAE   & 5.616 & 6.713 & 9.695 & 9.621 \\
+\midrule
+\multirow{2}{*}{PatchTST}
+ & $\rp$ & $-$0.053 & $-$0.042 & $-$0.563 & $-$1.205 \\
+ & MAE   & 3.100 & 4.454 & 6.650 & 8.456 \\
+\midrule
+\multirow{2}{*}{TCN}
+ & $\rp$ & .026 & $-$0.112 & $-$0.237 & $-$0.386 \\
+ & MAE   & 2.934 & 4.481 & 6.108 & 8.006 \\
+\midrule
+\multirow{2}{*}{Chronos\fm}
+ & $\rp$ & $-$0.308 & $-$0.251 & $-$0.237 & $-$0.386 \\
+ & MAE   & 2.961 & \best{4.105} & \best{5.143} & \best{6.549} \\
+\midrule
+\multirow{2}{*}{TimesFM\fm}
+ & $\rp$ & N/A & N/A & N/A & N/A \\
+ & MAE   & N/A & N/A & N/A & N/A \\
+\midrule
+\multirow{2}{*}{TiRex\fm}
+ & $\rp$ & N/A & N/A & N/A & N/A \\
+ & MAE   & N/A & N/A & N/A & N/A \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%% --------------------------------------------------
+%%  Table: Inner Mongolia CV aggregates — all models
+%% --------------------------------------------------
+\begin{table}[ht]
+\centering
+\caption{Inner Mongolia 3-fold expanding window CV (multi-well, mean $\pm$ std). Top: $\rp$, bottom: MAE.}
+\label{tab:im_cv}
+\scriptsize
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{@{}ll rrrr @{}}
+\toprule
+\textbf{Model} & \textbf{Metric} & $\boldsymbol{h{=}7}$ & $\boldsymbol{h{=}14}$ & $\boldsymbol{h{=}30}$ & $\boldsymbol{h{=}90}$ \\
+\midrule
+LSTM          & $\rp$ & \best{$.315 \pm .04$} & \best{$.233 \pm .05$} & \best{$.140 \pm .06$} & \best{$.053 \pm .09$} \\
+DeepONet      & $\rp$ & $.281 \pm .02$ & $.160 \pm .01$ & $-$0.011 $\pm$ .09 & $-$0.172 $\pm$ .23 \\
+PatchTST      & $\rp$ & $.241 \pm .04$ & $.177 \pm .05$ & $.085 \pm .06$ & $.003 \pm .05$ \\
+TCN           & $\rp$ & $.203 \pm .02$ & $.031 \pm .01$ & $.014 \pm .04$ & $-$0.017 $\pm$ .08 \\
+Chronos\fm    & $\rp$ & $-$0.282 $\pm$ .02 & $-$0.258 $\pm$ .04 & $-$0.313 $\pm$ .05 & $-$0.315 $\pm$ .03 \\
+TimesFM\fm    & $\rp$ & N/A & N/A & N/A & N/A \\
+TiRex\fm      & $\rp$ & N/A & N/A & N/A & N/A \\
+\midrule
+LSTM          & MAE & $1.778 \pm .24$ & $2.888 \pm .19$ & $3.434 \pm .32$ & $4.245 \pm .67$ \\
+DeepONet      & MAE & $1.865 \pm .02$ & $2.962 \pm .07$ & $3.884 \pm .21$ & $4.599 \pm .48$ \\
+PatchTST      & MAE & $1.823 \pm .09$ & $2.620 \pm .16$ & $3.143 \pm .47$ & $3.754 \pm .99$ \\
+TCN           & MAE & $2.167 \pm .17$ & $3.212 \pm .17$ & $3.974 \pm .36$ & $4.498 \pm .78$ \\
+Chronos\fm    & MAE & \best{$1.671 \pm .12$} & \best{$2.317 \pm .17$} & \best{$2.764 \pm .50$} & \best{$3.292 \pm 1.03$} \\
+TimesFM\fm    & MAE & N/A & N/A & N/A & N/A \\
+TiRex\fm      & MAE & N/A & N/A & N/A & N/A \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+%% --------------------------------------------------
+%%  Table: Inner Mongolia Friedman test summary
+%% --------------------------------------------------
+\begin{table}[ht]
+\centering
+\caption{Inner Mongolia Friedman test summary per horizon.
+$\chi^2$: test statistic; $p$: p-value; ranks from lowest (best) to highest (worst) for $\rp$ and MAE.
+5 models $\times$ 3 folds.}
+\label{tab:im_friedman}
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{tabular}{@{}l rr l l@{}}
+\toprule
+\textbf{Horizon} & $\boldsymbol{\chi^2}$ & $\boldsymbol{p}$ & \textbf{Rank order ($\rp \uparrow$)} & \textbf{Rank order (MAE $\downarrow$)} \\
+\midrule
+$h{=}7$    & 11.47 & \best{0.022} & LSTM, DeepONet, PatchTST, TCN, Chronos & Chronos, LSTM, PatchTST, DeepONet, TCN \\
+$h{=}14$   & 11.47 & \best{0.022} & LSTM, PatchTST, DeepONet, TCN, Chronos & Chronos, PatchTST, DeepONet, LSTM, TCN \\
+$h{=}30$   & 11.47 & \best{0.022} & LSTM, PatchTST, TCN, DeepONet, Chronos & Chronos, PatchTST, LSTM, DeepONet, TCN \\
+$h{=}90$   & 7.73  & 0.102 & LSTM, PatchTST, TCN, DeepONet, Chronos & Chronos, PatchTST, LSTM, DeepONet, TCN \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -548,33 +774,33 @@ TiRex\fm    & 24.88 & 20.48 & 19.21 & 63.19 & 85.22 & $21.93 \pm 3.22$ \\
 %% --------------------------------------------------
 \begin{table}[ht]
 \centering
-\caption{Model performance summary across all four tasks.
+\caption{Model performance summary across all six tasks.
 Arrows indicate metric direction ($\uparrow$ = higher is better, $\downarrow$ = lower is better).
 Best in \textbf{bold}. N/A = model not evaluated on task.}
 \label{tab:summary_all}
 \small
-\setlength{\tabcolsep}{3pt}
-\begin{tabular}{@{}l cc cc cc c@{}}
+\setlength{\tabcolsep}{2pt}
+\begin{tabular}{@{}l cc cc cc cc cc c@{}}
 \toprule
- & \multicolumn{2}{c}{\textbf{3W (Classification)}} & \multicolumn{2}{c}{\textbf{Ganymede ($h{=}7$)}} & \multicolumn{2}{c}{\textbf{SPE BERG ($h{=}7$)}} & \textbf{CDF} \\
-\cmidrule(lr){2-3} \cmidrule(lr){4-5} \cmidrule(lr){6-7} \cmidrule(lr){8-8}
-\textbf{Model} & Acc. $\uparrow$ & $F_1$m $\uparrow$ & $\rp$ $\uparrow$ & MAE $\downarrow$ & $\rp$ $\uparrow$ & MAE $\downarrow$ & Error $\downarrow$ \\
+ & \multicolumn{2}{c}{\textbf{3W (Cls.)}} & \multicolumn{2}{c}{\textbf{Ganymede ($h{=}7$)}} & \multicolumn{2}{c}{\textbf{SPE BERG ($h{=}7$)}} & \multicolumn{2}{c}{\textbf{Volve ($h{=}7$)}} & \multicolumn{2}{c}{\textbf{Inner Mong. ($h{=}7$)}} & \textbf{CDF} \\
+\cmidrule(lr){2-3} \cmidrule(lr){4-5} \cmidrule(lr){6-7} \cmidrule(lr){8-9} \cmidrule(lr){10-11} \cmidrule(lr){12-12}
+\textbf{Model} & Acc. $\uparrow$ & $F_1$m $\uparrow$ & $\rp$ $\uparrow$ & MAE $\downarrow$ & $\rp$ $\uparrow$ & MAE $\downarrow$ & $\rp$ $\uparrow$ & MAE $\downarrow$ & $\rp$ $\uparrow$ & MAE $\downarrow$ & Error $\downarrow$ \\
 \midrule
-DeepONet     & \best{.968} & \best{.964} & $-$5.72 & 4.84 & \best{.036} & .839 & 0.219 \\
-LSTM         & .967 & .962 & .327 & 1.77 & \best{$-$0.040} & .843 & \best{0.005} \\
-Random Forest\treemodel & .966 & .964 & N/A & N/A & N/A & N/A & N/A \\
-PatchTST     & .965 & .962 & .574 & 1.77 & $\cdots$ & $\cdots$ & 0.061 \\
-FKM-AD (feat.) & .967 & .961 & N/A & N/A & N/A & N/A & N/A \\
-FKM-AD (raw)   & .949 & .938 & N/A & N/A & N/A & N/A & N/A \\
-ConvTimeNet (feat.)\hpo & .966 & .962 & N/A & N/A & N/A & N/A & N/A \\
-ConvTimeNet (raw)       & .158 & .027 & N/A & N/A & N/A & N/A & N/A \\
-MambaSL (feat.)$^\dagger$ & .966 & .961 & N/A & N/A & N/A & N/A & N/A \\
-MambaSL (raw)$^\dagger$   & .919 & .887 & N/A & N/A & N/A & N/A & N/A \\
-TCN          & N/A & N/A & $-$4.51 & 3.98 & $\cdots$ & $\cdots$ & N/A \\
+DeepONet     & \best{.968} & \best{.964} & $-$5.72 & 4.84 & \best{.036} & .839 & $\cdots$ & $\cdots$ & $-$0.758 & 5.616 & 0.219 \\
+LSTM         & .967 & .962 & .327 & 1.77 & \best{$-$0.040} & .843 & $-$0.005 & 3.011 & \best{.069} & 2.692 & \best{0.005} \\
+Random Forest\treemodel & .966 & .964 & N/A & N/A & N/A & N/A & N/A & N/A & N/A & N/A & N/A \\
+PatchTST     & .965 & .962 & .574 & 1.77 & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ & $-$0.053 & 3.100 & 0.061 \\
+FKM-AD (feat.) & .967 & .961 & N/A & N/A & N/A & N/A & N/A & N/A & N/A & N/A & N/A \\
+FKM-AD (raw)   & .949 & .938 & N/A & N/A & N/A & N/A & N/A & N/A & N/A & N/A & N/A \\
+ConvTimeNet (feat.)\hpo & .966 & .962 & N/A & N/A & N/A & N/A & N/A & N/A & N/A & N/A & N/A \\
+ConvTimeNet (raw)       & .158 & .027 & N/A & N/A & N/A & N/A & N/A & N/A & N/A & N/A & N/A \\
+MambaSL (feat.)$^\dagger$ & .966 & .961 & N/A & N/A & N/A & N/A & N/A & N/A & N/A & N/A & N/A \\
+MambaSL (raw)$^\dagger$   & .919 & .887 & N/A & N/A & N/A & N/A & N/A & N/A & N/A & N/A & N/A \\
+TCN          & N/A & N/A & $-$4.51 & 3.98 & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ & .026 & 2.934 & N/A \\
 \midrule
-TiRex\fm     & .912 & .895 & \best{.822} & \best{.658} & $\cdots$ & $\cdots$ & 24.88 \\
-TimesFM\fm   & N/A & N/A & .826 & .740 & $\cdots$ & $\cdots$ & 24.88 \\
-Chronos\fm   & N/A & N/A & .734 & .739 & $-$0.203 & \best{.490} & 24.81 \\
+TiRex\fm     & .912 & .895 & \best{.822} & \best{.658} & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ & N/A & N/A & 24.88 \\
+TimesFM\fm   & N/A & N/A & .826 & .740 & $\cdots$ & $\cdots$ & $\cdots$ & $\cdots$ & N/A & N/A & 24.88 \\
+Chronos\fm   & N/A & N/A & .734 & .739 & $-$0.203 & \best{.490} & $\cdots$ & $\cdots$ & $-$0.308 & \best{2.961} & 24.81 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -588,7 +814,7 @@ Chronos\fm   & N/A & N/A & .734 & .739 & $-$0.203 & \best{.490} & 24.81 \\
 \caption{Key findings per dataset.}
 \label{tab:key_findings}
 \small
-\begin{tabular}{@{}l l l@{}}
+\begin{tabular}{@{}l l p{9cm}@{}}
 \toprule
 \textbf{Dataset} & \textbf{Winner} & \textbf{Key Finding} \\
 \midrule
@@ -599,7 +825,13 @@ Ganymede & Foundation models & TiRex/TimesFM $\rp > 0.8$ at $h{=}7$ \\
          &                   & TCN $\rp \leq 0.11$ $\to$ local receptive fields insufficient \\
 \midrule
 SPE BERG & $\cdots$ & $\cdots$ \\
-         &        & (Eagle Ford unconventional gas, 53 wells — results pending) \\
+         &        & (Eagle Ford unconventional gas, 53 wells --- results pending) \\
+\midrule
+Volve & $\cdots$ & $\cdots$ \\
+      &        & (Equinor North Sea oil, 6 wells, 73 features --- results pending) \\
+\midrule
+Inner Mongolia & Trained (CV $\rp$) & LSTM best CV $\rp$ at all horizons (.315 at $h{=}7$) \\
+               & Chronos (MAE)      & Chronos lowest MAE despite negative $\rp$; all models $\rp < 0.07$ on test \\
 \midrule
 CDF & Trained models & LSTM error 0.005 vs FMs $\sim$25 \\
     & (task-specific) & FMs lack CDF reconstruction inductive bias \\
