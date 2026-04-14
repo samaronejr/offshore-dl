@@ -27,6 +27,7 @@ FROM base AS train
 
 # Install foundation model + dev dependencies (pytest, etc.)
 RUN pip install -e ".[fm,dev]"
+RUN pip install aeon peft lightgbm
 
 # Copy configs, scripts, tests
 COPY configs/ configs/

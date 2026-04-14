@@ -56,7 +56,9 @@ def preprocess_ganymede(
 
     # Read CSV
     df_all = pd.read_csv(raw_path)
-    logger.info("Ganymede raw data: %d rows, %d columns", len(df_all), len(df_all.columns))
+    logger.info(
+        "Ganymede raw data: %d rows, %d columns", len(df_all), len(df_all.columns)
+    )
 
     time_col = cfg.data.time_column
     well_col = cfg.data.well_column
@@ -92,7 +94,9 @@ def preprocess_ganymede(
 
         # Apply transforms
         if target_col in df.columns:
-            df = detect_shutdowns(df, gas_column=target_col, zero_days_threshold=shutdown_days)
+            df = detect_shutdowns(
+                df, gas_column=target_col, zero_days_threshold=shutdown_days
+            )
 
         ema_cols = [c for c in avail_features if c in df.columns]
         df = compute_ema_features(df, columns=ema_cols, windows=ema_windows)
@@ -101,13 +105,12 @@ def preprocess_ganymede(
 
         log_avail = [c for c in log_cols if c in df.columns]
         if log_avail:
-            df = log_transform(df, columns=log_avail, eps=cfg.data.preprocessing.log_eps)
+            df = log_transform(
+                df, columns=log_avail, eps=cfg.data.preprocessing.log_eps
+            )
 
-        # Forward-fill then back-fill remaining NaN (small gaps in daily data)
-        df = df.ffill().bfill()
-
-        # Replace any remaining NaN (e.g., entire column was NaN)
-        df = df.fillna(0.0)
+        # Forward-fill remaining NaN, then replace any leading NaN with 0.0
+        df = df.ffill().fillna(0.0)
 
         # Save
         safe_name = well_name.replace("/", "_")
@@ -123,8 +126,11 @@ def preprocess_ganymede(
 
         logger.info(
             "  Well %s: %d rows, %d cols, %s → %s",
-            well_name, len(df), len(df.columns),
-            df.index.min().date(), df.index.max().date(),
+            well_name,
+            len(df),
+            len(df.columns),
+            df.index.min().date(),
+            df.index.max().date(),
         )
 
     logger.info("Ganymede preprocessing complete: %d wells", len(stats["wells"]))

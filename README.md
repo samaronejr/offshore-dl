@@ -44,9 +44,11 @@ The models cover different approaches:
 | **LSTM** | Feature extraction + fine-tune | 96.69% | 0.962 | 0.967 | 0.931 |
 | **PatchTST†** | Feature extraction + HPO | 96.47% | 0.962 | 0.965 | 0.931 |
 | **TiRex** | Frozen embeddings + RF | 91.16% | 0.895 | 0.911 | **0.938** |
-| MLP | Flatten + feedforward | 6.49% | 0.012 | 0.008 | 0.100 |
+| MLP* | Flatten + feedforward | 6.49% | 0.012 | 0.008 | 0.100 |
 
 †PatchTST improved from 95.7% to 96.5% after 30-trial Optuna HPO. LSTM and DeepONet showed no improvement — manual tuning was near-optimal. MLP's collapse to single-class prediction proves the discriminative information resides in the spatial arrangement of the (14×27) feature matrix, not the raw values.
+
+*Historical; MLP model code removed in M005 — result retained for reference only and not reproducible from the current codebase.
 
 ### Ganymede — Gas Production Forecasting (held-out test, multi-well, MMSCF)
 

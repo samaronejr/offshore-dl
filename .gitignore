@@ -61,3 +61,4 @@ data/
 
 # ── GSD baseline (auto-generated) ──
 .gsd-id
+.omx/
