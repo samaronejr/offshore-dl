@@ -1,0 +1,4 @@
+model:
+  name: "deeponet"
+  loss_type: "focal"
+  focal_gamma: 2.0

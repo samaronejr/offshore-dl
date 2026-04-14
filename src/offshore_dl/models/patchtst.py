@@ -16,8 +16,11 @@ Long-term Forecasting with Transformers."
 from __future__ import annotations
 
 import torch
-import torch.nn as nn
-from transformers import PatchTSTConfig, PatchTSTForClassification, PatchTSTForPrediction
+from transformers import (
+    PatchTSTConfig,
+    PatchTSTForClassification,
+    PatchTSTForPrediction,
+)
 
 from offshore_dl.models.base import BaseModel
 
@@ -46,6 +49,9 @@ class PatchTSTModel(BaseModel):
         self,
         task: str,
         n_vars: int,
+        loss_type: str = "ce",
+        focal_gamma: float = 2.0,
+        class_weights: torch.Tensor | None = None,
         patch_len: int = 16,
         stride: int = 8,
         d_model: int = 128,
@@ -60,7 +66,13 @@ class PatchTSTModel(BaseModel):
         weight_decay: float = 0.01,
         **kwargs,
     ) -> None:
-        super().__init__(task=task, n_vars=n_vars)
+        super().__init__(
+            task=task,
+            n_vars=n_vars,
+            loss_type=loss_type,
+            focal_gamma=focal_gamma,
+            class_weights=class_weights,
+        )
         self.n_classes = n_classes
         self.horizon = horizon
         self.window_size = window_size

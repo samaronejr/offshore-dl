@@ -1,0 +1,4 @@
+model:
+  name: "lstm"
+  loss_type: "focal"
+  focal_gamma: 2.0

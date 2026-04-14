@@ -15,8 +15,6 @@ Reference: Lu et al. (2021) "Learning nonlinear operators via DeepONet."
 
 from __future__ import annotations
 
-import math
-
 import torch
 import torch.nn as nn
 
@@ -36,11 +34,13 @@ def _build_mlp(
     layers: list[nn.Module] = []
     prev_dim = input_dim
     for h_dim in hidden_dims:
-        layers.extend([
-            nn.Linear(prev_dim, h_dim),
-            act_fn(),
-            nn.Dropout(dropout),
-        ])
+        layers.extend(
+            [
+                nn.Linear(prev_dim, h_dim),
+                act_fn(),
+                nn.Dropout(dropout),
+            ]
+        )
         prev_dim = h_dim
     layers.append(nn.Linear(prev_dim, output_dim))
     return nn.Sequential(*layers)
@@ -93,10 +93,10 @@ class SensorConv1dBranch(nn.Module):
             Branch embedding ``(batch, rank)``
         """
         # x is already (batch, channels=n_features, seq_len=n_sensors)
-        x = self.conv(x)       # → (batch, 128, n_sensors)
-        x = self.pool(x)       # → (batch, 128, 1)
-        x = x.squeeze(-1)      # → (batch, 128)
-        return self.proj(x)     # → (batch, rank)
+        x = self.conv(x)  # → (batch, 128, n_sensors)
+        x = self.pool(x)  # → (batch, 128, 1)
+        x = x.squeeze(-1)  # → (batch, 128)
+        return self.proj(x)  # → (batch, rank)
 
 
 class SensorAttentionBranch(nn.Module):
@@ -153,11 +153,11 @@ class SensorAttentionBranch(nn.Module):
         """
         # Transpose: (batch, 14, 27) → (batch, 27, 14)  (27 tokens of 14 dims)
         x = x.transpose(1, 2)
-        x = self.input_proj(x)          # → (batch, 27, d_model)
-        x = x + self.pos_enc            # add positional encoding
-        x = self.encoder(x)             # → (batch, 27, d_model)
-        x = x.mean(dim=1)              # mean pool over 27 tokens → (batch, d_model)
-        return self.proj(x)             # → (batch, rank)
+        x = self.input_proj(x)  # → (batch, 27, d_model)
+        x = x + self.pos_enc  # add positional encoding
+        x = self.encoder(x)  # → (batch, 27, d_model)
+        x = x.mean(dim=1)  # mean pool over 27 tokens → (batch, d_model)
+        return self.proj(x)  # → (batch, rank)
 
 
 class CNNBranch(nn.Module):
@@ -183,12 +183,14 @@ class CNNBranch(nn.Module):
         layers: list[nn.Module] = []
         in_ch = n_vars
         for out_ch, ks in zip(channels, kernel_sizes):
-            layers.extend([
-                nn.Conv1d(in_ch, out_ch, kernel_size=ks, padding=ks // 2),
-                nn.BatchNorm1d(out_ch),
-                nn.GELU(),
-                nn.Dropout(dropout),
-            ])
+            layers.extend(
+                [
+                    nn.Conv1d(in_ch, out_ch, kernel_size=ks, padding=ks // 2),
+                    nn.BatchNorm1d(out_ch),
+                    nn.GELU(),
+                    nn.Dropout(dropout),
+                ]
+            )
             in_ch = out_ch
 
         self.conv = nn.Sequential(*layers)
@@ -206,10 +208,10 @@ class CNNBranch(nn.Module):
         """
         # Conv1d expects (batch, channels, seq_len)
         x = x.transpose(1, 2)  # → (batch, n_vars, window)
-        x = self.conv(x)       # → (batch, channels[-1], window)
-        x = self.pool(x)       # → (batch, channels[-1], 1)
-        x = x.squeeze(-1)      # → (batch, channels[-1])
-        return self.proj(x)     # → (batch, rank)
+        x = self.conv(x)  # → (batch, channels[-1], window)
+        x = self.pool(x)  # → (batch, channels[-1], 1)
+        x = x.squeeze(-1)  # → (batch, channels[-1])
+        return self.proj(x)  # → (batch, rank)
 
 
 class DeepONetModel(BaseModel):
@@ -262,9 +264,16 @@ class DeepONetModel(BaseModel):
         weight_decay: float = 0.0001,
         loss_type: str = "ce",
         focal_gamma: float = 2.0,
+        class_weights: torch.Tensor | None = None,
         **kwargs,
     ) -> None:
-        super().__init__(task=task, n_vars=n_vars, loss_type=loss_type, focal_gamma=focal_gamma)
+        super().__init__(
+            task=task,
+            n_vars=n_vars,
+            loss_type=loss_type,
+            focal_gamma=focal_gamma,
+            class_weights=class_weights,
+        )
         self.rank = rank
         self.n_classes = n_classes
         self.horizon = horizon
@@ -343,8 +352,11 @@ class DeepONetModel(BaseModel):
             # Trunk encodes horizon query positions
             # Query input: normalized time position (1D)
             self.trunk = _build_mlp(
-                1, trunk_hidden, rank,
-                activation=activation, dropout=dropout,
+                1,
+                trunk_hidden,
+                rank,
+                activation=activation,
+                dropout=dropout,
             )
             # Bias term for each query position
             self.output_bias = nn.Parameter(torch.zeros(horizon))
@@ -354,8 +366,11 @@ class DeepONetModel(BaseModel):
             # Trunk encodes (timestep, variable) reconstruction positions
             # Query input: 2D position (normalized_t, normalized_v)
             self.trunk = _build_mlp(
-                2, trunk_hidden, rank,
-                activation=activation, dropout=dropout,
+                2,
+                trunk_hidden,
+                rank,
+                activation=activation,
+                dropout=dropout,
             )
             self.output_bias = nn.Parameter(torch.zeros(window_size * n_vars))
             self._n_queries = window_size * n_vars

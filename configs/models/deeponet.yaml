@@ -4,6 +4,8 @@
 
 model:
   name: "deeponet"
+  loss_type: "ce"
+  focal_gamma: 2.0
   architecture:
     branch_hidden: [64, 64]       # HPO-optimal branch width=64
     trunk_hidden: [128, 128]      # trunk network layer sizes
@@ -11,8 +13,6 @@ model:
     activation: "gelu"
     dropout: 0.077                 # HPO-optimal dropout
     branch_type: "mlp"            # "mlp", "conv1d", or "attention" (for short windows ≤30)
-    loss_type: "ce"               # "ce" (cross-entropy) or "focal" (focal loss)
-    focal_gamma: 2.0              # focusing exponent for focal loss
 
   training:
     lr: 0.00135                    # HPO-optimal lr (K014: YAML lr wins over overrides)
@@ -46,3 +46,9 @@ model:
       type: "float"
       low: 0.5
       high: 5.0
+    batch_size:
+      type: "categorical"
+      choices: [16, 32, 64, 128]
+    scheduler:
+      type: "categorical"
+      choices: ["cosine", "step", "onecycle"]

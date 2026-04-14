@@ -1,0 +1,14 @@
+model:
+  name: "inception_time"
+  architecture:
+    n_filters: 32
+    kernel_sizes: [10, 20, 40]
+    depth: 6
+  training:
+    lr: 1.0e-4
+    weight_decay: 1.0e-5
+    max_epochs: 100
+    batch_size: 256
+    patience: 20
+    gradient_clip_val: 0.5
+    scheduler: cosine

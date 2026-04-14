@@ -93,6 +93,7 @@ class BaseModel(nn.Module, ABC):
         n_vars: int,
         loss_type: str = "ce",
         focal_gamma: float = 2.0,
+        class_weights: torch.Tensor | None = None,
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)
@@ -100,7 +101,7 @@ class BaseModel(nn.Module, ABC):
         self.n_vars = n_vars
         self.loss_type = loss_type
         self.focal_gamma = focal_gamma
-        self._loss_fn = self._build_loss_fn()
+        self._loss_fn = self._build_loss_fn(class_weights=class_weights)
 
     def _build_loss_fn(self, class_weights: torch.Tensor | None = None) -> nn.Module:
         """Create the appropriate loss function for this task.
@@ -132,7 +133,10 @@ class BaseModel(nn.Module, ABC):
             weights: Tensor of per-class weights.
         """
         if self.task == "classification":
-            self._loss_fn = self._build_loss_fn(class_weights=weights.to(next(self.parameters()).device))
+            param = next(self.parameters(), None)
+            if param is not None:
+                weights = weights.to(param.device)
+            self._loss_fn = self._build_loss_fn(class_weights=weights)
 
     @abstractmethod
     def forward(self, x: torch.Tensor) -> torch.Tensor:
@@ -218,7 +222,9 @@ class BaseModel(nn.Module, ABC):
             Configured optimizer.
         """
 
-    def _compute_loss(self, outputs: torch.Tensor, targets: torch.Tensor) -> torch.Tensor:
+    def _compute_loss(
+        self, outputs: torch.Tensor, targets: torch.Tensor
+    ) -> torch.Tensor:
         """Compute loss with task-aware handling."""
         if self.task == "classification":
             # targets are int class labels

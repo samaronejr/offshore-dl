@@ -1,0 +1,16 @@
+model:
+  name: "convtran"
+  architecture:
+    d_model: 64
+    n_heads: 8
+    n_layers: 3
+    dropout: 0.1
+    dim_feedforward: 256
+  training:
+    lr: 1.0e-4
+    weight_decay: 1.0e-5
+    max_epochs: 100
+    batch_size: 128
+    patience: 20
+    gradient_clip_val: 1.0
+    scheduler: cosine

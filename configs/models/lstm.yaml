@@ -3,6 +3,8 @@
 
 model:
   name: "lstm"
+  loss_type: "ce"
+  focal_gamma: 2.0
   architecture:
     hidden_size: 256
     num_layers: 2
@@ -32,3 +34,9 @@ model:
       low: 0.00001
       high: 0.01
       log: true
+    batch_size:
+      type: "categorical"
+      choices: [16, 32, 64, 128]
+    scheduler:
+      type: "categorical"
+      choices: ["cosine", "step", "onecycle"]

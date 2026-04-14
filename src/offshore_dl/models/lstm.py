@@ -42,6 +42,9 @@ class LSTMModel(BaseModel):
         self,
         task: str,
         n_vars: int,
+        loss_type: str = "ce",
+        focal_gamma: float = 2.0,
+        class_weights: torch.Tensor | None = None,
         hidden_size: int = 256,
         num_layers: int = 2,
         dropout: float = 0.3,
@@ -53,7 +56,13 @@ class LSTMModel(BaseModel):
         weight_decay: float = 0.0001,
         **kwargs,
     ) -> None:
-        super().__init__(task=task, n_vars=n_vars)
+        super().__init__(
+            task=task,
+            n_vars=n_vars,
+            loss_type=loss_type,
+            focal_gamma=focal_gamma,
+            class_weights=class_weights,
+        )
         self.hidden_size = hidden_size
         self.num_layers = num_layers
         self.bidirectional = bidirectional
@@ -124,7 +133,8 @@ class LSTMModel(BaseModel):
             attn_scores = self.attn_w(output).squeeze(-1)  # (batch, seq_len)
             attn_weights = torch.softmax(attn_scores, dim=-1)  # (batch, seq_len)
             hidden = torch.bmm(
-                attn_weights.unsqueeze(1), output,
+                attn_weights.unsqueeze(1),
+                output,
             ).squeeze(1)  # (batch, hidden_dim)
             hidden = self.dropout(hidden)
             return self.head(hidden)  # (batch, n_classes)
