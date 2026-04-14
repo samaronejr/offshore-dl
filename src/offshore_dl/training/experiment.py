@@ -117,7 +117,9 @@ class NormalizedSubset(Dataset):
 
     @staticmethod
     def compute_target_stats(
-        dataset, indices: list[int], max_samples: int = 10000,
+        dataset,
+        indices: list[int],
+        max_samples: int = 10000,
     ) -> tuple[float, float]:
         """Compute target mean/std from training samples (for forecasting).
 
@@ -163,7 +165,9 @@ class NormalizedSubset(Dataset):
         return predictions * target_std + target_mean
 
     @staticmethod
-    def compute_stats(dataset, indices: list[int], max_samples: int = 10000) -> tuple[torch.Tensor, torch.Tensor]:
+    def compute_stats(
+        dataset, indices: list[int], max_samples: int = 10000
+    ) -> tuple[torch.Tensor, torch.Tensor]:
         """Compute normalization statistics from a subset of training samples.
 
         For raw windows ``(W, n_vars)`` where W is large (e.g. 720): computes
@@ -197,11 +201,11 @@ class NormalizedSubset(Dataset):
         if seq_len <= 30:
             # Feature matrix: normalize per (feature_row, sensor) across samples
             mean = stacked.mean(dim=0)  # [seq_len, n_vars]
-            std = stacked.std(dim=0)    # [seq_len, n_vars]
+            std = stacked.std(dim=0)  # [seq_len, n_vars]
         else:
             # Raw window: normalize per sensor across samples + timesteps
             mean = stacked.mean(dim=(0, 1))  # [n_vars]
-            std = stacked.std(dim=(0, 1))    # [n_vars]
+            std = stacked.std(dim=(0, 1))  # [n_vars]
 
         # For near-constant features (std ≈ 0), disable normalization by
         # setting mean=0, std=1 so raw values pass through unchanged.
@@ -221,7 +225,9 @@ def _setup_mlflow(cfg: DictConfig) -> bool:
         # Prefer MLFLOW_TRACKING_URI env var (set by Docker Compose)
         tracking_uri = os.environ.get("MLFLOW_TRACKING_URI")
         if not tracking_uri:
-            tracking_uri = cfg.mlflow.tracking_uri if hasattr(cfg, "mlflow") else "mlruns"
+            tracking_uri = (
+                cfg.mlflow.tracking_uri if hasattr(cfg, "mlflow") else "mlruns"
+            )
         mlflow.set_tracking_uri(tracking_uri)
         logger.info("MLflow tracking URI: %s", tracking_uri)
         return True
@@ -287,7 +293,9 @@ class ExperimentRunner:
         splits = self.cv_strategy.get_splits(len(self.dataset))
 
         if len(splits) == 0:
-            logger.error("CV strategy produced 0 splits — check fold/data compatibility")
+            logger.error(
+                "CV strategy produced 0 splits — check fold/data compatibility"
+            )
             return {
                 "fold_results": [],
                 "aggregate": {},
@@ -300,7 +308,11 @@ class ExperimentRunner:
 
         # Determine experiment name
         if experiment_name is None:
-            prefix = self.cfg.mlflow.experiment_prefix if hasattr(self.cfg, "mlflow") else "offshore-dl"
+            prefix = (
+                self.cfg.mlflow.experiment_prefix
+                if hasattr(self.cfg, "mlflow")
+                else "offshore-dl"
+            )
             model_name = self.model_class.__name__
             ds_name = type(self.dataset).__name__
             experiment_name = f"{prefix}/{model_name}/{ds_name}"
@@ -312,12 +324,15 @@ class ExperimentRunner:
         mlflow = None
         if mlflow_available:
             import mlflow as _mlflow
+
             try:
                 mlflow = _mlflow
                 mlflow.set_experiment(experiment_name)
                 parent_run = mlflow.start_run(run_name="experiment")
             except Exception as _mlflow_err:
-                logger.warning("MLflow unavailable (%s) — proceeding without tracking", _mlflow_err)
+                logger.warning(
+                    "MLflow unavailable (%s) — proceeding without tracking", _mlflow_err
+                )
                 mlflow = None
 
         try:
@@ -325,8 +340,12 @@ class ExperimentRunner:
                 logger.info("═══ Fold %d/%d ═══", fold_idx + 1, len(splits))
 
                 fold_result = self._run_fold(
-                    fold_idx, train_idx, val_idx, task,
-                    mlflow=mlflow, parent_run=parent_run,
+                    fold_idx,
+                    train_idx,
+                    val_idx,
+                    task,
+                    mlflow=mlflow,
+                    parent_run=parent_run,
                 )
                 fold_results.append(fold_result)
                 if "cost" in fold_result:
@@ -392,13 +411,17 @@ class ExperimentRunner:
             mlflow_available = _setup_mlflow(self.cfg)
             if mlflow_available:
                 import mlflow as _mlflow
+
                 try:
                     mlflow = _mlflow
                     exp_name = experiment_name or f"offshore-dl-{task}-nested"
                     mlflow.set_experiment(exp_name)
                     logger.info("MLflow tracking enabled: experiment=%s", exp_name)
                 except Exception as _mlflow_err:
-                    logger.warning("MLflow unavailable (%s) — proceeding without tracking", _mlflow_err)
+                    logger.warning(
+                        "MLflow unavailable (%s) — proceeding without tracking",
+                        _mlflow_err,
+                    )
                     mlflow = None
 
         # ── Step 1: Inner CV on training pool ──
@@ -415,7 +438,9 @@ class ExperimentRunner:
         logger.info(
             "═══ Nested CV: %d inner folds on %d training samples, "
             "%d held-out test samples ═══",
-            len(inner_splits), len(train_pool), len(test_indices),
+            len(inner_splits),
+            len(train_pool),
+            len(test_indices),
         )
 
         cv_fold_results = []
@@ -426,10 +451,13 @@ class ExperimentRunner:
             parent_run_ctx = mlflow.start_run(run_name=f"{task}-nested")
             parent_run_ctx.__enter__()
             parent_run = mlflow.active_run()
-            mlflow.log_params({
-                f"model_{k}": v for k, v in self.model_kwargs.items()
-                if isinstance(v, (str, int, float, bool))
-            })
+            mlflow.log_params(
+                {
+                    f"model_{k}": v
+                    for k, v in self.model_kwargs.items()
+                    if isinstance(v, (str, int, float, bool))
+                }
+            )
             mlflow.log_param("n_train", len(train_pool))
             mlflow.log_param("n_test", len(test_indices))
             mlflow.log_param("n_cv_folds", len(inner_splits))
@@ -440,64 +468,87 @@ class ExperimentRunner:
             global_train = train_pool[local_train]
             global_val = train_pool[local_val]
             fold_result = self._run_fold(
-                fold_idx, global_train, global_val, task,
-                mlflow=mlflow, parent_run=parent_run,
+                fold_idx,
+                global_train,
+                global_val,
+                task,
+                mlflow=mlflow,
+                parent_run=parent_run,
             )
             cv_fold_results.append(fold_result)
 
         cv_aggregate = self._aggregate_folds(cv_fold_results)
-        logger.info("Inner CV aggregate: %s", {
-            k: f"{v:.4f}" for k, v in cv_aggregate.items()
-            if k.endswith("_mean")
-        })
+        logger.info(
+            "Inner CV aggregate: %s",
+            {k: f"{v:.4f}" for k, v in cv_aggregate.items() if k.endswith("_mean")},
+        )
 
         # ── Step 2: Retrain on full training pool ──
-        logger.info("═══ Retraining with disjoint train/val split from training pool (%d samples) ═══",
-                     len(train_pool))
+        logger.info(
+            "═══ Retraining with disjoint train/val split from training pool (%d samples) ═══",
+            len(train_pool),
+        )
 
         retrain_train_idx, retrain_val_idx = self._split_retrain_train_val(
             train_pool_list,
         )
         mean, std = NormalizedSubset.compute_stats(
-            self.dataset, retrain_train_idx,
+            self.dataset,
+            retrain_train_idx,
         )
         use_augment = task == "classification" and mean.dim() == 1
 
         target_mean, target_std = None, None
         if task == "forecasting":
             target_mean, target_std = NormalizedSubset.compute_target_stats(
-                self.dataset, retrain_train_idx,
+                self.dataset,
+                retrain_train_idx,
             )
 
         train_subset = NormalizedSubset(
-            self.dataset, retrain_train_idx, mean, std,
+            self.dataset,
+            retrain_train_idx,
+            mean,
+            std,
             augment=use_augment,
-            target_mean=target_mean, target_std=target_std,
+            target_mean=target_mean,
+            target_std=target_std,
         )
 
         batch_size = (
-            self.cfg.training.batch_size
-            if hasattr(self.cfg, "training") else 32
+            self.cfg.training.batch_size if hasattr(self.cfg, "training") else 32
         )
         train_loader = DataLoader(
-            train_subset, batch_size=batch_size,
-            shuffle=True, num_workers=0, pin_memory=True,
+            train_subset,
+            batch_size=batch_size,
+            shuffle=True,
+            num_workers=0,
+            pin_memory=True,
         )
 
         retrain_val_subset = NormalizedSubset(
-            self.dataset, retrain_val_idx, mean, std,
-            target_mean=target_mean, target_std=target_std,
+            self.dataset,
+            retrain_val_idx,
+            mean,
+            std,
+            target_mean=target_mean,
+            target_std=target_std,
         )
         retrain_val_loader = DataLoader(
-            retrain_val_subset, batch_size=batch_size,
-            shuffle=False, num_workers=0, pin_memory=True,
+            retrain_val_subset,
+            batch_size=batch_size,
+            shuffle=False,
+            num_workers=0,
+            pin_memory=True,
         )
 
         model = self.model_class(**self.model_kwargs)
         if task == "classification":
             n_classes = self.model_kwargs.get("n_classes", None)
             class_weights = self._compute_class_weights(
-                self.dataset, retrain_train_idx, n_classes=n_classes,
+                self.dataset,
+                retrain_train_idx,
+                n_classes=n_classes,
             )
             if class_weights is not None:
                 model.set_class_weights(class_weights)
@@ -505,34 +556,46 @@ class ExperimentRunner:
         device = getattr(self.cfg, "device", "cpu")
         trainer = Trainer(cfg=self.cfg, device=device)
         retrain_history = trainer.fit(
-            model, train_loader, retrain_val_loader,
+            model,
+            train_loader,
+            retrain_val_loader,
             max_epochs=(
-                self.cfg.training.max_epochs
-                if hasattr(self.cfg, "training") else 5
+                self.cfg.training.max_epochs if hasattr(self.cfg, "training") else 5
             ),
         )
 
         # Log retrain per-epoch curves to MLflow
         if mlflow is not None:
-            for epoch, (tl, vl) in enumerate(zip(
-                retrain_history["train_loss"], retrain_history["val_loss"]
-            )):
-                mlflow.log_metrics({
-                    "retrain_train_loss": tl,
-                    "retrain_val_loss": vl,
-                }, step=epoch)
+            for epoch, (tl, vl) in enumerate(
+                zip(retrain_history["train_loss"], retrain_history["val_loss"])
+            ):
+                mlflow.log_metrics(
+                    {
+                        "retrain_train_loss": tl,
+                        "retrain_val_loss": vl,
+                    },
+                    step=epoch,
+                )
 
         # ── Step 3: Evaluate on held-out test set ──
-        logger.info("═══ Evaluating on held-out test set (%d samples) ═══",
-                     len(test_indices))
+        logger.info(
+            "═══ Evaluating on held-out test set (%d samples) ═══", len(test_indices)
+        )
 
         test_subset = NormalizedSubset(
-            self.dataset, test_indices.tolist(), mean, std,
-            target_mean=target_mean, target_std=target_std,
+            self.dataset,
+            test_indices.tolist(),
+            mean,
+            std,
+            target_mean=target_mean,
+            target_std=target_std,
         )
         test_loader = DataLoader(
-            test_subset, batch_size=batch_size,
-            shuffle=False, num_workers=0, pin_memory=True,
+            test_subset,
+            batch_size=batch_size,
+            shuffle=False,
+            num_workers=0,
+            pin_memory=True,
         )
 
         model.eval()
@@ -561,22 +624,47 @@ class ExperimentRunner:
 
         predictions = torch.cat(all_preds).numpy()
         targets = torch.cat(all_targets).numpy()
-        prediction_scores = (
-            torch.cat(all_scores).numpy() if all_scores else None
-        )
+        prediction_scores = torch.cat(all_scores).numpy() if all_scores else None
         instance_ids = (
             np.concatenate(all_instance_ids)
-            if all_instance_ids and sum(len(x) for x in all_instance_ids) == len(predictions)
+            if all_instance_ids
+            and sum(len(x) for x in all_instance_ids) == len(predictions)
             else None
         )
 
         if target_mean is not None and target_std is not None:
             predictions = NormalizedSubset.denormalize_targets(
-                predictions, target_mean, target_std,
+                predictions,
+                target_mean,
+                target_std,
             )
             targets = NormalizedSubset.denormalize_targets(
-                targets, target_mean, target_std,
+                targets,
+                target_mean,
+                target_std,
             )
+
+        # Collect training targets for MASE denominator (subsample for efficiency)
+        y_train_for_mase = None
+        if task == "forecasting":
+            try:
+                rng = np.random.default_rng(42)
+                sample_idx = rng.choice(
+                    len(train_pool), size=min(5000, len(train_pool)), replace=False
+                )
+                y_train_for_mase = np.array(
+                    [train_pool[int(i)][1].numpy() for i in sample_idx]
+                ).ravel()
+                if target_mean is not None and target_std is not None:
+                    y_train_for_mase = NormalizedSubset.denormalize_targets(
+                        y_train_for_mase,
+                        target_mean,
+                        target_std,
+                    )
+            except Exception:
+                logger.warning(
+                    "Could not collect y_train for MASE denominator; MASE values will be approximate."
+                )
 
         test_metrics = MetricRegistry.compute(
             task,
@@ -584,12 +672,16 @@ class ExperimentRunner:
             targets,
             prediction_scores=prediction_scores,
             instance_ids=instance_ids,
+            y_train=y_train_for_mase,
         )
 
-        logger.info("Test metrics: %s", {
-            k: f"{v:.4f}" if isinstance(v, float) else v
-            for k, v in test_metrics.items()
-        })
+        logger.info(
+            "Test metrics: %s",
+            {
+                k: f"{v:.4f}" if isinstance(v, float) else v
+                for k, v in test_metrics.items()
+            },
+        )
 
         # ── Log final test metrics + close parent run ──
         if mlflow is not None:
@@ -605,6 +697,10 @@ class ExperimentRunner:
 
         return {
             "test_metrics": test_metrics,
+            "test_indices": test_indices.copy(),
+            "test_predictions": predictions,
+            "test_probabilities": prediction_scores,
+            "test_targets": targets,
             "cv_aggregate": cv_aggregate,
             "cv_fold_results": cv_fold_results,
             "retrain_history": {
@@ -613,11 +709,13 @@ class ExperimentRunner:
                 "stopped_early": retrain_history["stopped_early"],
                 "final_train_loss": (
                     retrain_history["train_loss"][-1]
-                    if retrain_history["train_loss"] else None
+                    if retrain_history["train_loss"]
+                    else None
                 ),
                 "final_val_loss": (
                     retrain_history["val_loss"][-1]
-                    if retrain_history["val_loss"] else None
+                    if retrain_history["val_loss"]
+                    else None
                 ),
             },
             "n_train": len(train_pool),
@@ -645,7 +743,9 @@ class ExperimentRunner:
         # Validate fold: no index overlap between train and val
         overlap = set(train_indices) & set(val_indices)
         if overlap:
-            raise ValueError(f"LeakageGuard: {len(overlap)} indices overlap between train and val")
+            raise ValueError(
+                f"LeakageGuard: {len(overlap)} indices overlap between train and val"
+            )
 
         mean, std = NormalizedSubset.compute_stats(self.dataset, train_indices)
         # Disable augmentation for feature-based datasets (short sequences)
@@ -656,26 +756,50 @@ class ExperimentRunner:
         target_mean, target_std = None, None
         if task == "forecasting":
             target_mean, target_std = NormalizedSubset.compute_target_stats(
-                self.dataset, train_indices,
+                self.dataset,
+                train_indices,
             )
             logger.info(
                 "  Target normalization: mean=%.4f, std=%.4f",
-                target_mean, target_std,
+                target_mean,
+                target_std,
             )
 
         train_subset = NormalizedSubset(
-            self.dataset, train_indices, mean, std,
+            self.dataset,
+            train_indices,
+            mean,
+            std,
             augment=use_augment,
-            target_mean=target_mean, target_std=target_std,
+            target_mean=target_mean,
+            target_std=target_std,
         )
         val_subset = NormalizedSubset(
-            self.dataset, val_indices, mean, std,
-            target_mean=target_mean, target_std=target_std,
+            self.dataset,
+            val_indices,
+            mean,
+            std,
+            target_mean=target_mean,
+            target_std=target_std,
         )
 
-        batch_size = self.cfg.training.batch_size if hasattr(self.cfg, "training") else 32
-        train_loader = DataLoader(train_subset, batch_size=batch_size, shuffle=True, num_workers=0, pin_memory=True)
-        val_loader = DataLoader(val_subset, batch_size=batch_size, shuffle=False, num_workers=0, pin_memory=True)
+        batch_size = (
+            self.cfg.training.batch_size if hasattr(self.cfg, "training") else 32
+        )
+        train_loader = DataLoader(
+            train_subset,
+            batch_size=batch_size,
+            shuffle=True,
+            num_workers=0,
+            pin_memory=True,
+        )
+        val_loader = DataLoader(
+            val_subset,
+            batch_size=batch_size,
+            shuffle=False,
+            num_workers=0,
+            pin_memory=True,
+        )
 
         # Create model
         model = self.model_class(**self.model_kwargs)
@@ -684,11 +808,16 @@ class ExperimentRunner:
         if task == "classification":
             n_classes = self.model_kwargs.get("n_classes", None)
             class_weights = self._compute_class_weights(
-                self.dataset, train_indices, n_classes=n_classes,
+                self.dataset,
+                train_indices,
+                n_classes=n_classes,
             )
             if class_weights is not None:
                 model.set_class_weights(class_weights)
-                logger.info("Applied class weights: %s", [f"{w:.3f}" for w in class_weights.tolist()])
+                logger.info(
+                    "Applied class weights: %s",
+                    [f"{w:.3f}" for w in class_weights.tolist()],
+                )
 
         # Start MLflow child run
         child_run = None
@@ -719,17 +848,25 @@ class ExperimentRunner:
             device = getattr(self.cfg, "device", "cpu")
             trainer = Trainer(cfg=self.cfg, device=device)
             history = trainer.fit(
-                model, train_loader, val_loader,
-                max_epochs=self.cfg.training.max_epochs if hasattr(self.cfg, "training") else 5,
+                model,
+                train_loader,
+                val_loader,
+                max_epochs=self.cfg.training.max_epochs
+                if hasattr(self.cfg, "training")
+                else 5,
             )
 
             # Log per-epoch metrics to MLflow
             if mlflow and child_run:
-                for epoch, (tl, vl) in enumerate(zip(history["train_loss"], history["val_loss"])):
+                for epoch, (tl, vl) in enumerate(
+                    zip(history["train_loss"], history["val_loss"])
+                ):
                     mlflow.log_metrics({"train_loss": tl, "val_loss": vl}, step=epoch)
                 mlflow.log_metric("best_epoch", history.get("best_epoch", 0))
                 mlflow.log_metric("epochs_run", history.get("epochs_run", 0))
-                mlflow.log_metric("stopped_early", int(history.get("stopped_early", False)))
+                mlflow.log_metric(
+                    "stopped_early", int(history.get("stopped_early", False))
+                )
 
             # Collect predictions on val set
             model.eval()
@@ -759,23 +896,50 @@ class ExperimentRunner:
 
             predictions = torch.cat(all_preds).numpy()
             targets = torch.cat(all_targets).numpy()
-            prediction_scores = (
-                torch.cat(all_scores).numpy() if all_scores else None
-            )
+            prediction_scores = torch.cat(all_scores).numpy() if all_scores else None
             instance_ids = (
                 np.concatenate(all_instance_ids)
-                if all_instance_ids and sum(len(x) for x in all_instance_ids) == len(predictions)
+                if all_instance_ids
+                and sum(len(x) for x in all_instance_ids) == len(predictions)
                 else None
             )
 
             # ── Denormalize targets and predictions (forecasting) ──
             if target_mean is not None and target_std is not None:
                 predictions = NormalizedSubset.denormalize_targets(
-                    predictions, target_mean, target_std,
+                    predictions,
+                    target_mean,
+                    target_std,
                 )
                 targets = NormalizedSubset.denormalize_targets(
-                    targets, target_mean, target_std,
+                    targets,
+                    target_mean,
+                    target_std,
                 )
+
+            y_train_for_mase = None
+            if task == "forecasting":
+                try:
+                    rng = np.random.default_rng(42)
+                    sample_idx = rng.choice(
+                        len(train_idx), size=min(5000, len(train_idx)), replace=False
+                    )
+                    y_train_for_mase = np.array(
+                        [
+                            self._dataset[int(train_idx[i])][1].numpy()
+                            for i in sample_idx
+                        ]
+                    ).ravel()
+                    if target_mean is not None and target_std is not None:
+                        y_train_for_mase = NormalizedSubset.denormalize_targets(
+                            y_train_for_mase,
+                            target_mean,
+                            target_std,
+                        )
+                except Exception:
+                    logger.warning(
+                        "Could not collect y_train for MASE; MASE values will be approximate."
+                    )
 
             # Compute metrics
             metrics = MetricRegistry.compute(
@@ -784,6 +948,7 @@ class ExperimentRunner:
                 targets,
                 prediction_scores=prediction_scores,
                 instance_ids=instance_ids,
+                y_train=y_train_for_mase,
             )
 
             # Log fold metrics to MLflow
@@ -797,12 +962,19 @@ class ExperimentRunner:
             fold_result = {
                 "fold_idx": fold_idx,
                 "metrics": metrics,
+                "sample_indices": val_idx.copy(),
+                "predictions": predictions,
+                "targets": targets,
                 "history": {
                     "epochs_run": history["epochs_run"],
                     "best_epoch": history["best_epoch"],
                     "stopped_early": history["stopped_early"],
-                    "final_train_loss": history["train_loss"][-1] if history["train_loss"] else None,
-                    "final_val_loss": history["val_loss"][-1] if history["val_loss"] else None,
+                    "final_train_loss": history["train_loss"][-1]
+                    if history["train_loss"]
+                    else None,
+                    "final_val_loss": history["val_loss"][-1]
+                    if history["val_loss"]
+                    else None,
                 },
                 "cost": history.get("cost", {}),
             }
@@ -893,7 +1065,9 @@ class ExperimentRunner:
 
     @staticmethod
     def _compute_class_weights(
-        dataset: Any, train_indices: list[int], max_samples: int = 50000,
+        dataset: Any,
+        train_indices: list[int],
+        max_samples: int = 50000,
         n_classes: int | None = None,
     ) -> torch.Tensor | None:
         """Compute inverse-frequency class weights from training labels.
@@ -947,7 +1121,9 @@ class ExperimentRunner:
             )
             return weights
         except Exception:
-            logger.warning("Could not compute class weights — using uniform", exc_info=True)
+            logger.warning(
+                "Could not compute class weights — using uniform", exc_info=True
+            )
             return None
 
 
