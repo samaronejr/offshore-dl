@@ -71,3 +71,17 @@ try:
     __all__.append("HydraRocketModel")
 except ImportError:
     pass
+
+try:
+    from offshore_dl.models.moment_wrapper import MomentClassifier as MomentClassifier
+
+    __all__.append("MomentClassifier")
+except (ImportError, ModuleNotFoundError, RuntimeError):
+    pass
+
+try:
+    from offshore_dl.models.mantis_wrapper import MantisClassifier as MantisClassifier
+
+    __all__.append("MantisClassifier")
+except (ImportError, ModuleNotFoundError, RuntimeError):
+    pass
