@@ -62,3 +62,10 @@ data/
 # ── GSD baseline (auto-generated) ──
 .gsd-id
 .omx/
+.omc/
+.claude/
+.sisyphus/
+AGENTS.md
+**/AGENTS.md
+scripts/
+session-*.md
