@@ -53,18 +53,18 @@ The models span seven paradigms, from recurrent networks and neural operators to
 
 ### 3W — Fault Classification (held-out test, n=41,515)
 
-| Model | Accuracy | F1-macro |
-|-------|:--------:|:--------:|
-| **Random Forest** | 96.58% | **0.964** |
-| **ConvTimeNet** | 96.61% | 0.962 |
-| **PatchTST (HPO)** | 96.47% | 0.962 |
-| **FKMAD** | 96.70% | 0.961 |
-| **MambaSL** | 96.56% | 0.961 |
-| PatchTST | 95.72% | 0.952 |
-| DeepONet | 94.14% | 0.931 |
-| LSTM | 92.21% | 0.911 |
-| TiRex (embeddings + RF) | 91.16% | 0.895 |
-| InceptionTime† | — | 0.012 |
+| Model | Accuracy | F1-macro | F1-weighted |
+|-------|:--------:|:--------:|:-----------:|
+| **FKMAD** | **96.70%** | 0.961 | **0.967** |
+| **ConvTimeNet** | 96.61% | 0.962 | 0.966 |
+| **Random Forest** | 96.58% | **0.964** | 0.966 |
+| **MambaSL** | 96.56% | 0.961 | 0.966 |
+| **PatchTST (HPO)** | 96.47% | 0.962 | 0.965 |
+| PatchTST | 95.72% | 0.952 | 0.957 |
+| DeepONet | 94.14% | 0.931 | 0.942 |
+| LSTM | 92.21% | 0.911 | 0.921 |
+| TiRex (embeddings + RF) | 91.16% | 0.895 | 0.911 |
+| InceptionTime† | — | 0.012 | — |
 
 †InceptionTime collapsed to single-class prediction due to a kernel size mismatch with the feature-matrix input format. Result retained for reference.
 
