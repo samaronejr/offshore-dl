@@ -69,3 +69,7 @@ AGENTS.md
 **/AGENTS.md
 scripts/
 session-*.md
+docs/
+error_log_runtime/
+.dockerignore
+.gitignore
