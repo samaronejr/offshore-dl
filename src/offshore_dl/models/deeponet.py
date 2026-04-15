@@ -15,8 +15,11 @@ Reference: Lu et al. (2021) "Learning nonlinear operators via DeepONet."
 
 from __future__ import annotations
 
+import math
+
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from offshore_dl.models.base import BaseModel
 
@@ -44,6 +47,28 @@ def _build_mlp(
         prev_dim = h_dim
     layers.append(nn.Linear(prev_dim, output_dim))
     return nn.Sequential(*layers)
+
+
+def _simplex_etf(n_classes: int, embed_dim: int) -> torch.Tensor:
+    """Generate Simplex Equiangular Tight Frame (Yang et al., NeurIPS 2022).
+
+    Produces K vectors in R^d that are maximally and equally separated.
+    Used to initialize class embeddings for cosine classification.
+
+    Args:
+        n_classes: Number of classes K.
+        embed_dim: Embedding dimension d (must be >= K-1).
+
+    Returns:
+        ETF matrix of shape (K, d).
+    """
+    K = n_classes
+    identity = torch.eye(K)
+    ones = torch.ones(K, K) / K
+    centered = identity - ones
+    U, _, _ = torch.linalg.svd(torch.randn(embed_dim, K), full_matrices=False)
+    M = math.sqrt(K / (K - 1)) * (U @ centered)
+    return M.T  # (K, d)
 
 
 class SensorConv1dBranch(nn.Module):
@@ -265,6 +290,10 @@ class DeepONetModel(BaseModel):
         loss_type: str = "ce",
         focal_gamma: float = 2.0,
         class_weights: torch.Tensor | None = None,
+        trunk_clf: bool = False,
+        class_embed_dim: int = 8,
+        etf_init: bool = True,
+        fixed_etf: bool = False,
         **kwargs,
     ) -> None:
         super().__init__(
@@ -275,6 +304,7 @@ class DeepONetModel(BaseModel):
             class_weights=class_weights,
         )
         self.rank = rank
+        self.trunk_clf = trunk_clf
         self.n_classes = n_classes
         self.horizon = horizon
         self.window_size = window_size
@@ -337,16 +367,43 @@ class DeepONetModel(BaseModel):
             )
 
         # ── Task-specific output ──
-        if task == "classification":
-            # Deeper classification head with residual-style layers
+        if task == "classification" and not trunk_clf:
+            # Branch-only classification (existing baseline)
             self.head = nn.Sequential(
                 nn.Linear(rank, rank),
                 nn.GELU(),
                 nn.Dropout(dropout),
                 nn.Linear(rank, n_classes),
             )
-            # Trunk not used for classification
             self.trunk = None
+            self._n_queries = n_classes
+        elif task == "classification" and trunk_clf:
+            # True DeepONet classification with class embeddings
+            # Two modes: direct embeddings or trunk-mediated
+            if class_embed_dim == rank:
+                # Direct mode: learnable class vectors in embedding space
+                if etf_init:
+                    init_emb = _simplex_etf(n_classes, rank)
+                else:
+                    init_emb = torch.randn(n_classes, rank) * 0.02
+                self.class_embeddings = nn.Parameter(init_emb, requires_grad=not fixed_etf)
+                self.trunk = None
+            else:
+                # Trunk-mediated mode: class positions -> trunk MLP -> embeddings
+                self.class_positions = nn.Parameter(
+                    torch.randn(n_classes, class_embed_dim) * 0.1
+                )
+                self.trunk = _build_mlp(
+                    class_embed_dim,
+                    trunk_hidden,
+                    rank,
+                    activation=activation,
+                    dropout=dropout,
+                )
+                self.class_embeddings = None
+            # Learnable temperature for cosine similarity
+            self.log_temperature = nn.Parameter(torch.tensor(math.log(1.0 / 0.07)))
+            self.head = None
             self._n_queries = n_classes
         elif task == "forecasting":
             # Trunk encodes horizon query positions
@@ -417,7 +474,19 @@ class DeepONetModel(BaseModel):
         branch_emb = self.branch(x)  # (batch, rank)
 
         if self.task == "classification":
-            return self.head(branch_emb)  # (batch, n_classes)
+            if self.head is not None:
+                return self.head(branch_emb)  # branch-only baseline
+            # True DeepONet: cosine similarity with class embeddings
+            if self.class_embeddings is not None:
+                class_emb = self.class_embeddings  # direct mode
+            else:
+                class_emb = self.trunk(self.class_positions)  # trunk-mediated mode
+            # Cosine similarity with learnable temperature
+            branch_norm = F.normalize(branch_emb, dim=-1)
+            class_norm = F.normalize(class_emb, dim=-1)
+            temperature = torch.exp(self.log_temperature).clamp(min=0.01, max=100.0)
+            logits = torch.matmul(branch_norm, class_norm.T) * temperature
+            return logits
 
         # Get trunk embeddings for query positions
         query_pos = self._get_query_positions(x.device)  # (n_queries, input_dim)

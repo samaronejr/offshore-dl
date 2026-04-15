@@ -1,0 +1,13 @@
+model:
+  architecture:
+    branch_type: "conv1d"
+    rank: 64
+    trunk_hidden: [128, 128]
+    trunk_clf: true
+    class_embed_dim: 64
+    etf_init: true
+    fixed_etf: false
+    dropout: 0.1
+  training:
+    lr: 0.0005
+    weight_decay: 0.0001
