@@ -706,3 +706,106 @@ class TestOptunaIntegration:
         assert result["n_trials_completed"] == 2
         assert "best_value" in result
         assert "best_params" in result
+
+
+# ═══════════════════════════════════════════════════════════════════
+# LR Scheduler Tests
+# ═══════════════════════════════════════════════════════════════════
+
+
+class TestLRSchedulers:
+    """Verify Trainer._build_scheduler creates all 3 scheduler types."""
+
+    @pytest.fixture
+    def trainer(self):
+        return Trainer(device="cpu")
+
+    @pytest.fixture
+    def optimizer(self):
+        model = DummyModel(task="classification", n_vars=10, n_classes=3)
+        return torch.optim.Adam(model.parameters(), lr=0.01)
+
+    def test_onecycle_scheduler(self, trainer, optimizer):
+        sched = trainer._build_scheduler(
+            optimizer, "onecycle", max_epochs=10, steps_per_epoch=5, cfg_t=None
+        )
+        assert isinstance(sched, torch.optim.lr_scheduler.OneCycleLR)
+
+    def test_cosine_scheduler(self, trainer, optimizer):
+        sched = trainer._build_scheduler(
+            optimizer, "cosine", max_epochs=10, steps_per_epoch=5, cfg_t=None
+        )
+        assert isinstance(sched, torch.optim.lr_scheduler.CosineAnnealingLR)
+
+    def test_reduce_on_plateau_scheduler(self, trainer, optimizer):
+        sched = trainer._build_scheduler(
+            optimizer, "reduce_on_plateau", max_epochs=10, steps_per_epoch=5, cfg_t=None
+        )
+        assert isinstance(sched, torch.optim.lr_scheduler.ReduceLROnPlateau)
+
+    def test_none_scheduler(self, trainer, optimizer):
+        sched = trainer._build_scheduler(
+            optimizer, None, max_epochs=10, steps_per_epoch=5, cfg_t=None
+        )
+        assert sched is None
+
+    def test_unknown_scheduler_returns_none(self, trainer, optimizer):
+        sched = trainer._build_scheduler(
+            optimizer, "nonexistent", max_epochs=10, steps_per_epoch=5, cfg_t=None
+        )
+        assert sched is None
+
+
+# ═══════════════════════════════════════════════════════════════════
+# NaN Loss Handling Test
+# ═══════════════════════════════════════════════════════════════════
+
+
+class TestNaNLossHandling:
+    """Verify Trainer skips batches with NaN/Inf loss without crashing."""
+
+    def test_nan_loss_batch_is_skipped(self):
+        class NaNModel(DummyModel):
+            """DummyModel that returns NaN loss on the first batch."""
+            def __init__(self):
+                super().__init__(task="classification", n_vars=10, n_classes=3)
+                self._call_count = 0
+
+            def training_step(self, batch):
+                self._call_count += 1
+                if self._call_count == 1:
+                    return torch.tensor(float("nan"), requires_grad=True)
+                return super().training_step(batch)
+
+        model = NaNModel()
+        ds = torch.utils.data.TensorDataset(
+            torch.randn(20, 50, 10),
+            torch.randint(0, 3, (20,)),
+        )
+        # Wrap to add metadata tuple element
+        class WrappedDS(torch.utils.data.Dataset):
+            def __init__(self, tds):
+                self.tds = tds
+            def __len__(self):
+                return len(self.tds)
+            def __getitem__(self, idx):
+                x, y = self.tds[idx]
+                return x, y, {}
+
+        wrapped = WrappedDS(ds)
+        train_loader = DataLoader(wrapped, batch_size=4)
+        val_loader = DataLoader(wrapped, batch_size=4)
+
+        cfg = OmegaConf.create({"training": {
+            "max_epochs": 2, "batch_size": 4,
+            "early_stopping_patience": 10, "gradient_clip_val": 1.0,
+        }})
+
+        trainer = Trainer(cfg=cfg, device="cpu")
+        history = trainer.fit(model, train_loader, val_loader)
+
+        # Training should complete without crashing
+        assert history["epochs_run"] == 2
+        # At least some batches should have produced finite losses
+        assert len(history["train_loss"]) == 2
+        assert all(np.isfinite(l) for l in history["train_loss"])
