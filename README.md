@@ -9,22 +9,32 @@ MSc dissertation — UFRJ/COPPE PEE
 
 ## Overview
 
-This repository contains the code and experimental results for my MSc dissertation. It compares eight architectures for three offshore production monitoring tasks: gas production forecasting, fault classification, and anomaly detection.
+This repository contains the code and experimental results for my MSc dissertation. It compares 16 architectures across three offshore production monitoring tasks: gas production forecasting, fault classification, and anomaly detection.
 
-The models cover different approaches:
+The models span seven paradigms, from recurrent networks and neural operators to state-space models and zero-shot foundation models:
 
 | Paradigm | Model | Training | Tasks |
 |----------|-------|----------|-------|
 | Recurrent | **LSTM** | From scratch | Forecasting · Classification · Anomaly |
-| Neural operator | **Time-Dependent DeepONet** | From scratch | Forecasting · Classification · Anomaly |
+| Neural operator | **DeepONet** | From scratch | Forecasting · Classification · Anomaly |
 | Transformer | **PatchTST** | From scratch* | Forecasting · Classification · Anomaly |
-| Feedforward baseline | **MLP** | From scratch | Classification |
-| Gradient boosted trees | **XGBoost** | sklearn-style | Forecasting |
-| Zero-shot foundation model | **TimesFM 2.5** | Pretrained (no fine-tuning) | Forecasting · Anomaly |
-| Zero-shot foundation model | **Chronos-2** | Pretrained (no fine-tuning) | Forecasting · Anomaly |
-| Zero-shot foundation model | **TiRex** | Pretrained (xLSTM backbone) | Forecasting · Classification · Anomaly |
+| Temporal convolution | **TCN** | From scratch | Forecasting |
+| Convolution | **ConvTimeNet** | From scratch | Classification |
+| Convolution | **ConvTran** | From scratch | Classification |
+| Inception | **InceptionTime** | From scratch | Classification |
+| State-space | **MambaSL** | From scratch | Classification |
+| Anomaly detection | **FKMAD** | From scratch | Classification |
+| Convolution | **HydraRocket** | sklearn-style | Classification |
+| Tree ensemble | **Random Forest** | sklearn-style | Classification |
+| Zero-shot FM | **Chronos-2** | Pretrained | Forecasting · Anomaly |
+| Zero-shot FM | **TimesFM 2.5** | Pretrained | Forecasting · Anomaly |
+| Zero-shot FM | **TiRex** | Pretrained (xLSTM) | Forecasting · Classification · Anomaly |
+| Fine-tuned FM | **MOMENT** | LoRA fine-tuning | Classification (optional) |
+| Fine-tuned FM | **Mantis** | Frozen encoder + RF | Classification (optional) |
 
 <sub>*PatchTST uses the HuggingFace architecture but trains from scratch — pretrained weights are incompatible with the input dimensions of these datasets.</sub>
+
+---
 
 ## Datasets
 
@@ -33,49 +43,59 @@ The models cover different approaches:
 | **3W v2.0.0** | Petrobras | 10-class fault classification | 208,973 windows · 27 sensors · 1.8 GB |
 | **Ganymede** | NSTA (UK Continental Shelf) | Gas production forecasting | 7 wells · 31,359 samples · 63 features |
 | **CDF** | Cognite Data Fusion | Unsupervised anomaly detection | 1 compressor · 4,367 hourly rows · 12 sensors |
+| **SPE Berg** | SPE Data Repository | Gas production forecasting | 53 wells · shale gas |
+| **Volve** | Equinor (open release) | Oil production forecasting | 6 wells · oil field |
+| **Inner Mongolia** | Public release | Gas production forecasting | 30 wells · gas |
+
+---
 
 ## Results at a Glance
 
 ### 3W — Fault Classification (held-out test, n=41,515)
 
-| Model | Method | Accuracy | F1-macro | F1-weighted | AUC-PR |
-|-------|--------|:--------:|:--------:|:-----------:|:------:|
-| **DeepONet** | Feature extraction + fine-tune | **96.85%** | **0.964** | **0.969** | 0.934 |
-| **LSTM** | Feature extraction + fine-tune | 96.69% | 0.962 | 0.967 | 0.931 |
-| **PatchTST†** | Feature extraction + HPO | 96.47% | 0.962 | 0.965 | 0.931 |
-| **TiRex** | Frozen embeddings + RF | 91.16% | 0.895 | 0.911 | **0.938** |
-| MLP* | Flatten + feedforward | 6.49% | 0.012 | 0.008 | 0.100 |
+| Model | Accuracy | F1-macro |
+|-------|:--------:|:--------:|
+| **Random Forest** | 96.58% | **0.964** |
+| **ConvTimeNet** | 96.61% | 0.962 |
+| **PatchTST (HPO)** | 96.47% | 0.962 |
+| **FKMAD** | 96.70% | 0.961 |
+| **MambaSL** | 96.56% | 0.961 |
+| PatchTST | 95.72% | 0.952 |
+| DeepONet | 94.14% | 0.931 |
+| LSTM | 92.21% | 0.911 |
+| TiRex (embeddings + RF) | 91.16% | 0.895 |
+| InceptionTime† | — | 0.012 |
 
-†PatchTST improved from 95.7% to 96.5% after 30-trial Optuna HPO. LSTM and DeepONet showed no improvement — manual tuning was near-optimal. MLP's collapse to single-class prediction proves the discriminative information resides in the spatial arrangement of the (14×27) feature matrix, not the raw values.
+†InceptionTime collapsed to single-class prediction due to a kernel size mismatch with the feature-matrix input format. Result retained for reference.
 
-*Historical; MLP model code removed in M005 — result retained for reference only and not reproducible from the current codebase.
+PatchTST improved from 95.7% to 96.5% after 30-trial Optuna HPO. Manual tuning of Random Forest, ConvTimeNet, FKMAD, and MambaSL proved near-optimal. The discriminative information in the 3W task resides in the spatial arrangement of the (14×27) feature matrix, which benefits convolution and tree-based approaches.
 
-### Ganymede — Gas Production Forecasting (held-out test, multi-well, MMSCF)
+### Ganymede — Gas Production Forecasting (held-out test, multi-well, h=7, MMSCF)
 
-| Model | R²_prod h=7 | R²_prod h=90 | MAE h=7 |
-|-------|:-----------:|:------------:|:-------:|
-| **TimesFM** | **0.826** | 0.413 | 0.740 |
-| **TiRex** | 0.822 | **0.565** | **0.658** |
-| Chronos-2 | 0.734 | 0.361 | 0.739 |
-| PatchTST | 0.574 | −0.718 | 1.771 |
-| LSTM | 0.327 | −0.464 | 1.768 |
-| XGBoost | −0.031 | −1.252 | 1.928 |
-| DeepONet | −5.716 | −14.93 | 4.836 |
+| Model | MAE h=7 | R²\_prod h=7 |
+|-------|:-------:|:------------:|
+| **TiRex** | **0.658** | **0.822** |
+| **TimesFM** | 0.740 | 0.826 |
+| **Chronos-2** | 0.739 | 0.722 |
+| LSTM | 0.873 | −0.078 |
+| PatchTST | 1.005 | −0.501 |
+| DeepONet | 1.224 | 0.197 |
+| TCN | 3.982 | −4.293 |
 
-Foundation models outperform trained models at all horizons. TiRex shows the least degradation with increasing horizon (R²_prod 0.82→0.57). XGBoost performs better than DeepONet but worse than the neural sequence models. The production forecasting scripts now use a **per-well grouped 80/20 temporal holdout plus grouped 3-fold ExpandingWindowCV** for multi-well evaluation; regenerate benchmark tables after methodology changes to refresh the published numbers.
+Foundation models outperform trained models at all horizons. TiRex achieves the lowest MAE and TimesFM the highest R²_prod; both substantially outperform all trained architectures. The production sweep uses a **per-well grouped 80/20 temporal holdout plus grouped 3-fold ExpandingWindowCV**.
 
 ### CDF — Anomaly Detection (held-out test, reconstruction error ↓)
 
-| Model | Error Mean | Error P95 |
-|-------|:----------:|:---------:|
-| **LSTM** | **0.005** | **0.009** |
-| PatchTST | 0.061 | 0.146 |
-| DeepONet | 0.219 | 0.449 |
-| Chronos | 24.81 | 60.92 |
-| TimesFM | 24.88 | 64.89 |
-| TiRex | 24.88 | 63.19 |
+| Model | Error Mean |
+|-------|:----------:|
+| **LSTM** | **0.005** |
+| PatchTST | 0.068 |
+| DeepONet | 0.209 |
+| Chronos-2 | 0.217 |
+| TiRex | 0.235 |
+| TimesFM | 0.263 |
 
-Trained models perform much better here — LSTM reconstruction error is ~5000× lower than FMs. The foundation models were not designed for this type of reconstruction task.
+Trained models dominate this task. LSTM reconstruction error is orders of magnitude lower than zero-shot FMs, which were not designed for this type of encoder-decoder reconstruction.
 
 ---
 
@@ -84,36 +104,42 @@ Trained models perform much better here — LSTM reconstruction error is ~5000×
 ```
 offshore-dl/
 ├── src/offshore_dl/           # Main package
-│   ├── models/                # All 8 architectures
+│   ├── models/                # All 16 architectures
 │   │   ├── base.py            #   BaseModel ABC — common interface
 │   │   ├── lstm.py            #   Bidirectional LSTM + attention
 │   │   ├── deeponet.py        #   Time-Dependent DeepONet (branch-trunk)
 │   │   ├── patchtst.py        #   PatchTST via HuggingFace Transformers
-│   │   ├── mlp.py             #   MLP baseline (Flatten→FC→BN→GELU→Dropout)
+│   │   ├── tcn.py             #   Temporal Convolutional Network
+│   │   ├── convtimenet.py     #   ConvTimeNet (multi-scale convolution)
+│   │   ├── convtran.py        #   ConvTran (convolution + transformer)
+│   │   ├── inception_time.py  #   InceptionTime
+│   │   ├── mambasl.py         #   MambaSL (state-space model)
+│   │   ├── fkmad.py           #   FKMAD anomaly detector
+│   │   ├── hydra_rocket.py    #   HydraRocket (sklearn-style)
 │   │   ├── chronos_wrapper.py #   Chronos-2 zero-shot wrapper
 │   │   ├── timesfm_wrapper.py #   TimesFM 2.5 zero-shot wrapper
 │   │   ├── tirex_wrapper.py   #   TiRex zero-shot wrapper
-│   │   └── tirex_classifier.py #  TiRex embedding + RF classifier
+│   │   ├── tirex_classifier.py #  TiRex embedding + RF classifier
+│   │   ├── moment_wrapper.py  #   MOMENT LoRA fine-tuning (optional)
+│   │   └── mantis_wrapper.py  #   Mantis frozen encoder + RF (optional)
 │   ├── data/                  # Data loading and preprocessing
 │   ├── training/              # Trainer, ExperimentRunner, Optuna HPO
+│   │   └── ...                #   SupCon pre-training, label smoothing
 │   ├── evaluation/            # MetricRegistry, CV strategies, baselines
 │   ├── analysis/              # LaTeX generation, statistical tests
-│   └── utils/                 # Config, reproducibility (seed 7 RNG sources)
+│   └── utils/                 # Config, reproducibility, serialization
+│       ├── config.py          #   OmegaConf helpers
+│       ├── reproducibility.py #   seed locking (7 RNG sources)
+│       └── serialization.py   #   JSON result I/O
 │
 ├── configs/                   # Hierarchical YAML (OmegaConf)
 │   ├── base.yaml              #   Global defaults
-│   ├── data/                  #   Dataset configs (3w, ganymede, cdf)
-│   └── models/                #   Model configs + Optuna search spaces
-│
-├── scripts/                   # Production sweeps, HPO, statistical tests
-│   ├── run_production_ganymede.py  # 7 models × 4 horizons × 8 targets
-│   ├── run_production_3w_features.py # Trained models + TiRex on 3W
-│   ├── run_optuna_hpo.py      # 30-trial Bayesian HPO
-│   ├── run_statistical_tests.py # Friedman/Nemenyi/Wilcoxon
-│   └── ...                    # Slurm, Docker, Singularity scripts
+│   ├── data/                  #   3w, ganymede, cdf, spe_berg, volve,
+│   │                          #   inner_mongolia
+│   └── models/                #   Per-model configs + Optuna search spaces
 │
 ├── docker/                    # Dockerfile (CUDA 12.4), docker-compose
-├── tests/                     # ~250 tests
+├── tests/                     # 534 tests
 ├── results/                   # JSON outputs per model per dataset
 ├── reports/                   # LaTeX tables, PDFs, statistical tests
 ├── dvc.yaml                   # DVC pipeline definition
@@ -130,7 +156,7 @@ git clone https://github.com/<user>/offshore-dl.git
 cd offshore-dl
 pip install -e ".[dev]"
 
-# Run tests
+# Run all tests
 pytest tests/ -v
 
 # Run a single experiment
@@ -164,18 +190,25 @@ sbatch scripts/hpc_job_3w.slurm     # 3W full training
 
 ### Architecture
 
-Every trained model inherits from `BaseModel` and implements `training_step`, `predict`, and `configure_optimizers`. Zero-shot FMs return `loss = 0.0` from `training_step`. XGBoost uses sklearn-style `MultiOutputRegressor(XGBRegressor)` with a separate dispatch path (`TREE_MODELS`).
+Every trained model inherits from `BaseModel` and implements `training_step`, `predict`, and `configure_optimizers`. Zero-shot FMs return `loss = 0.0` from `training_step`. HydraRocket and Random Forest use a sklearn-style dispatch path and do not use the PyTorch training loop.
 
 ### Cross-Validation
 
 | Dataset / sweep | Strategy | Rationale |
 |-----------------|----------|-----------|
-| Forecasting production (`ganymede`, `spe_berg`, `volve`, `inner_mongolia`) | grouped 80/20 temporal holdout + `GroupedExpandingWindowCV` (3-fold) | Preserve temporal order **within each well** instead of across the flattened multi-well sample index |
-| 3W feature-based production | stratified-group holdout + `StratifiedGroupKFoldSKLearn` (5-fold) | No instance leakage across folds |
-| 3W raw production script | `TemporalSplitCV` | Legacy raw-window baseline path |
-| CDF production | temporal holdout + `SlidingWindowCV` (3-fold) | Multiple temporal folds for the single-compressor series |
+| Forecasting (`ganymede`, `spe_berg`, `volve`, `inner_mongolia`) | Grouped 80/20 temporal holdout + `GroupedExpandingWindowCV` (3-fold) | Preserve temporal order within each well rather than across the flattened multi-well sample index |
+| 3W feature-based | Stratified-group holdout + `StratifiedGroupKFoldSKLearn` (5-fold) | No instance leakage across event groups |
+| 3W raw windows | `TemporalSplitCV` | Legacy raw-window baseline path |
+| CDF | Temporal holdout + `SlidingWindowCV` (3-fold) | Multiple temporal folds for the single-compressor series |
 
-Normalization is computed from the training partition only. Classification metrics use probability scores for AUC-PR and per-instance metadata for EDR when available.
+Normalization is computed from the training partition only and applied to validation and test partitions without re-fitting.
+
+### Training Features
+
+- **SupCon pre-training**: supervised contrastive pre-training stage available for classification models
+- **Label smoothing**: configurable `label_smoothing` parameter in training config
+- **Optuna HPO**: 30-trial Bayesian search over architecture and optimizer hyperparameters
+- **MLflow**: all experiments tracked with full fold-level detail in JSON outputs
 
 ### Configuration
 
@@ -183,16 +216,16 @@ Hierarchical YAML via OmegaConf: `base.yaml` ← `data/*.yaml` ← `models/*.yam
 
 ### Reproducibility
 
-`set_global_seed(42)` locks Python `random`, NumPy, PyTorch CPU, CUDA, cuDNN, and CUBLAS. All results are JSON with full fold-level detail.
+`set_global_seed(42)` locks Python `random`, NumPy, PyTorch CPU, CUDA, cuDNN, and CUBLAS (7 RNG sources). All results are stored as JSON with full fold-level detail via `utils/serialization.py`.
 
 ---
 
 ## Adding a New Model
 
-1. Create `src/offshore_dl/models/my_model.py` — inherit `BaseModel` or use sklearn-style for tree models
-2. Add `configs/models/my_model.yaml` with architecture params + Optuna search space
+1. Create `src/offshore_dl/models/my_model.py` — inherit `BaseModel` or use sklearn-style for non-differentiable models
+2. Add `configs/models/my_model.yaml` with architecture params and an Optuna search space block
 3. Register in `src/offshore_dl/models/__init__.py` and the relevant production script
-4. Run: the full evaluation pipeline (CV, metrics, MLflow, tables) applies automatically
+4. Run: the full evaluation pipeline (CV, metrics, MLflow, LaTeX tables) applies automatically
 
 ---
 
@@ -201,14 +234,25 @@ Hierarchical YAML via OmegaConf: `base.yaml` ← `data/*.yaml` ← `models/*.yam
 | Package | Role |
 |---------|------|
 | PyTorch ≥ 2.3 | Core DL framework |
-| XGBoost ≥ 2.0 | Gradient boosted trees |
+| LightGBM | Gradient boosted trees |
 | OmegaConf | Hierarchical YAML config |
 | MLflow ≥ 2.14 | Experiment tracking |
 | Optuna ≥ 3.6 | Hyperparameter optimization |
-| scikit-learn ≥ 1.4 | Metrics, preprocessing |
+| scikit-learn ≥ 1.4 | Metrics, preprocessing, RF |
 | HuggingFace Transformers ≥ 4.40 | PatchTST architecture |
 
-Foundation model deps (`timesfm`, `chronos-forecasting`, `tirex-ts`) are in the optional `[fm]` extra.
+**Optional extras:**
+
+| Package | Role | Extra |
+|---------|------|-------|
+| `timesfm` | TimesFM 2.5 zero-shot FM | `[fm]` |
+| `chronos-forecasting` | Chronos-2 zero-shot FM | `[fm]` |
+| `tirex-ts` | TiRex zero-shot FM | `[fm]` |
+| `mamba-ssm` | MambaSL state-space model | `[mamba]` |
+| `aeon` | InceptionTime, HydraRocket | `[aeon]` |
+| `momentfm` | MOMENT LoRA fine-tuning | `[fm]` |
+
+Install all extras: `pip install -e ".[dev,fm,mamba,aeon]"`
 
 ---
 
