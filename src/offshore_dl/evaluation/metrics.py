@@ -251,7 +251,9 @@ class MetricRegistry:
         predictions = np.asarray(predictions, dtype=np.float64)
         targets = np.asarray(targets, dtype=np.float64)
 
-        # Per-sample reconstruction error (L2 norm over features)
+        # Per-sample reconstruction error (RMSE across features, not L2 norm).
+        # For multidimensional reconstructions, this is sqrt(mean((pred-tgt)^2))
+        # per sample, which differs from L2 norm by a factor of sqrt(n_features).
         if predictions.ndim > 1:
             errors = np.sqrt(np.mean((predictions - targets) ** 2, axis=-1))
         else:

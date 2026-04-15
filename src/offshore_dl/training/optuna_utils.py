@@ -53,6 +53,7 @@ def create_study(
         direction=direction,
         pruner=pruner,
         load_if_exists=True,
+        sampler=optuna.samplers.TPESampler(seed=42),
     )
 
     logger.info("Optuna study created: %s (storage: %s)", study_name, storage)

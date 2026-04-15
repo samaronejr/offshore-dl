@@ -386,8 +386,9 @@ class ExperimentRunner:
           1. Run inner K-fold CV within ``train_pool`` (for variance
              estimates and model-selection diagnostics).
           2. Fit a fresh model on a retraining subset from ``train_pool``
-             while reserving a disjoint temporal/group-safe validation subset
-             for checkpoint selection.
+             while reserving a disjoint randomly-sampled validation subset
+             for checkpoint selection (random split avoids temporal bias
+             that caused best_epoch=0 on non-stationary data).
           3. Evaluate the retrained model on the held-out ``test_indices``.
 
         The **test metrics** are the primary reported numbers. Inner CV
@@ -653,7 +654,7 @@ class ExperimentRunner:
                     len(train_pool), size=min(5000, len(train_pool)), replace=False
                 )
                 y_train_for_mase = np.array(
-                    [train_pool[int(i)][1].numpy() for i in sample_idx]
+                    [self.dataset[int(train_pool[int(i)])][1].numpy() for i in sample_idx]
                 ).ravel()
                 if target_mean is not None and target_std is not None:
                     y_train_for_mase = NormalizedSubset.denormalize_targets(
@@ -661,9 +662,9 @@ class ExperimentRunner:
                         target_mean,
                         target_std,
                     )
-            except Exception:
+            except (IndexError, TypeError, AttributeError) as exc:
                 logger.warning(
-                    "Could not collect y_train for MASE denominator; MASE values will be approximate."
+                    "Could not collect y_train for MASE denominator: %s; MASE values will be approximate.", exc
                 )
 
         test_metrics = MetricRegistry.compute(
@@ -926,7 +927,7 @@ class ExperimentRunner:
                     )
                     y_train_for_mase = np.array(
                         [
-                            self._dataset[int(train_idx[i])][1].numpy()
+                            self.dataset[int(train_idx[i])][1].numpy()
                             for i in sample_idx
                         ]
                     ).ravel()
@@ -936,9 +937,9 @@ class ExperimentRunner:
                             target_mean,
                             target_std,
                         )
-                except Exception:
+                except (IndexError, TypeError, AttributeError) as exc:
                     logger.warning(
-                        "Could not collect y_train for MASE; MASE values will be approximate."
+                        "Could not collect y_train for MASE: %s; MASE values will be approximate.", exc
                     )
 
             # Compute metrics
@@ -1013,18 +1014,32 @@ class ExperimentRunner:
     def _split_retrain_train_val(
         train_pool_indices: list[int],
         val_ratio: float = 0.1,
+        seed: int = 42,
     ) -> tuple[list[int], list[int]]:
-        """Split a training pool into disjoint retrain-train / retrain-val subsets."""
+        """Split a training pool into disjoint retrain-train / retrain-val subsets.
+
+        Uses a seeded random shuffle instead of a temporal tail split.
+        The previous temporal-tail approach caused the retrain validation set
+        to be maximally distribution-shifted from the training portion in
+        non-stationary forecasting datasets (e.g., Ganymede), leading to
+        best_epoch=0 failures where the model never improved beyond
+        random initialization.
+        """
         if len(train_pool_indices) < 2:
             return train_pool_indices[:], train_pool_indices[:]
 
+        rng = np.random.RandomState(seed)
         n_retrain_val = max(1, int(len(train_pool_indices) * val_ratio))
-        retrain_train_idx = train_pool_indices[:-n_retrain_val]
-        retrain_val_idx = train_pool_indices[-n_retrain_val:]
+
+        shuffled = list(train_pool_indices)
+        rng.shuffle(shuffled)
+
+        retrain_val_idx = shuffled[:n_retrain_val]
+        retrain_train_idx = shuffled[n_retrain_val:]
 
         if not retrain_train_idx:
-            retrain_train_idx = train_pool_indices[:-1]
-            retrain_val_idx = train_pool_indices[-1:]
+            retrain_train_idx = shuffled[:-1]
+            retrain_val_idx = shuffled[-1:]
 
         return retrain_train_idx, retrain_val_idx
 
