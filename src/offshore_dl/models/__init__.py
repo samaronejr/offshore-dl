@@ -85,3 +85,10 @@ try:
     __all__.append("MantisClassifier")
 except (ImportError, ModuleNotFoundError, RuntimeError):
     pass
+
+try:
+    from offshore_dl.models.deeponet_recon_clf import DeepONetReconClassifier
+
+    __all__.append("DeepONetReconClassifier")
+except (ImportError, ModuleNotFoundError, RuntimeError):
+    pass

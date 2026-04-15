@@ -1,0 +1,15 @@
+model:
+  architecture:
+    rank: 64
+    branch_hidden: 128
+    branch_layers: 2
+    trunk_hidden: [128, 128]
+    n_frequencies: 16
+    lora_rank: 4
+    dropout: 0.1
+  training:
+    pretrain_epochs: 30
+    finetune_epochs: 10
+    pretrain_lr: 0.001
+    finetune_lr: 0.0005
+    batch_size: 32
