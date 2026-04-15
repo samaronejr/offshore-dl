@@ -29,7 +29,7 @@ try:
 except (ImportError, ModuleNotFoundError):
     _MAMBASL_AVAILABLE = False
 
-from offshore_dl.models.base import BaseModel
+from offshore_dl.models.base import BaseModel, instance_normalize
 
 logger = logging.getLogger(__name__)
 
@@ -476,16 +476,7 @@ class MambaSLModel(BaseModel):
         Returns:
             ``(B, n_classes)`` classification logits.
         """
-        # ── Instance normalization (per-sample z-score) ──
-        # Prevents numerical instability from wide-ranging raw sensor values
-        # (K017). Feature inputs are already normalized; z-score on top is
-        # harmless but also stable.
-        eps = 1e-5
-        mean = x.mean(dim=1, keepdim=True)  # (B, 1, n_vars)
-        std = x.std(dim=1, keepdim=True).clamp(min=eps)
-        x = (x - mean) / std
-        # Clamp to guard against extreme outliers destabilising SSM layers
-        x = x.clamp(-10.0, 10.0)
+        x = instance_normalize(x)
 
         # ── Token embedding ──
         h = self.embedding(x)  # (B, L, d_model)
@@ -504,24 +495,3 @@ class MambaSLModel(BaseModel):
         # ── Classification head ──
         return self.head(pooled)  # (B, n_classes)
 
-    def configure_optimizers(self, cfg=None) -> torch.optim.Optimizer:
-        """Create AdamW optimizer.
-
-        Args:
-            cfg: Optional OmegaConf config with training.lr / training.weight_decay.
-
-        Returns:
-            Configured AdamW optimizer.
-        """
-        lr = self.lr
-        wd = self.weight_decay
-
-        if cfg is not None:
-            if hasattr(cfg, "model") and hasattr(cfg.model, "training"):
-                lr = getattr(cfg.model.training, "lr", lr)
-                wd = getattr(cfg.model.training, "weight_decay", wd)
-            elif hasattr(cfg, "training"):
-                lr = getattr(cfg.training, "lr", lr)
-                wd = getattr(cfg.training, "weight_decay", wd)
-
-        return torch.optim.AdamW(self.parameters(), lr=lr, weight_decay=wd)

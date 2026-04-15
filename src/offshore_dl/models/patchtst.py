@@ -140,48 +140,4 @@ class PatchTSTModel(BaseModel):
         msg = f"Unknown task: {self.task!r}"
         raise ValueError(msg)
 
-    def training_step(self, batch: tuple) -> torch.Tensor:
-        """Compute training loss.
 
-        Uses our own loss computation (via BaseModel) rather than HF's
-        internal loss, for consistency with other models.
-        """
-        features, targets, _metadata = batch
-        outputs = self.forward(features)
-        return self._compute_loss(outputs, targets)
-
-    def validation_step(self, batch: tuple) -> dict:
-        """Compute validation metrics."""
-        features, targets, _metadata = batch
-        with torch.no_grad():
-            outputs = self.forward(features)
-            loss = self._compute_loss(outputs, targets)
-
-        predictions = self._extract_predictions(outputs)
-        return {
-            "loss": loss,
-            "predictions": predictions,
-            "targets": targets,
-        }
-
-    def predict(self, batch: tuple) -> torch.Tensor:
-        """Generate predictions."""
-        features, _targets, _metadata = batch
-        with torch.no_grad():
-            outputs = self.forward(features)
-        return self._extract_predictions(outputs)
-
-    def configure_optimizers(self, cfg=None) -> torch.optim.Optimizer:
-        """Create AdamW optimizer with lower LR for transformer fine-tuning."""
-        lr = self.lr
-        wd = self.weight_decay
-
-        if cfg is not None:
-            if hasattr(cfg, "model") and hasattr(cfg.model, "training"):
-                lr = getattr(cfg.model.training, "lr", lr)
-                wd = getattr(cfg.model.training, "weight_decay", wd)
-            elif hasattr(cfg, "training"):
-                lr = getattr(cfg.training, "lr", lr)
-                wd = getattr(cfg.training, "weight_decay", wd)
-
-        return torch.optim.AdamW(self.parameters(), lr=lr, weight_decay=wd)

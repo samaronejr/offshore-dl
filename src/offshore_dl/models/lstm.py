@@ -158,24 +158,3 @@ class LSTMModel(BaseModel):
         msg = f"Unknown task: {self.task!r}"
         raise ValueError(msg)
 
-    def configure_optimizers(self, cfg=None) -> torch.optim.Optimizer:
-        """Create AdamW optimizer with configurable lr and weight decay.
-
-        Args:
-            cfg: OmegaConf config with training.lr and training.weight_decay.
-
-        Returns:
-            Configured AdamW optimizer.
-        """
-        lr = self.lr
-        wd = self.weight_decay
-
-        if cfg is not None:
-            if hasattr(cfg, "model") and hasattr(cfg.model, "training"):
-                lr = getattr(cfg.model.training, "lr", lr)
-                wd = getattr(cfg.model.training, "weight_decay", wd)
-            elif hasattr(cfg, "training"):
-                lr = getattr(cfg.training, "lr", lr)
-                wd = getattr(cfg.training, "weight_decay", wd)
-
-        return torch.optim.AdamW(self.parameters(), lr=lr, weight_decay=wd)

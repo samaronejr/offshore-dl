@@ -432,17 +432,3 @@ class DeepONetModel(BaseModel):
 
         return output
 
-    def configure_optimizers(self, cfg=None) -> torch.optim.Optimizer:
-        """Create AdamW optimizer."""
-        lr = self.lr
-        wd = self.weight_decay
-
-        if cfg is not None:
-            if hasattr(cfg, "model") and hasattr(cfg.model, "training"):
-                lr = getattr(cfg.model.training, "lr", lr)
-                wd = getattr(cfg.model.training, "weight_decay", wd)
-            elif hasattr(cfg, "training"):
-                lr = getattr(cfg.training, "lr", lr)
-                wd = getattr(cfg.training, "weight_decay", wd)
-
-        return torch.optim.AdamW(self.parameters(), lr=lr, weight_decay=wd)

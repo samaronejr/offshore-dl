@@ -151,17 +151,3 @@ class InceptionTimeModel(BaseModel):
         pooled = self.pool(x).squeeze(-1)
         return self.classifier(pooled)
 
-    def configure_optimizers(self, cfg=None) -> torch.optim.Optimizer:
-        """Create AdamW optimizer."""
-        lr = self.lr
-        weight_decay = self.weight_decay
-
-        if cfg is not None:
-            if hasattr(cfg, "model") and hasattr(cfg.model, "training"):
-                lr = getattr(cfg.model.training, "lr", lr)
-                weight_decay = getattr(cfg.model.training, "weight_decay", weight_decay)
-            elif hasattr(cfg, "training"):
-                lr = getattr(cfg.training, "lr", lr)
-                weight_decay = getattr(cfg.training, "weight_decay", weight_decay)
-
-        return torch.optim.AdamW(self.parameters(), lr=lr, weight_decay=weight_decay)

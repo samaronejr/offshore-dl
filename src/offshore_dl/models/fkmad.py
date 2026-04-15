@@ -21,7 +21,7 @@ import torch.nn as nn
 
 from mamba_ssm import Mamba
 
-from offshore_dl.models.base import BaseModel
+from offshore_dl.models.base import BaseModel, instance_normalize
 
 logger = logging.getLogger(__name__)
 
@@ -294,19 +294,7 @@ class FKMADModel(BaseModel):
         Returns:
             ``(B, n_classes)`` classification logits.
         """
-        # ── Instance normalization (per-sample z-score) ──
-        # Raw sensor data can span [0, 1e7] across variables.  Without
-        # normalization the Fourier basis overflows and losses go NaN.
-        # Per-instance z-score is model-internal so it doesn't leak across
-        # CV folds (no global statistics needed).
-        eps = 1e-5
-        mean = x.mean(dim=1, keepdim=True)  # (B, 1, n_vars)
-        std = x.std(dim=1, keepdim=True).clamp(min=eps)  # (B, 1, n_vars)
-        x = (x - mean) / std
-
-        # Clamp normalized values to prevent extreme z-scores from
-        # destabilising the Fourier basis and Mamba layers.
-        x = x.clamp(-10.0, 10.0)
+        x = instance_normalize(x)
 
         # Input projection (linear + Fourier)
         h = self.projection(x)  # (B, L, d_model)
@@ -334,24 +322,3 @@ class FKMADModel(BaseModel):
         # Classification head
         return self.head(pooled)  # (B, n_classes)
 
-    def configure_optimizers(self, cfg=None) -> torch.optim.Optimizer:
-        """Create AdamW optimizer.
-
-        Args:
-            cfg: Optional OmegaConf config with training.lr / training.weight_decay.
-
-        Returns:
-            Configured AdamW optimizer.
-        """
-        lr = self.lr
-        wd = self.weight_decay
-
-        if cfg is not None:
-            if hasattr(cfg, "model") and hasattr(cfg.model, "training"):
-                lr = getattr(cfg.model.training, "lr", lr)
-                wd = getattr(cfg.model.training, "weight_decay", wd)
-            elif hasattr(cfg, "training"):
-                lr = getattr(cfg.training, "lr", lr)
-                wd = getattr(cfg.training, "weight_decay", wd)
-
-        return torch.optim.AdamW(self.parameters(), lr=lr, weight_decay=wd)

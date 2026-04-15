@@ -18,6 +18,7 @@ import numpy as np
 import torch
 from omegaconf import OmegaConf
 
+from offshore_dl.utils.serialization import make_serializable as _make_serializable
 from offshore_dl.data.datasets import (
     CDFDataset,
     GanymedeDataset,
@@ -428,25 +429,6 @@ def run_and_save(
     print(f"{'=' * 60}\n")
 
     return results
-
-
-def _make_serializable(obj):
-    """Convert non-serializable types for JSON output."""
-    import numpy as np
-
-    if isinstance(obj, dict):
-        return {k: _make_serializable(v) for k, v in obj.items() if k != "study"}
-    elif isinstance(obj, (list, tuple)):
-        return [_make_serializable(v) for v in obj]
-    elif isinstance(obj, (np.integer,)):
-        return int(obj)
-    elif isinstance(obj, (np.floating, float)):
-        return float(obj)
-    elif isinstance(obj, np.ndarray):
-        return obj.tolist()
-    elif isinstance(obj, torch.Tensor):
-        return obj.tolist()
-    return obj
 
 
 def main() -> None:

@@ -26,83 +26,13 @@ except ImportError:
 
 
 # ── Feature catalogue ────────────────────────────────────────────
-# Each entry: (name, callable(col_1d) → scalar)
-
-
-def _slope(x: np.ndarray) -> float:
-    """Linear-regression slope over the window."""
-    n = len(x)
-    if n < 2:
-        return 0.0
-    t = np.arange(n, dtype=np.float64)
-    # Fast OLS via closed form: slope = cov(t,x) / var(t)
-    t_mean = (n - 1) / 2.0
-    x_mean = x.mean()
-    num = np.dot(t - t_mean, x - x_mean)
-    den = np.dot(t - t_mean, t - t_mean)
-    return float(num / den) if den > 0 else 0.0
-
-
-def _mean_abs_change(x: np.ndarray) -> float:
-    """Mean absolute first-difference."""
-    if len(x) < 2:
-        return 0.0
-    return float(np.mean(np.abs(np.diff(x))))
-
-
-def _count_above_mean(x: np.ndarray) -> float:
-    """Fraction of values above the mean."""
-    if len(x) == 0:
-        return 0.0
-    return float(np.mean(x > x.mean()))
-
-
-def _number_peaks(x: np.ndarray, support: int = 5) -> float:
-    """Count local maxima with given support width."""
-    if len(x) < 2 * support + 1:
-        return 0.0
-    count = 0
-    for i in range(support, len(x) - support):
-        left = x[i - support : i]
-        right = x[i + 1 : i + support + 1]
-        if np.all(x[i] > left) and np.all(x[i] > right):
-            count += 1
-    return float(count)
-
-
-def _rms(x: np.ndarray) -> float:
-    """Root mean square."""
-    return float(np.sqrt(np.mean(x**2)))
-
-
-def _iqr(x: np.ndarray) -> float:
-    """Inter-quartile range."""
-    return float(np.percentile(x, 75) - np.percentile(x, 25))
-
-
-def _energy(x: np.ndarray) -> float:
-    """Sum of squared values (signal energy)."""
-    return float(np.sum(x**2))
-
-
-FEATURE_FUNCTIONS: list[tuple[str, callable]] = [
-    ("mean", lambda x: float(np.mean(x))),
-    ("std", lambda x: float(np.std(x))),
-    ("min", lambda x: float(np.min(x))),
-    ("max", lambda x: float(np.max(x))),
-    ("median", lambda x: float(np.median(x))),
-    ("skewness", lambda x: float(sp_stats.skew(x))),
-    ("kurtosis", lambda x: float(sp_stats.kurtosis(x))),
-    ("slope", _slope),
-    ("mean_abs_change", _mean_abs_change),
-    ("count_above_mean", _count_above_mean),
-    ("number_peaks", lambda x: _number_peaks(x, support=5)),
-    ("rms", _rms),
-    ("iqr", _iqr),
-    ("energy", _energy),
+FEATURE_NAMES: list[str] = [
+    "mean", "std", "min", "max", "median", "skewness", "kurtosis",
+    "slope", "mean_abs_change", "count_above_mean", "number_peaks",
+    "rms", "iqr", "energy",
 ]
 
-N_FEATURES = len(FEATURE_FUNCTIONS)  # 14
+N_FEATURES = len(FEATURE_NAMES)  # 14
 
 
 def extract_window_features(window: np.ndarray) -> np.ndarray:
@@ -113,7 +43,7 @@ def extract_window_features(window: np.ndarray) -> np.ndarray:
 
     Returns:
         Feature matrix of shape ``(n_features, n_vars)`` where
-        ``n_features = 14`` (see ``FEATURE_FUNCTIONS``).
+        ``n_features = 14`` (see ``FEATURE_NAMES``).
         Each column is the per-sensor feature vector.
     """
     timesteps, n_vars = window.shape
@@ -291,11 +221,6 @@ class WaveletFeatureExtractor:
 
         np.nan_to_num(out, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
         return out
-
-
-def feature_names() -> list[str]:
-    """Return ordered list of feature names."""
-    return [name for name, _ in FEATURE_FUNCTIONS]
 
 
 class PhysicsFeatureExtractor:

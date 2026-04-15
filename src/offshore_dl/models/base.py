@@ -93,6 +93,7 @@ class BaseModel(nn.Module, ABC):
         n_vars: int,
         loss_type: str = "ce",
         focal_gamma: float = 2.0,
+        label_smoothing: float = 0.0,
         class_weights: torch.Tensor | None = None,
         **kwargs,
     ) -> None:
@@ -101,7 +102,14 @@ class BaseModel(nn.Module, ABC):
         self.n_vars = n_vars
         self.loss_type = loss_type
         self.focal_gamma = focal_gamma
+        self.label_smoothing = label_smoothing
         self._loss_fn = self._build_loss_fn(class_weights=class_weights)
+
+        # Defaults for configure_optimizers; subclasses override in their __init__
+        if not hasattr(self, "lr"):
+            self.lr = 1e-3
+        if not hasattr(self, "weight_decay"):
+            self.weight_decay = 1e-4
 
     def _build_loss_fn(self, class_weights: torch.Tensor | None = None) -> nn.Module:
         """Create the appropriate loss function for this task.
@@ -114,7 +122,10 @@ class BaseModel(nn.Module, ABC):
         """
         if self.task == "classification":
             if self.loss_type == "ce":
-                return nn.CrossEntropyLoss(weight=class_weights)
+                return nn.CrossEntropyLoss(
+                    weight=class_weights,
+                    label_smoothing=self.label_smoothing,
+                )
             elif self.loss_type == "focal":
                 return FocalLoss(gamma=self.focal_gamma, weight=class_weights)
             else:
@@ -211,16 +222,27 @@ class BaseModel(nn.Module, ABC):
             outputs = self.forward(features)
         return self._extract_prediction_scores(outputs)
 
-    @abstractmethod
-    def configure_optimizers(self, cfg) -> torch.optim.Optimizer:
-        """Create and return the optimizer.
+    def configure_optimizers(self, cfg=None) -> torch.optim.Optimizer:
+        """Create AdamW optimizer with configurable lr and weight decay.
 
         Args:
             cfg: OmegaConf config (contains lr, weight_decay, etc.).
 
         Returns:
-            Configured optimizer.
+            Configured AdamW optimizer.
         """
+        lr = self.lr
+        wd = self.weight_decay
+
+        if cfg is not None:
+            if hasattr(cfg, "model") and hasattr(cfg.model, "training"):
+                lr = getattr(cfg.model.training, "lr", lr)
+                wd = getattr(cfg.model.training, "weight_decay", wd)
+            elif hasattr(cfg, "training"):
+                lr = getattr(cfg.training, "lr", lr)
+                wd = getattr(cfg.training, "weight_decay", wd)
+
+        return torch.optim.AdamW(self.parameters(), lr=lr, weight_decay=wd)
 
     def _compute_loss(
         self, outputs: torch.Tensor, targets: torch.Tensor
@@ -252,6 +274,28 @@ class BaseModel(nn.Module, ABC):
         if self.task == "classification":
             return torch.softmax(outputs, dim=-1)
         return outputs
+
+
+def instance_normalize(
+    x: torch.Tensor, eps: float = 1e-5, clamp_val: float = 10.0
+) -> torch.Tensor:
+    """Per-sample z-score normalization along the sequence dimension.
+
+    Prevents numerical instability from wide-ranging raw sensor values.
+    Model-internal so it doesn't leak across CV folds.
+
+    Args:
+        x: ``(B, L, n_vars)`` input tensor.
+        eps: Minimum std to avoid division by zero.
+        clamp_val: Clamp normalized values to ``[-clamp_val, clamp_val]``.
+
+    Returns:
+        Normalized tensor of same shape.
+    """
+    mean = x.mean(dim=1, keepdim=True)
+    std = x.std(dim=1, keepdim=True).clamp(min=eps)
+    x = (x - mean) / std
+    return x.clamp(-clamp_val, clamp_val)
 
 
 def model_summary(model: nn.Module) -> dict:
