@@ -16,7 +16,8 @@ The models span seven paradigms, from recurrent networks and neural operators to
 | Paradigm | Model | Training | Tasks |
 |----------|-------|----------|-------|
 | Recurrent | **LSTM** | From scratch | Forecasting · Classification · Anomaly |
-| Neural operator | **DeepONet** | From scratch | Forecasting · Classification · Anomaly |
+| Neural operator | **DeepONet** | From scratch | Forecasting · Anomaly |
+| Branch network | **DeepONet-Branch + MLP head** | From scratch | Classification |
 | Transformer | **PatchTST** | From scratch* | Forecasting · Classification · Anomaly |
 | Temporal convolution | **TCN** | From scratch | Forecasting |
 | Convolution | **ConvTimeNet** | From scratch | Classification |
@@ -61,7 +62,7 @@ The models span seven paradigms, from recurrent networks and neural operators to
 | **MambaSL** | 96.56% | 0.961 | 0.966 |
 | **PatchTST (HPO)** | 96.47% | 0.962 | 0.965 |
 | PatchTST | 95.72% | 0.952 | 0.957 |
-| DeepONet | 94.14% | 0.931 | 0.942 |
+| DeepONet-Branch + MLP head | 94.14% | 0.931 | 0.942 |
 | LSTM | 92.21% | 0.911 | 0.921 |
 | TiRex (embeddings + RF) | 91.16% | 0.895 | 0.911 |
 | InceptionTime† | — | 0.012 | — |

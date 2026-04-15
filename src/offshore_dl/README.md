@@ -10,7 +10,7 @@ Core Python package.
 |--------|-------|------|
 | `base.py` | `BaseModel` ABC | Interface: `forward()`, `training_step()`, `predict()`, `configure_optimizers()` |
 | `lstm.py` | Bidirectional LSTM + attention | Trained (classification, forecasting, anomaly) |
-| `deeponet.py` | Time-Dependent DeepONet | Trained (branch-trunk operator learning) |
+| `deeponet.py` | Time-Dependent DeepONet | Trained (full branch-trunk for forecasting/anomaly; branch + MLP head for classification) |
 | `patchtst.py` | PatchTST | Trained (channel-independent transformer) |
 | `tcn.py` | Temporal Convolutional Network | Trained (dilated causal convolutions) |
 | `convtimenet.py` | ConvTimeNet | Trained (multi-scale depthwise conv) |
