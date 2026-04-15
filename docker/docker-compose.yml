@@ -18,6 +18,7 @@ services:
       - ../reports:/app/reports
       - ../mlruns:/app/mlruns
       - ../configs:/app/configs
+      - ../optuna.db:/app/optuna.db
       - ${HF_CACHE_DIR:-~/.cache/huggingface}:/app/.cache/huggingface
     environment:
       - MLFLOW_TRACKING_URI=http://host.docker.internal:5000
