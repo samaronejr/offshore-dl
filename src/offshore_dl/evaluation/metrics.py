@@ -107,9 +107,18 @@ class MetricRegistry:
         results["f1_weighted"] = float(f1_score(targets, predictions, average="weighted", zero_division=0))
         results["accuracy"] = float(accuracy_score(targets, predictions))
 
-        # AUC-PR (macro-averaged, one-vs-rest)
+        # AUC-PR (macro-averaged, one-vs-rest).  Class labels must cover the
+        # full label space, not just classes seen in this fold's val set —
+        # otherwise rare-class folds end up with shape-mismatched scores and
+        # silently fall back to auc_pr=0.0.
         if class_labels is None:
-            class_labels = sorted(set(targets))
+            inferred = set(np.asarray(targets).tolist())
+            inferred.update(np.asarray(predictions).tolist())
+            if prediction_scores is not None:
+                scores_arr = np.asarray(prediction_scores)
+                if scores_arr.ndim == 2:
+                    inferred.update(range(scores_arr.shape[1]))
+            class_labels = sorted(inferred)
 
         if len(class_labels) > 2:
             try:
