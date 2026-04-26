@@ -15,11 +15,17 @@ from offshore_dl.models.base import BaseModel
 
 
 def _resolve_kernel_sizes(kernel_sizes: Sequence[int], window_size: int) -> list[int]:
-    """Adapt default kernels for long raw windows."""
+    """Adapt default kernels to the window length.
+
+    * Long raw windows (>=128 timesteps) → [40, 80, 160] (original paper).
+    * Short feature windows (<128) → clamp each kernel to ``<= window_size``
+      so the convolution spans at most the full sequence, preventing the
+      model from collapsing to a majority-class predictor.
+    """
     kernels = [int(k) for k in kernel_sizes]
     if kernels == [10, 20, 40] and window_size >= 128:
         return [40, 80, 160]
-    return kernels
+    return [min(k, max(1, window_size)) for k in kernels]
 
 
 class InceptionBlock(nn.Module):
@@ -92,6 +98,7 @@ class InceptionTimeModel(BaseModel):
         window_size: int = 14,
         lr: float = 1.0e-3,
         weight_decay: float = 0.0,
+        class_weights: torch.Tensor | None = None,
         **kwargs,
     ) -> None:
         super().__init__(
@@ -99,6 +106,7 @@ class InceptionTimeModel(BaseModel):
             n_vars=n_vars,
             loss_type=loss_type,
             focal_gamma=focal_gamma,
+            class_weights=class_weights,
         )
         if task != "classification":
             msg = "InceptionTimeModel currently supports classification only."

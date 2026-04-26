@@ -697,6 +697,8 @@ class ConvTimeNetModel(BaseModel):
         window_size: int = 720,
         loss_type: str = "ce",
         focal_gamma: float = 2.0,
+        class_weights: torch.Tensor | None = None,
+        **kwargs,
     ) -> None:
         if task != "classification":
             msg = (
@@ -711,6 +713,7 @@ class ConvTimeNetModel(BaseModel):
             n_vars=n_vars,
             loss_type=loss_type,
             focal_gamma=focal_gamma,
+            class_weights=class_weights,
         )
 
         if dw_ks is None:
