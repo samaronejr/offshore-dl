@@ -7,482 +7,598 @@
   ],
   "alpha": 0.05,
   "3w": {
-    "n_models": 11,
+    "n_models": 12,
     "metrics": {
       "accuracy": {
         "models": [
           "convtimenet",
-          "convtimenet_raw",
+          "convtran",
           "deeponet",
           "fkmad",
-          "fkmad_raw",
           "lstm",
           "mambasl",
-          "mambasl_raw",
           "patchtst",
+          "physics_deeponet",
+          "physics_rf",
           "random_forest",
-          "tirex"
+          "wavelet_deeponet",
+          "wavelet_rf"
         ],
         "friedman": {
-          "statistic": 45.93806921675773,
-          "p_value": 1.471768001008469e-06,
+          "statistic": 36.261538461538464,
+          "p_value": 0.00015309464000495688,
           "significant": true,
-          "n_models": 11,
+          "n_models": 12,
           "n_folds": 5,
           "models": [
             "convtimenet",
-            "convtimenet_raw",
+            "convtran",
             "deeponet",
             "fkmad",
-            "fkmad_raw",
             "lstm",
             "mambasl",
-            "mambasl_raw",
             "patchtst",
+            "physics_deeponet",
+            "physics_rf",
             "random_forest",
-            "tirex"
+            "wavelet_deeponet",
+            "wavelet_rf"
           ]
         },
         "average_ranks": {
-          "convtimenet": 3.4,
-          "convtimenet_raw": 8.8,
-          "deeponet": 10.6,
-          "fkmad": 2.8,
-          "fkmad_raw": 7.4,
-          "lstm": 6.2,
-          "mambasl": 4.8,
-          "mambasl_raw": 8.2,
-          "patchtst": 3.2,
-          "random_forest": 1.0,
-          "tirex": 9.6
+          "convtimenet": 8.4,
+          "convtran": 7.4,
+          "deeponet": 8.0,
+          "fkmad": 8.2,
+          "lstm": 8.6,
+          "mambasl": 10.0,
+          "patchtst": 7.4,
+          "physics_deeponet": 8.8,
+          "physics_rf": 2.2,
+          "random_forest": 2.6,
+          "wavelet_deeponet": 5.0,
+          "wavelet_rf": 1.4
         },
         "wilcoxon_pairwise": [
           {
             "model_a": "convtimenet",
-            "model_b": "convtimenet_raw",
-            "statistic": 0.0,
-            "p_value": 0.0625,
+            "model_b": "convtran",
+            "statistic": 6.0,
+            "p_value_raw": 0.8125,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "convtimenet",
             "model_b": "deeponet",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "convtimenet",
-            "model_b": "fkmad",
             "statistic": 5.0,
-            "p_value": 0.625,
+            "p_value_raw": 0.625,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "convtimenet",
-            "model_b": "fkmad_raw",
-            "statistic": 0.0,
-            "p_value": 0.0625,
+            "model_b": "fkmad",
+            "statistic": 7.0,
+            "p_value_raw": 1.0,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "convtimenet",
             "model_b": "lstm",
-            "statistic": 0.0,
-            "p_value": 0.0625,
+            "statistic": 6.0,
+            "p_value_raw": 0.8125,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "convtimenet",
             "model_b": "mambasl",
-            "statistic": 4.0,
-            "p_value": 0.4375,
-            "significant": false
-          },
-          {
-            "model_a": "convtimenet",
-            "model_b": "mambasl_raw",
-            "statistic": 0.0,
-            "p_value": 0.0625,
+            "statistic": 5.0,
+            "p_value_raw": 0.625,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "convtimenet",
             "model_b": "patchtst",
+            "statistic": 6.0,
+            "p_value_raw": 0.8125,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "convtimenet",
+            "model_b": "physics_deeponet",
             "statistic": 7.0,
+            "p_value_raw": 1.0,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "convtimenet",
+            "model_b": "physics_rf",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
             "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "convtimenet",
             "model_b": "random_forest",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "convtimenet",
-            "model_b": "tirex",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "convtimenet_raw",
-            "model_b": "deeponet",
-            "statistic": 0.0,
-            "p_value": 0.25,
-            "significant": false
-          },
-          {
-            "model_a": "convtimenet_raw",
-            "model_b": "fkmad",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "convtimenet_raw",
-            "model_b": "fkmad_raw",
-            "statistic": 3.0,
-            "p_value": 0.3125,
-            "significant": false
-          },
-          {
-            "model_a": "convtimenet_raw",
-            "model_b": "lstm",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "convtimenet_raw",
-            "model_b": "mambasl",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "convtimenet_raw",
-            "model_b": "mambasl_raw",
-            "statistic": 6.0,
-            "p_value": 0.8125,
-            "significant": false
-          },
-          {
-            "model_a": "convtimenet_raw",
-            "model_b": "patchtst",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "convtimenet_raw",
-            "model_b": "random_forest",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "convtimenet_raw",
-            "model_b": "tirex",
-            "statistic": 6.0,
-            "p_value": 0.8125,
-            "significant": false
-          },
-          {
-            "model_a": "deeponet",
-            "model_b": "fkmad",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "deeponet",
-            "model_b": "fkmad_raw",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "deeponet",
-            "model_b": "lstm",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "deeponet",
-            "model_b": "mambasl",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "deeponet",
-            "model_b": "mambasl_raw",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "deeponet",
-            "model_b": "patchtst",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "deeponet",
-            "model_b": "random_forest",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "deeponet",
-            "model_b": "tirex",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "fkmad",
-            "model_b": "fkmad_raw",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "fkmad",
-            "model_b": "lstm",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "fkmad",
-            "model_b": "mambasl",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "fkmad",
-            "model_b": "mambasl_raw",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "fkmad",
-            "model_b": "patchtst",
-            "statistic": 7.0,
-            "p_value": 1.0,
-            "significant": false
-          },
-          {
-            "model_a": "fkmad",
-            "model_b": "random_forest",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "fkmad",
-            "model_b": "tirex",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "fkmad_raw",
-            "model_b": "lstm",
-            "statistic": 4.0,
-            "p_value": 0.4375,
-            "significant": false
-          },
-          {
-            "model_a": "fkmad_raw",
-            "model_b": "mambasl",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "fkmad_raw",
-            "model_b": "mambasl_raw",
-            "statistic": 3.0,
-            "p_value": 0.3125,
-            "significant": false
-          },
-          {
-            "model_a": "fkmad_raw",
-            "model_b": "patchtst",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "fkmad_raw",
-            "model_b": "random_forest",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "fkmad_raw",
-            "model_b": "tirex",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "lstm",
-            "model_b": "mambasl",
             "statistic": 1.0,
-            "p_value": 0.125,
+            "p_value_raw": 0.125,
+            "p_value": 1.0,
             "significant": false
           },
           {
-            "model_a": "lstm",
-            "model_b": "mambasl_raw",
+            "model_a": "convtimenet",
+            "model_b": "wavelet_deeponet",
+            "statistic": 3.0,
+            "p_value_raw": 0.3125,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "convtimenet",
+            "model_b": "wavelet_rf",
             "statistic": 0.0,
-            "p_value": 0.0625,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           },
           {
-            "model_a": "lstm",
+            "model_a": "convtran",
+            "model_b": "deeponet",
+            "statistic": 7.0,
+            "p_value_raw": 1.0,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "convtran",
+            "model_b": "fkmad",
+            "statistic": 7.0,
+            "p_value_raw": 1.0,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "convtran",
+            "model_b": "lstm",
+            "statistic": 6.0,
+            "p_value_raw": 0.8125,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "convtran",
+            "model_b": "mambasl",
+            "statistic": 4.0,
+            "p_value_raw": 0.4375,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "convtran",
             "model_b": "patchtst",
-            "statistic": 0.0,
-            "p_value": 0.0625,
+            "statistic": 6.0,
+            "p_value_raw": 0.8125,
+            "p_value": 1.0,
             "significant": false
           },
           {
-            "model_a": "lstm",
+            "model_a": "convtran",
+            "model_b": "physics_deeponet",
+            "statistic": 5.0,
+            "p_value_raw": 0.625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "convtran",
+            "model_b": "physics_rf",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "convtran",
             "model_b": "random_forest",
             "statistic": 0.0,
-            "p_value": 0.0625,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           },
           {
-            "model_a": "lstm",
-            "model_b": "tirex",
+            "model_a": "convtran",
+            "model_b": "wavelet_deeponet",
+            "statistic": 2.0,
+            "p_value_raw": 0.1875,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "convtran",
+            "model_b": "wavelet_rf",
             "statistic": 0.0,
-            "p_value": 0.0625,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           },
           {
-            "model_a": "mambasl",
-            "model_b": "mambasl_raw",
-            "statistic": 0.0,
-            "p_value": 0.0625,
+            "model_a": "deeponet",
+            "model_b": "fkmad",
+            "statistic": 7.0,
+            "p_value_raw": 1.0,
+            "p_value": 1.0,
             "significant": false
           },
           {
-            "model_a": "mambasl",
+            "model_a": "deeponet",
+            "model_b": "lstm",
+            "statistic": 5.0,
+            "p_value_raw": 0.625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "deeponet",
+            "model_b": "mambasl",
+            "statistic": 2.0,
+            "p_value_raw": 0.1875,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "deeponet",
             "model_b": "patchtst",
             "statistic": 5.0,
-            "p_value": 0.625,
+            "p_value_raw": 0.625,
+            "p_value": 1.0,
             "significant": false
           },
           {
-            "model_a": "mambasl",
+            "model_a": "deeponet",
+            "model_b": "physics_deeponet",
+            "statistic": 5.0,
+            "p_value_raw": 0.625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "deeponet",
+            "model_b": "physics_rf",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "deeponet",
             "model_b": "random_forest",
             "statistic": 0.0,
-            "p_value": 0.0625,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           },
           {
-            "model_a": "mambasl",
-            "model_b": "tirex",
+            "model_a": "deeponet",
+            "model_b": "wavelet_deeponet",
             "statistic": 0.0,
-            "p_value": 0.0625,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           },
           {
-            "model_a": "mambasl_raw",
+            "model_a": "deeponet",
+            "model_b": "wavelet_rf",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad",
+            "model_b": "lstm",
+            "statistic": 5.0,
+            "p_value_raw": 0.625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad",
+            "model_b": "mambasl",
+            "statistic": 4.0,
+            "p_value_raw": 0.4375,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad",
             "model_b": "patchtst",
-            "statistic": 0.0,
-            "p_value": 0.0625,
+            "statistic": 7.0,
+            "p_value_raw": 1.0,
+            "p_value": 1.0,
             "significant": false
           },
           {
-            "model_a": "mambasl_raw",
+            "model_a": "fkmad",
+            "model_b": "physics_deeponet",
+            "statistic": 6.0,
+            "p_value_raw": 0.8125,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad",
+            "model_b": "physics_rf",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad",
             "model_b": "random_forest",
             "statistic": 0.0,
-            "p_value": 0.0625,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           },
           {
-            "model_a": "mambasl_raw",
-            "model_b": "tirex",
+            "model_a": "fkmad",
+            "model_b": "wavelet_deeponet",
+            "statistic": 1.0,
+            "p_value_raw": 0.125,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad",
+            "model_b": "wavelet_rf",
             "statistic": 0.0,
-            "p_value": 0.0625,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "lstm",
+            "model_b": "mambasl",
+            "statistic": 5.0,
+            "p_value_raw": 0.625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "lstm",
+            "model_b": "patchtst",
+            "statistic": 5.0,
+            "p_value_raw": 0.625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "lstm",
+            "model_b": "physics_deeponet",
+            "statistic": 6.0,
+            "p_value_raw": 0.8125,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "lstm",
+            "model_b": "physics_rf",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "lstm",
+            "model_b": "random_forest",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "lstm",
+            "model_b": "wavelet_deeponet",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "lstm",
+            "model_b": "wavelet_rf",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "mambasl",
+            "model_b": "patchtst",
+            "statistic": 6.0,
+            "p_value_raw": 0.8125,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "mambasl",
+            "model_b": "physics_deeponet",
+            "statistic": 1.0,
+            "p_value_raw": 0.125,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "mambasl",
+            "model_b": "physics_rf",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "mambasl",
+            "model_b": "random_forest",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "mambasl",
+            "model_b": "wavelet_deeponet",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "mambasl",
+            "model_b": "wavelet_rf",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "patchtst",
+            "model_b": "physics_deeponet",
+            "statistic": 5.0,
+            "p_value_raw": 0.625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "patchtst",
+            "model_b": "physics_rf",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "patchtst",
             "model_b": "random_forest",
             "statistic": 0.0,
-            "p_value": 0.0625,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "patchtst",
-            "model_b": "tirex",
+            "model_b": "wavelet_deeponet",
+            "statistic": 3.0,
+            "p_value_raw": 0.3125,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "patchtst",
+            "model_b": "wavelet_rf",
             "statistic": 0.0,
-            "p_value": 0.0625,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "physics_deeponet",
+            "model_b": "physics_rf",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "physics_deeponet",
+            "model_b": "random_forest",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "physics_deeponet",
+            "model_b": "wavelet_deeponet",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "physics_deeponet",
+            "model_b": "wavelet_rf",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "physics_rf",
+            "model_b": "random_forest",
+            "statistic": 7.0,
+            "p_value_raw": 1.0,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "physics_rf",
+            "model_b": "wavelet_deeponet",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "physics_rf",
+            "model_b": "wavelet_rf",
+            "statistic": 1.0,
+            "p_value_raw": 0.125,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "random_forest",
-            "model_b": "tirex",
+            "model_b": "wavelet_deeponet",
             "statistic": 0.0,
-            "p_value": 0.0625,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "random_forest",
+            "model_b": "wavelet_rf",
+            "statistic": 2.0,
+            "p_value_raw": 0.1875,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "wavelet_deeponet",
+            "model_b": "wavelet_rf",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           }
         ],
-        "nemenyi_cd": 6.752231364519436,
+        "nemenyi_cd": 7.452186578447966,
         "nemenyi_significant_pairs": [
           {
-            "model_a": "convtimenet",
-            "model_b": "deeponet",
-            "rank_diff": 7.199999999999999
-          },
-          {
-            "model_a": "convtimenet_raw",
-            "model_b": "random_forest",
-            "rank_diff": 7.800000000000001
-          },
-          {
-            "model_a": "deeponet",
-            "model_b": "fkmad",
+            "model_a": "mambasl",
+            "model_b": "physics_rf",
             "rank_diff": 7.8
           },
           {
-            "model_a": "deeponet",
-            "model_b": "patchtst",
-            "rank_diff": 7.3999999999999995
-          },
-          {
-            "model_a": "deeponet",
-            "model_b": "random_forest",
-            "rank_diff": 9.6
-          },
-          {
-            "model_a": "fkmad",
-            "model_b": "tirex",
-            "rank_diff": 6.8
-          },
-          {
-            "model_a": "mambasl_raw",
-            "model_b": "random_forest",
-            "rank_diff": 7.199999999999999
-          },
-          {
-            "model_a": "random_forest",
-            "model_b": "tirex",
+            "model_a": "mambasl",
+            "model_b": "wavelet_rf",
             "rank_diff": 8.6
           }
         ]
@@ -490,104 +606,115 @@
       "f1_macro": {
         "models": [
           "convtimenet",
-          "convtimenet_raw",
+          "convtran",
           "deeponet",
           "fkmad",
-          "fkmad_raw",
           "lstm",
           "mambasl",
-          "mambasl_raw",
           "patchtst",
+          "physics_deeponet",
+          "physics_rf",
           "random_forest",
-          "tirex"
+          "wavelet_deeponet",
+          "wavelet_rf"
         ],
         "friedman": {
-          "statistic": 44.954462659380695,
-          "p_value": 2.21625151690239e-06,
+          "statistic": 37.12307692307692,
+          "p_value": 0.00010988575797867575,
           "significant": true,
-          "n_models": 11,
+          "n_models": 12,
           "n_folds": 5,
           "models": [
             "convtimenet",
-            "convtimenet_raw",
+            "convtran",
             "deeponet",
             "fkmad",
-            "fkmad_raw",
             "lstm",
             "mambasl",
-            "mambasl_raw",
             "patchtst",
+            "physics_deeponet",
+            "physics_rf",
             "random_forest",
-            "tirex"
+            "wavelet_deeponet",
+            "wavelet_rf"
           ]
         },
         "average_ranks": {
-          "convtimenet": 3.0,
-          "convtimenet_raw": 8.6,
-          "deeponet": 10.6,
-          "fkmad": 4.0,
-          "fkmad_raw": 7.2,
-          "lstm": 6.4,
-          "mambasl": 3.8,
-          "mambasl_raw": 8.4,
-          "patchtst": 3.4,
-          "random_forest": 1.0,
-          "tirex": 9.6
+          "convtimenet": 9.4,
+          "convtran": 7.8,
+          "deeponet": 8.4,
+          "fkmad": 7.6,
+          "lstm": 8.2,
+          "mambasl": 9.4,
+          "patchtst": 6.2,
+          "physics_deeponet": 9.4,
+          "physics_rf": 2.2,
+          "random_forest": 2.2,
+          "wavelet_deeponet": 5.6,
+          "wavelet_rf": 1.6
         },
         "wilcoxon_pairwise": [
           {
             "model_a": "convtimenet",
-            "model_b": "convtimenet_raw",
-            "statistic": 0.0,
-            "p_value": 0.0625,
+            "model_b": "convtran",
+            "statistic": 3.0,
+            "p_value_raw": 0.3125,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "convtimenet",
             "model_b": "deeponet",
-            "statistic": 0.0,
-            "p_value": 0.0625,
+            "statistic": 5.0,
+            "p_value_raw": 0.625,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "convtimenet",
             "model_b": "fkmad",
-            "statistic": 6.0,
-            "p_value": 0.8125,
-            "significant": false
-          },
-          {
-            "model_a": "convtimenet",
-            "model_b": "fkmad_raw",
-            "statistic": 0.0,
-            "p_value": 0.0625,
+            "statistic": 5.0,
+            "p_value_raw": 0.625,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "convtimenet",
             "model_b": "lstm",
-            "statistic": 0.0,
-            "p_value": 0.0625,
+            "statistic": 5.0,
+            "p_value_raw": 0.625,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "convtimenet",
             "model_b": "mambasl",
-            "statistic": 1.0,
-            "p_value": 0.125,
-            "significant": false
-          },
-          {
-            "model_a": "convtimenet",
-            "model_b": "mambasl_raw",
-            "statistic": 0.0,
-            "p_value": 0.0625,
+            "statistic": 7.0,
+            "p_value_raw": 1.0,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "convtimenet",
             "model_b": "patchtst",
+            "statistic": 3.0,
+            "p_value_raw": 0.3125,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "convtimenet",
+            "model_b": "physics_deeponet",
             "statistic": 7.0,
+            "p_value_raw": 1.0,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "convtimenet",
+            "model_b": "physics_rf",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
             "p_value": 1.0,
             "significant": false
           },
@@ -595,841 +722,1087 @@
             "model_a": "convtimenet",
             "model_b": "random_forest",
             "statistic": 0.0,
-            "p_value": 0.0625,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "convtimenet",
-            "model_b": "tirex",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "convtimenet_raw",
-            "model_b": "deeponet",
-            "statistic": 0.0,
-            "p_value": 0.25,
-            "significant": false
-          },
-          {
-            "model_a": "convtimenet_raw",
-            "model_b": "fkmad",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "convtimenet_raw",
-            "model_b": "fkmad_raw",
-            "statistic": 3.0,
-            "p_value": 0.3125,
-            "significant": false
-          },
-          {
-            "model_a": "convtimenet_raw",
-            "model_b": "lstm",
+            "model_b": "wavelet_deeponet",
             "statistic": 2.0,
-            "p_value": 0.1875,
+            "p_value_raw": 0.1875,
+            "p_value": 1.0,
             "significant": false
           },
           {
-            "model_a": "convtimenet_raw",
+            "model_a": "convtimenet",
+            "model_b": "wavelet_rf",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "convtran",
+            "model_b": "deeponet",
+            "statistic": 7.0,
+            "p_value_raw": 1.0,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "convtran",
+            "model_b": "fkmad",
+            "statistic": 7.0,
+            "p_value_raw": 1.0,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "convtran",
+            "model_b": "lstm",
+            "statistic": 6.0,
+            "p_value_raw": 0.8125,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "convtran",
             "model_b": "mambasl",
             "statistic": 0.0,
-            "p_value": 0.0625,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           },
           {
-            "model_a": "convtimenet_raw",
-            "model_b": "mambasl_raw",
-            "statistic": 6.0,
-            "p_value": 0.8125,
-            "significant": false
-          },
-          {
-            "model_a": "convtimenet_raw",
+            "model_a": "convtran",
             "model_b": "patchtst",
-            "statistic": 0.0,
-            "p_value": 0.0625,
+            "statistic": 5.0,
+            "p_value_raw": 0.625,
+            "p_value": 1.0,
             "significant": false
           },
           {
-            "model_a": "convtimenet_raw",
+            "model_a": "convtran",
+            "model_b": "physics_deeponet",
+            "statistic": 5.0,
+            "p_value_raw": 0.625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "convtran",
+            "model_b": "physics_rf",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "convtran",
             "model_b": "random_forest",
             "statistic": 0.0,
-            "p_value": 0.0625,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           },
           {
-            "model_a": "convtimenet_raw",
-            "model_b": "tirex",
-            "statistic": 6.0,
-            "p_value": 0.8125,
+            "model_a": "convtran",
+            "model_b": "wavelet_deeponet",
+            "statistic": 5.0,
+            "p_value_raw": 0.625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "convtran",
+            "model_b": "wavelet_rf",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "deeponet",
             "model_b": "fkmad",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "deeponet",
-            "model_b": "fkmad_raw",
-            "statistic": 0.0,
-            "p_value": 0.0625,
+            "statistic": 3.0,
+            "p_value_raw": 0.3125,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "deeponet",
             "model_b": "lstm",
-            "statistic": 0.0,
-            "p_value": 0.0625,
+            "statistic": 7.0,
+            "p_value_raw": 1.0,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "deeponet",
             "model_b": "mambasl",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "deeponet",
-            "model_b": "mambasl_raw",
-            "statistic": 0.0,
-            "p_value": 0.0625,
+            "statistic": 6.0,
+            "p_value_raw": 0.8125,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "deeponet",
             "model_b": "patchtst",
+            "statistic": 4.0,
+            "p_value_raw": 0.4375,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "deeponet",
+            "model_b": "physics_deeponet",
+            "statistic": 5.0,
+            "p_value_raw": 0.625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "deeponet",
+            "model_b": "physics_rf",
             "statistic": 0.0,
-            "p_value": 0.0625,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "deeponet",
             "model_b": "random_forest",
             "statistic": 0.0,
-            "p_value": 0.0625,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "deeponet",
-            "model_b": "tirex",
+            "model_b": "wavelet_deeponet",
             "statistic": 0.0,
-            "p_value": 0.0625,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           },
           {
-            "model_a": "fkmad",
-            "model_b": "fkmad_raw",
+            "model_a": "deeponet",
+            "model_b": "wavelet_rf",
             "statistic": 0.0,
-            "p_value": 0.0625,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "fkmad",
             "model_b": "lstm",
-            "statistic": 0.0,
-            "p_value": 0.0625,
+            "statistic": 5.0,
+            "p_value_raw": 0.625,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "fkmad",
             "model_b": "mambasl",
             "statistic": 6.0,
-            "p_value": 0.8125,
-            "significant": false
-          },
-          {
-            "model_a": "fkmad",
-            "model_b": "mambasl_raw",
-            "statistic": 0.0,
-            "p_value": 0.0625,
+            "p_value_raw": 0.8125,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "fkmad",
             "model_b": "patchtst",
             "statistic": 5.0,
-            "p_value": 0.625,
+            "p_value_raw": 0.625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad",
+            "model_b": "physics_deeponet",
+            "statistic": 4.0,
+            "p_value_raw": 0.4375,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad",
+            "model_b": "physics_rf",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "fkmad",
             "model_b": "random_forest",
             "statistic": 0.0,
-            "p_value": 0.0625,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "fkmad",
-            "model_b": "tirex",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "fkmad_raw",
-            "model_b": "lstm",
-            "statistic": 6.0,
-            "p_value": 0.8125,
-            "significant": false
-          },
-          {
-            "model_a": "fkmad_raw",
-            "model_b": "mambasl",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "fkmad_raw",
-            "model_b": "mambasl_raw",
-            "statistic": 2.0,
-            "p_value": 0.1875,
-            "significant": false
-          },
-          {
-            "model_a": "fkmad_raw",
-            "model_b": "patchtst",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "fkmad_raw",
-            "model_b": "random_forest",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "fkmad_raw",
-            "model_b": "tirex",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "lstm",
-            "model_b": "mambasl",
+            "model_b": "wavelet_deeponet",
             "statistic": 1.0,
-            "p_value": 0.125,
+            "p_value_raw": 0.125,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad",
+            "model_b": "wavelet_rf",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "lstm",
-            "model_b": "mambasl_raw",
-            "statistic": 0.0,
-            "p_value": 0.0625,
+            "model_b": "mambasl",
+            "statistic": 3.0,
+            "p_value_raw": 0.3125,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "lstm",
             "model_b": "patchtst",
+            "statistic": 3.0,
+            "p_value_raw": 0.3125,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "lstm",
+            "model_b": "physics_deeponet",
+            "statistic": 3.0,
+            "p_value_raw": 0.3125,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "lstm",
+            "model_b": "physics_rf",
             "statistic": 0.0,
-            "p_value": 0.0625,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "lstm",
             "model_b": "random_forest",
             "statistic": 0.0,
-            "p_value": 0.0625,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "lstm",
-            "model_b": "tirex",
-            "statistic": 0.0,
-            "p_value": 0.0625,
+            "model_b": "wavelet_deeponet",
+            "statistic": 1.0,
+            "p_value_raw": 0.125,
+            "p_value": 1.0,
             "significant": false
           },
           {
-            "model_a": "mambasl",
-            "model_b": "mambasl_raw",
+            "model_a": "lstm",
+            "model_b": "wavelet_rf",
             "statistic": 0.0,
-            "p_value": 0.0625,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "mambasl",
             "model_b": "patchtst",
+            "statistic": 2.0,
+            "p_value_raw": 0.1875,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "mambasl",
+            "model_b": "physics_deeponet",
             "statistic": 6.0,
-            "p_value": 0.8125,
+            "p_value_raw": 0.8125,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "mambasl",
+            "model_b": "physics_rf",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "mambasl",
             "model_b": "random_forest",
             "statistic": 0.0,
-            "p_value": 0.0625,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "mambasl",
-            "model_b": "tirex",
-            "statistic": 0.0,
-            "p_value": 0.0625,
+            "model_b": "wavelet_deeponet",
+            "statistic": 1.0,
+            "p_value_raw": 0.125,
+            "p_value": 1.0,
             "significant": false
           },
           {
-            "model_a": "mambasl_raw",
-            "model_b": "patchtst",
+            "model_a": "mambasl",
+            "model_b": "wavelet_rf",
             "statistic": 0.0,
-            "p_value": 0.0625,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           },
           {
-            "model_a": "mambasl_raw",
-            "model_b": "random_forest",
+            "model_a": "patchtst",
+            "model_b": "physics_deeponet",
             "statistic": 0.0,
-            "p_value": 0.0625,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           },
           {
-            "model_a": "mambasl_raw",
-            "model_b": "tirex",
+            "model_a": "patchtst",
+            "model_b": "physics_rf",
             "statistic": 0.0,
-            "p_value": 0.0625,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "patchtst",
             "model_b": "random_forest",
             "statistic": 0.0,
-            "p_value": 0.0625,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "patchtst",
-            "model_b": "tirex",
+            "model_b": "wavelet_deeponet",
+            "statistic": 6.0,
+            "p_value_raw": 0.8125,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "patchtst",
+            "model_b": "wavelet_rf",
             "statistic": 0.0,
-            "p_value": 0.0625,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "physics_deeponet",
+            "model_b": "physics_rf",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "physics_deeponet",
+            "model_b": "random_forest",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "physics_deeponet",
+            "model_b": "wavelet_deeponet",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "physics_deeponet",
+            "model_b": "wavelet_rf",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "physics_rf",
+            "model_b": "random_forest",
+            "statistic": 6.0,
+            "p_value_raw": 0.8125,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "physics_rf",
+            "model_b": "wavelet_deeponet",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "physics_rf",
+            "model_b": "wavelet_rf",
+            "statistic": 7.0,
+            "p_value_raw": 1.0,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "random_forest",
-            "model_b": "tirex",
+            "model_b": "wavelet_deeponet",
             "statistic": 0.0,
-            "p_value": 0.0625,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "random_forest",
+            "model_b": "wavelet_rf",
+            "statistic": 1.0,
+            "p_value_raw": 0.125,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "wavelet_deeponet",
+            "model_b": "wavelet_rf",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           }
         ],
-        "nemenyi_cd": 6.752231364519436,
+        "nemenyi_cd": 7.452186578447966,
         "nemenyi_significant_pairs": [
           {
             "model_a": "convtimenet",
-            "model_b": "deeponet",
-            "rank_diff": 7.6
+            "model_b": "wavelet_rf",
+            "rank_diff": 7.800000000000001
           },
           {
-            "model_a": "convtimenet_raw",
-            "model_b": "random_forest",
-            "rank_diff": 7.6
+            "model_a": "mambasl",
+            "model_b": "wavelet_rf",
+            "rank_diff": 7.800000000000001
           },
           {
-            "model_a": "deeponet",
-            "model_b": "mambasl",
-            "rank_diff": 6.8
-          },
-          {
-            "model_a": "deeponet",
-            "model_b": "patchtst",
-            "rank_diff": 7.199999999999999
-          },
-          {
-            "model_a": "deeponet",
-            "model_b": "random_forest",
-            "rank_diff": 9.6
-          },
-          {
-            "model_a": "mambasl_raw",
-            "model_b": "random_forest",
-            "rank_diff": 7.4
-          },
-          {
-            "model_a": "random_forest",
-            "model_b": "tirex",
-            "rank_diff": 8.6
+            "model_a": "physics_deeponet",
+            "model_b": "wavelet_rf",
+            "rank_diff": 7.800000000000001
           }
         ]
       },
       "auc_pr": {
         "models": [
           "convtimenet",
-          "convtimenet_raw",
+          "convtran",
           "deeponet",
           "fkmad",
-          "fkmad_raw",
           "lstm",
           "mambasl",
-          "mambasl_raw",
           "patchtst",
+          "physics_deeponet",
+          "physics_rf",
           "random_forest",
-          "tirex"
+          "wavelet_deeponet",
+          "wavelet_rf"
         ],
         "friedman": {
-          "statistic": 40.83788706739525,
-          "p_value": 1.2054707782031218e-05,
+          "statistic": 38.13846153846154,
+          "p_value": 7.413609078548502e-05,
           "significant": true,
-          "n_models": 11,
+          "n_models": 12,
           "n_folds": 5,
           "models": [
             "convtimenet",
-            "convtimenet_raw",
+            "convtran",
             "deeponet",
             "fkmad",
-            "fkmad_raw",
             "lstm",
             "mambasl",
-            "mambasl_raw",
             "patchtst",
+            "physics_deeponet",
+            "physics_rf",
             "random_forest",
-            "tirex"
+            "wavelet_deeponet",
+            "wavelet_rf"
           ]
         },
         "average_ranks": {
-          "convtimenet": 5.8,
-          "convtimenet_raw": 6.2,
-          "deeponet": 10.6,
-          "fkmad": 6.6,
-          "fkmad_raw": 8.8,
-          "lstm": 2.0,
-          "mambasl": 6.2,
-          "mambasl_raw": 9.4,
-          "patchtst": 5.8,
-          "random_forest": 1.0,
-          "tirex": 3.6
+          "convtimenet": 7.2,
+          "convtran": 9.4,
+          "deeponet": 6.8,
+          "fkmad": 7.4,
+          "lstm": 7.8,
+          "mambasl": 11.6,
+          "patchtst": 7.2,
+          "physics_deeponet": 8.2,
+          "physics_rf": 2.6,
+          "random_forest": 2.4,
+          "wavelet_deeponet": 6.0,
+          "wavelet_rf": 1.4
         },
         "wilcoxon_pairwise": [
           {
             "model_a": "convtimenet",
-            "model_b": "convtimenet_raw",
-            "statistic": 6.0,
-            "p_value": 0.8125,
-            "significant": false
-          },
-          {
-            "model_a": "convtimenet",
-            "model_b": "deeponet",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "convtimenet",
-            "model_b": "fkmad",
-            "statistic": 7.0,
+            "model_b": "convtran",
+            "statistic": 4.0,
+            "p_value_raw": 0.4375,
             "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "convtimenet",
-            "model_b": "fkmad_raw",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "convtimenet",
-            "model_b": "lstm",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "convtimenet",
-            "model_b": "mambasl",
-            "statistic": 3.0,
-            "p_value": 0.3125,
-            "significant": false
-          },
-          {
-            "model_a": "convtimenet",
-            "model_b": "mambasl_raw",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "convtimenet",
-            "model_b": "patchtst",
-            "statistic": 7.0,
+            "model_b": "deeponet",
+            "statistic": 6.0,
+            "p_value_raw": 0.8125,
             "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "convtimenet",
-            "model_b": "random_forest",
-            "statistic": 0.0,
-            "p_value": 0.0625,
+            "model_b": "fkmad",
+            "statistic": 6.0,
+            "p_value_raw": 0.8125,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "convtimenet",
-            "model_b": "tirex",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "convtimenet_raw",
-            "model_b": "deeponet",
-            "statistic": 0.0,
-            "p_value": 0.25,
-            "significant": false
-          },
-          {
-            "model_a": "convtimenet_raw",
-            "model_b": "fkmad",
-            "statistic": 6.0,
-            "p_value": 0.8125,
-            "significant": false
-          },
-          {
-            "model_a": "convtimenet_raw",
-            "model_b": "fkmad_raw",
-            "statistic": 6.0,
-            "p_value": 0.8125,
-            "significant": false
-          },
-          {
-            "model_a": "convtimenet_raw",
             "model_b": "lstm",
-            "statistic": 0.0,
-            "p_value": 0.0625,
+            "statistic": 7.0,
+            "p_value_raw": 1.0,
+            "p_value": 1.0,
             "significant": false
           },
           {
-            "model_a": "convtimenet_raw",
-            "model_b": "mambasl",
-            "statistic": 6.0,
-            "p_value": 0.8125,
-            "significant": false
-          },
-          {
-            "model_a": "convtimenet_raw",
-            "model_b": "mambasl_raw",
-            "statistic": 6.0,
-            "p_value": 0.8125,
-            "significant": false
-          },
-          {
-            "model_a": "convtimenet_raw",
-            "model_b": "patchtst",
-            "statistic": 6.0,
-            "p_value": 0.8125,
-            "significant": false
-          },
-          {
-            "model_a": "convtimenet_raw",
-            "model_b": "random_forest",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "convtimenet_raw",
-            "model_b": "tirex",
-            "statistic": 6.0,
-            "p_value": 0.8125,
-            "significant": false
-          },
-          {
-            "model_a": "deeponet",
-            "model_b": "fkmad",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "deeponet",
-            "model_b": "fkmad_raw",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "deeponet",
-            "model_b": "lstm",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "deeponet",
+            "model_a": "convtimenet",
             "model_b": "mambasl",
             "statistic": 0.0,
-            "p_value": 0.0625,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           },
           {
-            "model_a": "deeponet",
-            "model_b": "mambasl_raw",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "deeponet",
-            "model_b": "patchtst",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "deeponet",
-            "model_b": "random_forest",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "deeponet",
-            "model_b": "tirex",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "fkmad",
-            "model_b": "fkmad_raw",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "fkmad",
-            "model_b": "lstm",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "fkmad",
-            "model_b": "mambasl",
-            "statistic": 6.0,
-            "p_value": 0.8125,
-            "significant": false
-          },
-          {
-            "model_a": "fkmad",
-            "model_b": "mambasl_raw",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "fkmad",
+            "model_a": "convtimenet",
             "model_b": "patchtst",
             "statistic": 5.0,
-            "p_value": 0.625,
+            "p_value_raw": 0.625,
+            "p_value": 1.0,
             "significant": false
           },
           {
-            "model_a": "fkmad",
+            "model_a": "convtimenet",
+            "model_b": "physics_deeponet",
+            "statistic": 7.0,
+            "p_value_raw": 1.0,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "convtimenet",
+            "model_b": "physics_rf",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "convtimenet",
             "model_b": "random_forest",
             "statistic": 0.0,
-            "p_value": 0.0625,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           },
           {
-            "model_a": "fkmad",
-            "model_b": "tirex",
+            "model_a": "convtimenet",
+            "model_b": "wavelet_deeponet",
+            "statistic": 6.0,
+            "p_value_raw": 0.8125,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "convtimenet",
+            "model_b": "wavelet_rf",
             "statistic": 0.0,
-            "p_value": 0.0625,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           },
           {
-            "model_a": "fkmad_raw",
-            "model_b": "lstm",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "fkmad_raw",
-            "model_b": "mambasl",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "fkmad_raw",
-            "model_b": "mambasl_raw",
+            "model_a": "convtran",
+            "model_b": "deeponet",
             "statistic": 2.0,
-            "p_value": 0.1875,
+            "p_value_raw": 0.1875,
+            "p_value": 1.0,
             "significant": false
           },
           {
-            "model_a": "fkmad_raw",
+            "model_a": "convtran",
+            "model_b": "fkmad",
+            "statistic": 3.0,
+            "p_value_raw": 0.3125,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "convtran",
+            "model_b": "lstm",
+            "statistic": 5.0,
+            "p_value_raw": 0.625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "convtran",
+            "model_b": "mambasl",
+            "statistic": 6.0,
+            "p_value_raw": 0.8125,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "convtran",
             "model_b": "patchtst",
-            "statistic": 0.0,
-            "p_value": 0.0625,
+            "statistic": 5.0,
+            "p_value_raw": 0.625,
+            "p_value": 1.0,
             "significant": false
           },
           {
-            "model_a": "fkmad_raw",
+            "model_a": "convtran",
+            "model_b": "physics_deeponet",
+            "statistic": 5.0,
+            "p_value_raw": 0.625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "convtran",
+            "model_b": "physics_rf",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "convtran",
             "model_b": "random_forest",
             "statistic": 0.0,
-            "p_value": 0.0625,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           },
           {
-            "model_a": "fkmad_raw",
-            "model_b": "tirex",
+            "model_a": "convtran",
+            "model_b": "wavelet_deeponet",
             "statistic": 0.0,
-            "p_value": 0.0625,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "convtran",
+            "model_b": "wavelet_rf",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "deeponet",
+            "model_b": "fkmad",
+            "statistic": 6.0,
+            "p_value_raw": 0.8125,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "deeponet",
+            "model_b": "lstm",
+            "statistic": 7.0,
+            "p_value_raw": 1.0,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "deeponet",
+            "model_b": "mambasl",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "deeponet",
+            "model_b": "patchtst",
+            "statistic": 7.0,
+            "p_value_raw": 1.0,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "deeponet",
+            "model_b": "physics_deeponet",
+            "statistic": 6.0,
+            "p_value_raw": 0.8125,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "deeponet",
+            "model_b": "physics_rf",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "deeponet",
+            "model_b": "random_forest",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "deeponet",
+            "model_b": "wavelet_deeponet",
+            "statistic": 6.0,
+            "p_value_raw": 0.8125,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "deeponet",
+            "model_b": "wavelet_rf",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad",
+            "model_b": "lstm",
+            "statistic": 7.0,
+            "p_value_raw": 1.0,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad",
+            "model_b": "mambasl",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad",
+            "model_b": "patchtst",
+            "statistic": 6.0,
+            "p_value_raw": 0.8125,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad",
+            "model_b": "physics_deeponet",
+            "statistic": 6.0,
+            "p_value_raw": 0.8125,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad",
+            "model_b": "physics_rf",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad",
+            "model_b": "random_forest",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad",
+            "model_b": "wavelet_deeponet",
+            "statistic": 6.0,
+            "p_value_raw": 0.8125,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "fkmad",
+            "model_b": "wavelet_rf",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "lstm",
             "model_b": "mambasl",
             "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "lstm",
-            "model_b": "mambasl_raw",
-            "statistic": 0.0,
-            "p_value": 0.0625,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "lstm",
             "model_b": "patchtst",
+            "statistic": 7.0,
+            "p_value_raw": 1.0,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "lstm",
+            "model_b": "physics_deeponet",
+            "statistic": 6.0,
+            "p_value_raw": 0.8125,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "lstm",
+            "model_b": "physics_rf",
             "statistic": 0.0,
-            "p_value": 0.0625,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "lstm",
             "model_b": "random_forest",
             "statistic": 0.0,
-            "p_value": 0.0625,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "lstm",
-            "model_b": "tirex",
-            "statistic": 0.0,
-            "p_value": 0.0625,
+            "model_b": "wavelet_deeponet",
+            "statistic": 6.0,
+            "p_value_raw": 0.8125,
+            "p_value": 1.0,
             "significant": false
           },
           {
-            "model_a": "mambasl",
-            "model_b": "mambasl_raw",
+            "model_a": "lstm",
+            "model_b": "wavelet_rf",
             "statistic": 0.0,
-            "p_value": 0.0625,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "mambasl",
             "model_b": "patchtst",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "mambasl",
+            "model_b": "physics_deeponet",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "mambasl",
+            "model_b": "physics_rf",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "mambasl",
+            "model_b": "random_forest",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "mambasl",
+            "model_b": "wavelet_deeponet",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "mambasl",
+            "model_b": "wavelet_rf",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "patchtst",
+            "model_b": "physics_deeponet",
+            "statistic": 4.0,
+            "p_value_raw": 0.4375,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "patchtst",
+            "model_b": "physics_rf",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "patchtst",
+            "model_b": "random_forest",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "patchtst",
+            "model_b": "wavelet_deeponet",
+            "statistic": 7.0,
+            "p_value_raw": 1.0,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "patchtst",
+            "model_b": "wavelet_rf",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "physics_deeponet",
+            "model_b": "physics_rf",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "physics_deeponet",
+            "model_b": "random_forest",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "physics_deeponet",
+            "model_b": "wavelet_deeponet",
             "statistic": 5.0,
-            "p_value": 0.625,
+            "p_value_raw": 0.625,
+            "p_value": 1.0,
             "significant": false
           },
           {
-            "model_a": "mambasl",
+            "model_a": "physics_deeponet",
+            "model_b": "wavelet_rf",
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "physics_rf",
             "model_b": "random_forest",
-            "statistic": 0.0,
-            "p_value": 0.0625,
+            "statistic": 6.0,
+            "p_value_raw": 0.8125,
+            "p_value": 1.0,
             "significant": false
           },
           {
-            "model_a": "mambasl",
-            "model_b": "tirex",
-            "statistic": 0.0,
-            "p_value": 0.0625,
+            "model_a": "physics_rf",
+            "model_b": "wavelet_deeponet",
+            "statistic": 1.0,
+            "p_value_raw": 0.125,
+            "p_value": 1.0,
             "significant": false
           },
           {
-            "model_a": "mambasl_raw",
-            "model_b": "patchtst",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "mambasl_raw",
-            "model_b": "random_forest",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "mambasl_raw",
-            "model_b": "tirex",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "patchtst",
-            "model_b": "random_forest",
-            "statistic": 0.0,
-            "p_value": 0.0625,
-            "significant": false
-          },
-          {
-            "model_a": "patchtst",
-            "model_b": "tirex",
-            "statistic": 0.0,
-            "p_value": 0.0625,
+            "model_a": "physics_rf",
+            "model_b": "wavelet_rf",
+            "statistic": 2.0,
+            "p_value_raw": 0.1875,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "random_forest",
-            "model_b": "tirex",
+            "model_b": "wavelet_deeponet",
+            "statistic": 1.0,
+            "p_value_raw": 0.125,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "random_forest",
+            "model_b": "wavelet_rf",
+            "statistic": 1.0,
+            "p_value_raw": 0.125,
+            "p_value": 1.0,
+            "significant": false
+          },
+          {
+            "model_a": "wavelet_deeponet",
+            "model_b": "wavelet_rf",
             "statistic": 0.0,
-            "p_value": 0.0625,
+            "p_value_raw": 0.0625,
+            "p_value": 1.0,
             "significant": false
           }
         ],
-        "nemenyi_cd": 6.752231364519436,
+        "nemenyi_cd": 7.452186578447966,
         "nemenyi_significant_pairs": [
           {
-            "model_a": "deeponet",
-            "model_b": "lstm",
-            "rank_diff": 8.6
+            "model_a": "convtran",
+            "model_b": "wavelet_rf",
+            "rank_diff": 8.0
           },
           {
-            "model_a": "deeponet",
+            "model_a": "mambasl",
+            "model_b": "physics_rf",
+            "rank_diff": 9.0
+          },
+          {
+            "model_a": "mambasl",
             "model_b": "random_forest",
-            "rank_diff": 9.6
+            "rank_diff": 9.2
           },
           {
-            "model_a": "deeponet",
-            "model_b": "tirex",
-            "rank_diff": 7.0
-          },
-          {
-            "model_a": "fkmad_raw",
-            "model_b": "lstm",
-            "rank_diff": 6.800000000000001
-          },
-          {
-            "model_a": "fkmad_raw",
-            "model_b": "random_forest",
-            "rank_diff": 7.800000000000001
-          },
-          {
-            "model_a": "lstm",
-            "model_b": "mambasl_raw",
-            "rank_diff": 7.4
-          },
-          {
-            "model_a": "mambasl_raw",
-            "model_b": "random_forest",
-            "rank_diff": 8.4
+            "model_a": "mambasl",
+            "model_b": "wavelet_rf",
+            "rank_diff": 10.2
           }
         ]
       }
@@ -1479,147 +1852,168 @@
               "model_a": "chronos",
               "model_b": "deeponet",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "lstm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "patchtst",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "timesfm",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "tirex",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "lstm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "patchtst",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "timesfm",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "tirex",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "patchtst",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "timesfm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "tirex",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "patchtst",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "patchtst",
               "model_b": "timesfm",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "patchtst",
               "model_b": "tirex",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "tcn",
               "model_b": "timesfm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "tcn",
               "model_b": "tirex",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "timesfm",
               "model_b": "tirex",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             }
           ],
@@ -1672,27 +2066,31 @@
               "model_a": "chronos",
               "model_b": "deeponet",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "lstm",
               "statistic": 2.0,
-              "p_value": 0.75,
+              "p_value_raw": 0.75,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "patchtst",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "tcn",
               "statistic": 3.0,
+              "p_value_raw": 1.0,
               "p_value": 1.0,
               "significant": false
             },
@@ -1700,34 +2098,39 @@
               "model_a": "chronos",
               "model_b": "timesfm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "tirex",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "lstm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "patchtst",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "tcn",
               "statistic": 3.0,
+              "p_value_raw": 1.0,
               "p_value": 1.0,
               "significant": false
             },
@@ -1735,27 +2138,31 @@
               "model_a": "deeponet",
               "model_b": "timesfm",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "tirex",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "patchtst",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "tcn",
               "statistic": 3.0,
+              "p_value_raw": 1.0,
               "p_value": 1.0,
               "significant": false
             },
@@ -1763,20 +2170,23 @@
               "model_a": "lstm",
               "model_b": "timesfm",
               "statistic": 2.0,
-              "p_value": 0.75,
+              "p_value_raw": 0.75,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "tirex",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "patchtst",
               "model_b": "tcn",
               "statistic": 3.0,
+              "p_value_raw": 1.0,
               "p_value": 1.0,
               "significant": false
             },
@@ -1784,35 +2194,40 @@
               "model_a": "patchtst",
               "model_b": "timesfm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "patchtst",
               "model_b": "tirex",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "tcn",
               "model_b": "timesfm",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "tcn",
               "model_b": "tirex",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "timesfm",
               "model_b": "tirex",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             }
           ]
@@ -1862,147 +2277,168 @@
               "model_a": "chronos",
               "model_b": "deeponet",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "lstm",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "patchtst",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "timesfm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "tirex",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "lstm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "patchtst",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "timesfm",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "tirex",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "patchtst",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "timesfm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "tirex",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "patchtst",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "patchtst",
               "model_b": "timesfm",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "patchtst",
               "model_b": "tirex",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "tcn",
               "model_b": "timesfm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "tcn",
               "model_b": "tirex",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "timesfm",
               "model_b": "tirex",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             }
           ]
@@ -2047,27 +2483,31 @@
               "model_a": "chronos",
               "model_b": "deeponet",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "lstm",
               "statistic": 2.0,
-              "p_value": 0.75,
+              "p_value_raw": 0.75,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "patchtst",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "tcn",
               "statistic": 3.0,
+              "p_value_raw": 1.0,
               "p_value": 1.0,
               "significant": false
             },
@@ -2075,34 +2515,39 @@
               "model_a": "chronos",
               "model_b": "timesfm",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "tirex",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "lstm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "patchtst",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "tcn",
               "statistic": 3.0,
+              "p_value_raw": 1.0,
               "p_value": 1.0,
               "significant": false
             },
@@ -2110,27 +2555,31 @@
               "model_a": "deeponet",
               "model_b": "timesfm",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "tirex",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "patchtst",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "tcn",
               "statistic": 3.0,
+              "p_value_raw": 1.0,
               "p_value": 1.0,
               "significant": false
             },
@@ -2138,20 +2587,23 @@
               "model_a": "lstm",
               "model_b": "timesfm",
               "statistic": 2.0,
-              "p_value": 0.75,
+              "p_value_raw": 0.75,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "tirex",
               "statistic": 2.0,
-              "p_value": 0.75,
+              "p_value_raw": 0.75,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "patchtst",
               "model_b": "tcn",
               "statistic": 3.0,
+              "p_value_raw": 1.0,
               "p_value": 1.0,
               "significant": false
             },
@@ -2159,20 +2611,23 @@
               "model_a": "patchtst",
               "model_b": "timesfm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "patchtst",
               "model_b": "tirex",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "tcn",
               "model_b": "timesfm",
               "statistic": 3.0,
+              "p_value_raw": 1.0,
               "p_value": 1.0,
               "significant": false
             },
@@ -2180,14 +2635,16 @@
               "model_a": "tcn",
               "model_b": "tirex",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "timesfm",
               "model_b": "tirex",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             }
           ]
@@ -2237,147 +2694,168 @@
               "model_a": "chronos",
               "model_b": "deeponet",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "lstm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "patchtst",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "tcn",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "timesfm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "tirex",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "lstm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "patchtst",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "timesfm",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "tirex",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "patchtst",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "timesfm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "tirex",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "patchtst",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "patchtst",
               "model_b": "timesfm",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "patchtst",
               "model_b": "tirex",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "tcn",
               "model_b": "timesfm",
               "statistic": 2.0,
-              "p_value": 0.75,
+              "p_value_raw": 0.75,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "tcn",
               "model_b": "tirex",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "timesfm",
               "model_b": "tirex",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             }
           ]
@@ -2422,27 +2900,31 @@
               "model_a": "chronos",
               "model_b": "deeponet",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "lstm",
               "statistic": 2.0,
-              "p_value": 0.75,
+              "p_value_raw": 0.75,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "patchtst",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "tcn",
               "statistic": 3.0,
+              "p_value_raw": 1.0,
               "p_value": 1.0,
               "significant": false
             },
@@ -2450,34 +2932,39 @@
               "model_a": "chronos",
               "model_b": "timesfm",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "tirex",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "lstm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "patchtst",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "tcn",
               "statistic": 3.0,
+              "p_value_raw": 1.0,
               "p_value": 1.0,
               "significant": false
             },
@@ -2485,27 +2972,31 @@
               "model_a": "deeponet",
               "model_b": "timesfm",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "tirex",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "patchtst",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "tcn",
               "statistic": 3.0,
+              "p_value_raw": 1.0,
               "p_value": 1.0,
               "significant": false
             },
@@ -2513,20 +3004,23 @@
               "model_a": "lstm",
               "model_b": "timesfm",
               "statistic": 2.0,
-              "p_value": 0.75,
+              "p_value_raw": 0.75,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "tirex",
               "statistic": 2.0,
-              "p_value": 0.75,
+              "p_value_raw": 0.75,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "patchtst",
               "model_b": "tcn",
               "statistic": 3.0,
+              "p_value_raw": 1.0,
               "p_value": 1.0,
               "significant": false
             },
@@ -2534,20 +3028,23 @@
               "model_a": "patchtst",
               "model_b": "timesfm",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "patchtst",
               "model_b": "tirex",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "tcn",
               "model_b": "timesfm",
               "statistic": 3.0,
+              "p_value_raw": 1.0,
               "p_value": 1.0,
               "significant": false
             },
@@ -2555,14 +3052,16 @@
               "model_a": "tcn",
               "model_b": "tirex",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "timesfm",
               "model_b": "tirex",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             }
           ]
@@ -2612,118 +3111,135 @@
               "model_a": "chronos",
               "model_b": "deeponet",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "lstm",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "patchtst",
               "statistic": 2.0,
-              "p_value": 0.75,
+              "p_value_raw": 0.75,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "tcn",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "timesfm",
               "statistic": 2.0,
-              "p_value": 0.75,
+              "p_value_raw": 0.75,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "tirex",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "lstm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "patchtst",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "timesfm",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "tirex",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "patchtst",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "timesfm",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "tirex",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "patchtst",
               "model_b": "tcn",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "patchtst",
               "model_b": "timesfm",
               "statistic": 3.0,
+              "p_value_raw": 1.0,
               "p_value": 1.0,
               "significant": false
             },
@@ -2731,28 +3247,32 @@
               "model_a": "patchtst",
               "model_b": "tirex",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "tcn",
               "model_b": "timesfm",
               "statistic": 2.0,
-              "p_value": 0.75,
+              "p_value_raw": 0.75,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "tcn",
               "model_b": "tirex",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "timesfm",
               "model_b": "tirex",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             }
           ]
@@ -2797,20 +3317,23 @@
               "model_a": "chronos",
               "model_b": "deeponet",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "lstm",
               "statistic": 2.0,
-              "p_value": 0.75,
+              "p_value_raw": 0.75,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "patchtst",
               "statistic": 3.0,
+              "p_value_raw": 1.0,
               "p_value": 1.0,
               "significant": false
             },
@@ -2818,6 +3341,7 @@
               "model_a": "chronos",
               "model_b": "tcn",
               "statistic": 3.0,
+              "p_value_raw": 1.0,
               "p_value": 1.0,
               "significant": false
             },
@@ -2825,27 +3349,31 @@
               "model_a": "chronos",
               "model_b": "timesfm",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "tirex",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "lstm",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "patchtst",
               "statistic": 3.0,
+              "p_value_raw": 1.0,
               "p_value": 1.0,
               "significant": false
             },
@@ -2853,6 +3381,7 @@
               "model_a": "deeponet",
               "model_b": "tcn",
               "statistic": 3.0,
+              "p_value_raw": 1.0,
               "p_value": 1.0,
               "significant": false
             },
@@ -2860,20 +3389,23 @@
               "model_a": "deeponet",
               "model_b": "timesfm",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "tirex",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "patchtst",
               "statistic": 3.0,
+              "p_value_raw": 1.0,
               "p_value": 1.0,
               "significant": false
             },
@@ -2881,6 +3413,7 @@
               "model_a": "lstm",
               "model_b": "tcn",
               "statistic": 3.0,
+              "p_value_raw": 1.0,
               "p_value": 1.0,
               "significant": false
             },
@@ -2888,27 +3421,31 @@
               "model_a": "lstm",
               "model_b": "timesfm",
               "statistic": 2.0,
-              "p_value": 0.75,
+              "p_value_raw": 0.75,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "tirex",
               "statistic": 2.0,
-              "p_value": 0.75,
+              "p_value_raw": 0.75,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "patchtst",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "patchtst",
               "model_b": "timesfm",
               "statistic": 3.0,
+              "p_value_raw": 1.0,
               "p_value": 1.0,
               "significant": false
             },
@@ -2916,28 +3453,32 @@
               "model_a": "patchtst",
               "model_b": "tirex",
               "statistic": 2.0,
-              "p_value": 0.75,
+              "p_value_raw": 0.75,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "tcn",
               "model_b": "timesfm",
               "statistic": 2.0,
-              "p_value": 0.75,
+              "p_value_raw": 0.75,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "tcn",
               "model_b": "tirex",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "timesfm",
               "model_b": "tirex",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             }
           ]
@@ -2977,21 +3518,24 @@
               "model_a": "chronos",
               "model_b": "deeponet",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 0.75,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "lstm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 0.75,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "lstm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 0.75,
               "significant": false
             }
           ],
@@ -3032,21 +3576,24 @@
               "model_a": "chronos",
               "model_b": "deeponet",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 0.75,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "lstm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 0.75,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "lstm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 0.75,
               "significant": false
             }
           ],
@@ -3092,21 +3639,24 @@
               "model_a": "chronos",
               "model_b": "deeponet",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 0.75,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "lstm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 0.75,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "lstm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 0.75,
               "significant": false
             }
           ],
@@ -3147,21 +3697,24 @@
               "model_a": "chronos",
               "model_b": "deeponet",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 0.75,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "lstm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 0.75,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "lstm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 0.75,
               "significant": false
             }
           ],
@@ -3207,21 +3760,24 @@
               "model_a": "chronos",
               "model_b": "deeponet",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 0.75,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "lstm",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 0.75,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "lstm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 0.75,
               "significant": false
             }
           ]
@@ -3254,21 +3810,24 @@
               "model_a": "chronos",
               "model_b": "deeponet",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 0.75,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "lstm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 0.75,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "lstm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 0.75,
               "significant": false
             }
           ],
@@ -3314,21 +3873,24 @@
               "model_a": "chronos",
               "model_b": "deeponet",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 0.75,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "lstm",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 0.75,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "lstm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 0.75,
               "significant": false
             }
           ]
@@ -3361,21 +3923,24 @@
               "model_a": "chronos",
               "model_b": "deeponet",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 0.75,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "lstm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 0.75,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "lstm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 0.75,
               "significant": false
             }
           ],
@@ -3447,41 +4012,47 @@
               "model_a": "chronos",
               "model_b": "deeponet",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "lstm",
               "statistic": 2.0,
-              "p_value": 0.75,
+              "p_value_raw": 0.75,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "patchtst",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "lstm",
               "statistic": 2.0,
-              "p_value": 0.75,
+              "p_value_raw": 0.75,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "patchtst",
               "statistic": 3.0,
+              "p_value_raw": 1.0,
               "p_value": 1.0,
               "significant": false
             },
@@ -3489,13 +4060,15 @@
               "model_a": "deeponet",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "patchtst",
               "statistic": 3.0,
+              "p_value_raw": 1.0,
               "p_value": 1.0,
               "significant": false
             },
@@ -3503,14 +4076,16 @@
               "model_a": "lstm",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "patchtst",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             }
           ]
@@ -3549,70 +4124,80 @@
               "model_a": "chronos",
               "model_b": "deeponet",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "lstm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "patchtst",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "lstm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "patchtst",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "patchtst",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "patchtst",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             }
           ],
@@ -3664,70 +4249,80 @@
               "model_a": "chronos",
               "model_b": "deeponet",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "lstm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "patchtst",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "lstm",
               "statistic": 2.0,
-              "p_value": 0.75,
+              "p_value_raw": 0.75,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "patchtst",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "patchtst",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "tcn",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "patchtst",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             }
           ],
@@ -3774,70 +4369,80 @@
               "model_a": "chronos",
               "model_b": "deeponet",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "lstm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "patchtst",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "lstm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "patchtst",
               "statistic": 2.0,
-              "p_value": 0.75,
+              "p_value_raw": 0.75,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "patchtst",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "patchtst",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             }
           ],
@@ -3889,70 +4494,80 @@
               "model_a": "chronos",
               "model_b": "deeponet",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "lstm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "patchtst",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "lstm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "patchtst",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "tcn",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "patchtst",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "patchtst",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             }
           ],
@@ -3999,70 +4614,80 @@
               "model_a": "chronos",
               "model_b": "deeponet",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "lstm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "patchtst",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "lstm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "patchtst",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "tcn",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "patchtst",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "patchtst",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             }
           ],
@@ -4114,70 +4739,80 @@
               "model_a": "chronos",
               "model_b": "deeponet",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "lstm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "patchtst",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "lstm",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "patchtst",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "tcn",
               "statistic": 2.0,
-              "p_value": 0.75,
+              "p_value_raw": 0.75,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "patchtst",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "patchtst",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             }
           ]
@@ -4216,70 +4851,80 @@
               "model_a": "chronos",
               "model_b": "deeponet",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "lstm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "patchtst",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "chronos",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "lstm",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "patchtst",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "deeponet",
               "model_b": "tcn",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "patchtst",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "lstm",
               "model_b": "tcn",
               "statistic": 0.0,
-              "p_value": 0.25,
+              "p_value_raw": 0.25,
+              "p_value": 1.0,
               "significant": false
             },
             {
               "model_a": "patchtst",
               "model_b": "tcn",
               "statistic": 1.0,
-              "p_value": 0.5,
+              "p_value_raw": 0.5,
+              "p_value": 1.0,
               "significant": false
             }
           ]
@@ -4321,42 +4966,48 @@
             "model_a": "deeponet",
             "model_b": "lstm",
             "statistic": 0.0,
-            "p_value": 0.25,
+            "p_value_raw": 0.25,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "deeponet",
             "model_b": "patchtst",
             "statistic": 0.0,
-            "p_value": 0.25,
+            "p_value_raw": 0.25,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "deeponet",
             "model_b": "tirex",
             "statistic": 0.0,
-            "p_value": 0.25,
+            "p_value_raw": 0.25,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "lstm",
             "model_b": "patchtst",
             "statistic": 0.0,
-            "p_value": 0.25,
+            "p_value_raw": 0.25,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "lstm",
             "model_b": "tirex",
             "statistic": 0.0,
-            "p_value": 0.25,
+            "p_value_raw": 0.25,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "patchtst",
             "model_b": "tirex",
             "statistic": 0.0,
-            "p_value": 0.25,
+            "p_value_raw": 0.25,
+            "p_value": 1.0,
             "significant": false
           }
         ],
@@ -4406,105 +5057,120 @@
             "model_a": "chronos",
             "model_b": "deeponet",
             "statistic": 1.0,
-            "p_value": 0.5,
+            "p_value_raw": 0.5,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "chronos",
             "model_b": "lstm",
             "statistic": 0.0,
-            "p_value": 0.25,
+            "p_value_raw": 0.25,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "chronos",
             "model_b": "patchtst",
             "statistic": 0.0,
-            "p_value": 0.25,
+            "p_value_raw": 0.25,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "chronos",
             "model_b": "timesfm",
             "statistic": 0.0,
-            "p_value": 0.25,
+            "p_value_raw": 0.25,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "chronos",
             "model_b": "tirex",
             "statistic": 0.0,
-            "p_value": 0.25,
+            "p_value_raw": 0.25,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "deeponet",
             "model_b": "lstm",
             "statistic": 0.0,
-            "p_value": 0.25,
+            "p_value_raw": 0.25,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "deeponet",
             "model_b": "patchtst",
             "statistic": 0.0,
-            "p_value": 0.25,
+            "p_value_raw": 0.25,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "deeponet",
             "model_b": "timesfm",
             "statistic": 2.0,
-            "p_value": 0.75,
+            "p_value_raw": 0.75,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "deeponet",
             "model_b": "tirex",
             "statistic": 0.0,
-            "p_value": 0.25,
+            "p_value_raw": 0.25,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "lstm",
             "model_b": "patchtst",
             "statistic": 0.0,
-            "p_value": 0.25,
+            "p_value_raw": 0.25,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "lstm",
             "model_b": "timesfm",
             "statistic": 0.0,
-            "p_value": 0.25,
+            "p_value_raw": 0.25,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "lstm",
             "model_b": "tirex",
             "statistic": 0.0,
-            "p_value": 0.25,
+            "p_value_raw": 0.25,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "patchtst",
             "model_b": "timesfm",
             "statistic": 0.0,
-            "p_value": 0.25,
+            "p_value_raw": 0.25,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "patchtst",
             "model_b": "tirex",
             "statistic": 0.0,
-            "p_value": 0.25,
+            "p_value_raw": 0.25,
+            "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "timesfm",
             "model_b": "tirex",
             "statistic": 0.0,
-            "p_value": 0.25,
+            "p_value_raw": 0.25,
+            "p_value": 1.0,
             "significant": false
           }
         ],
