@@ -1218,8 +1218,8 @@
           "wavelet_rf"
         ],
         "friedman": {
-          "statistic": 38.13846153846154,
-          "p_value": 7.413609078548502e-05,
+          "statistic": 37.95384615384617,
+          "p_value": 7.965197543426582e-05,
           "significant": true,
           "n_models": 12,
           "n_folds": 5,
@@ -1239,25 +1239,25 @@
           ]
         },
         "average_ranks": {
-          "convtimenet": 7.2,
-          "convtran": 9.4,
-          "deeponet": 6.8,
-          "fkmad": 7.4,
-          "lstm": 7.8,
-          "mambasl": 11.6,
-          "patchtst": 7.2,
-          "physics_deeponet": 8.2,
+          "convtimenet": 7.6,
+          "convtran": 7.2,
+          "deeponet": 7.0,
+          "fkmad": 7.8,
+          "lstm": 8.0,
+          "mambasl": 12.0,
+          "patchtst": 7.4,
+          "physics_deeponet": 8.4,
           "physics_rf": 2.6,
           "random_forest": 2.4,
-          "wavelet_deeponet": 6.0,
+          "wavelet_deeponet": 6.2,
           "wavelet_rf": 1.4
         },
         "wilcoxon_pairwise": [
           {
             "model_a": "convtimenet",
             "model_b": "convtran",
-            "statistic": 4.0,
-            "p_value_raw": 0.4375,
+            "statistic": 3.0,
+            "p_value_raw": 0.3125,
             "p_value": 1.0,
             "significant": false
           },
@@ -1344,16 +1344,16 @@
           {
             "model_a": "convtran",
             "model_b": "deeponet",
-            "statistic": 2.0,
-            "p_value_raw": 0.1875,
+            "statistic": 7.0,
+            "p_value_raw": 1.0,
             "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "convtran",
             "model_b": "fkmad",
-            "statistic": 3.0,
-            "p_value_raw": 0.3125,
+            "statistic": 5.0,
+            "p_value_raw": 0.625,
             "p_value": 1.0,
             "significant": false
           },
@@ -1368,24 +1368,24 @@
           {
             "model_a": "convtran",
             "model_b": "mambasl",
-            "statistic": 6.0,
-            "p_value_raw": 0.8125,
+            "statistic": 0.0,
+            "p_value_raw": 0.0625,
             "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "convtran",
             "model_b": "patchtst",
-            "statistic": 5.0,
-            "p_value_raw": 0.625,
+            "statistic": 7.0,
+            "p_value_raw": 1.0,
             "p_value": 1.0,
             "significant": false
           },
           {
             "model_a": "convtran",
             "model_b": "physics_deeponet",
-            "statistic": 5.0,
-            "p_value_raw": 0.625,
+            "statistic": 3.0,
+            "p_value_raw": 0.3125,
             "p_value": 1.0,
             "significant": false
           },
@@ -1408,8 +1408,8 @@
           {
             "model_a": "convtran",
             "model_b": "wavelet_deeponet",
-            "statistic": 0.0,
-            "p_value_raw": 0.0625,
+            "statistic": 5.0,
+            "p_value_raw": 0.625,
             "p_value": 1.0,
             "significant": false
           },
@@ -1785,24 +1785,19 @@
         "nemenyi_cd": 7.452186578447966,
         "nemenyi_significant_pairs": [
           {
-            "model_a": "convtran",
-            "model_b": "wavelet_rf",
-            "rank_diff": 8.0
-          },
-          {
             "model_a": "mambasl",
             "model_b": "physics_rf",
-            "rank_diff": 9.0
+            "rank_diff": 9.4
           },
           {
             "model_a": "mambasl",
             "model_b": "random_forest",
-            "rank_diff": 9.2
+            "rank_diff": 9.6
           },
           {
             "model_a": "mambasl",
             "model_b": "wavelet_rf",
-            "rank_diff": 10.2
+            "rank_diff": 10.6
           }
         ]
       }
