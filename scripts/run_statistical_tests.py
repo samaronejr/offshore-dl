@@ -136,30 +136,28 @@ def _nemenyi_cd(n_models: int, n_folds: int, alpha: float = 0.05) -> float:
 
 
 def _compute_ranks(scores: dict[str, list[float]], higher_is_better: bool = True) -> dict:
-    """Compute average ranks across folds."""
+    """Compute average ranks across folds (with proper tie handling)."""
     models = sorted(scores.keys())
     arrays = np.array([scores[m] for m in models])  # (n_models, n_folds)
     n_models, n_folds = arrays.shape
 
-    # Rank per fold (1 = best)
-    ranks = np.zeros_like(arrays)
+    # Rank per fold (1 = best) using scipy.stats.rankdata for correct tie handling
+    ranks = np.zeros_like(arrays, dtype=float)
     for j in range(n_folds):
         col = arrays[:, j]
         if higher_is_better:
-            col = -col  # negate so argsort gives best=lowest
-        order = col.argsort()
-        r = np.empty_like(order, dtype=float)
-        r[order] = np.arange(1, n_models + 1)
-        ranks[:, j] = r
+            col = -col  # negate so rank 1 = highest value
+        ranks[:, j] = stats.rankdata(col, method="average")
 
     avg_ranks = ranks.mean(axis=1)
     return {models[i]: float(avg_ranks[i]) for i in range(n_models)}
 
 
 def _wilcoxon_pairwise(scores: dict[str, list[float]]) -> list[dict]:
-    """Pairwise Wilcoxon signed-rank tests."""
+    """Pairwise Wilcoxon signed-rank tests with Holm correction."""
     models = sorted(scores.keys())
     results = []
+    raw_pvals = []
     for i in range(len(models)):
         for j in range(i + 1, len(models)):
             a = np.array(scores[models[i]])
@@ -168,22 +166,42 @@ def _wilcoxon_pairwise(scores: dict[str, list[float]]) -> list[dict]:
             if np.all(diff == 0):
                 results.append({
                     "model_a": models[i], "model_b": models[j],
-                    "statistic": 0.0, "p_value": 1.0, "significant": False,
+                    "statistic": 0.0, "p_value": 1.0, "p_value_raw": 1.0,
+                    "significant": False,
                     "note": "identical scores",
                 })
+                raw_pvals.append(1.0)
                 continue
             try:
                 stat, p = stats.wilcoxon(a, b)
                 results.append({
                     "model_a": models[i], "model_b": models[j],
-                    "statistic": float(stat), "p_value": float(p),
-                    "significant": bool(p < 0.05),
+                    "statistic": float(stat), "p_value_raw": float(p),
                 })
+                raw_pvals.append(float(p))
             except ValueError as e:
                 results.append({
                     "model_a": models[i], "model_b": models[j],
                     "error": str(e),
                 })
+                raw_pvals.append(1.0)
+
+    # Apply Holm correction for multiple comparisons — only over valid Wilcoxon
+    # p-values. Placeholder 1.0s appended for identical-score and ValueError
+    # pairs must NOT inflate n (family size) in the step-down formula.
+    if raw_pvals:
+        from statsmodels.stats.multitest import multipletests
+        valid_idx = [
+            i for i, r in enumerate(results)
+            if "error" not in r and "note" not in r
+        ]
+        if valid_idx:
+            valid_p = [raw_pvals[i] for i in valid_idx]
+            _, corrected, _, _ = multipletests(valid_p, method="holm")
+            for k, i in enumerate(valid_idx):
+                results[i]["p_value"] = float(corrected[k])
+                results[i]["significant"] = bool(corrected[k] < 0.05)
+
     return results
 
 
