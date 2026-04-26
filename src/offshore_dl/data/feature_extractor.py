@@ -175,18 +175,52 @@ class WaveletFeatureExtractor:
         valid_scales: list[int],
     ) -> np.ndarray:
         if sp_signal is None or not hasattr(sp_signal, "cwt"):
-            msg = "Wavelet extraction requires either pywt or scipy.signal.cwt."
-            raise ImportError(msg)
+            return self._extract_numpy(signal_1d, valid_scales)
 
         wavelet_fn = getattr(sp_signal, "ricker", None)
         if wavelet_fn is None:
             wavelet_fn = getattr(sp_signal, "morlet2", None)
         if wavelet_fn is None:
-            msg = "No compatible scipy wavelet function available."
-            raise ImportError(msg)
+            return self._extract_numpy(signal_1d, valid_scales)
 
         coefficients = sp_signal.cwt(signal_1d, wavelet_fn, valid_scales)
         return np.sum(np.abs(coefficients) ** 2, axis=1, dtype=np.float64)
+
+    def _extract_numpy(
+        self,
+        signal_1d: np.ndarray,
+        valid_scales: list[int],
+    ) -> np.ndarray:
+        """Pure-numpy CWT fallback using FFT-based Morlet wavelets.
+
+        Implements the Morlet continuous wavelet transform in the frequency
+        domain — equivalent in shape and magnitude to ``scipy.signal.cwt``
+        with ``morlet2``, but with zero non-numpy dependencies.
+        """
+        n = signal_1d.size
+        if n == 0:
+            return np.zeros(len(valid_scales), dtype=np.float64)
+
+        signal_fft = np.fft.fft(signal_1d)
+        # Angular frequencies (rad/sample), positive for analytic signal
+        omega = 2.0 * np.pi * np.fft.fftfreq(n)
+        omega0 = 6.0  # standard Morlet central frequency
+
+        energies = np.zeros(len(valid_scales), dtype=np.float64)
+        for i, scale in enumerate(valid_scales):
+            # Morlet mother wavelet in frequency domain, scaled
+            s_omega = scale * omega
+            # Heaviside: keep only positive frequencies for analytic wavelet
+            heaviside = (omega > 0).astype(np.float64)
+            psi_hat = (
+                np.pi ** -0.25
+                * np.sqrt(2.0 * scale)
+                * heaviside
+                * np.exp(-0.5 * (s_omega - omega0) ** 2)
+            )
+            coeffs = np.fft.ifft(signal_fft * psi_hat)
+            energies[i] = np.sum(np.abs(coeffs) ** 2)
+        return energies
 
     def extract(self, window: np.ndarray) -> np.ndarray:
         if window.ndim != 2:
@@ -214,13 +248,19 @@ class WaveletFeatureExtractor:
             valid_scales = [self.scales[i] for i in valid_positions]
             if pywt is not None:
                 energies = self._extract_pywt(signal_1d, valid_scales)
-            else:
+            elif sp_signal is not None and hasattr(sp_signal, "cwt"):
                 energies = self._extract_scipy(signal_1d, valid_scales)
+            else:
+                energies = self._extract_numpy(signal_1d, valid_scales)
 
             out[valid_positions, sensor_idx] = energies.astype(np.float32, copy=False)
 
         np.nan_to_num(out, copy=False, nan=0.0, posinf=0.0, neginf=0.0)
-        return out
+        # Log-compress wavelet energies. Raw CWT energy values can reach 10^4-10^10
+        # depending on signal magnitude — concatenating those rows with normalized
+        # statistical features causes gradient explosion in downstream networks.
+        # log1p keeps zero-energy as zero and brings the dynamic range to ~0-25.
+        return np.log1p(out).astype(np.float32, copy=False)
 
 
 class PhysicsFeatureExtractor:

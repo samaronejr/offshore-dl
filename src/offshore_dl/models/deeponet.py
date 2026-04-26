@@ -21,7 +21,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from offshore_dl.models.base import BaseModel
+from offshore_dl.models.base import BaseModel, instance_normalize
 
 
 def _build_mlp(
@@ -469,6 +469,14 @@ class DeepONetModel(BaseModel):
             - anomaly: ``(batch, window, n_vars)`` reconstruction
         """
         batch_size = x.shape[0]
+
+        # Per-sample z-score normalization stabilizes training when input rows
+        # span heterogeneous magnitudes (e.g. raw stat features alongside log-
+        # compressed wavelet energies). Forecasting/anomaly heads need the raw
+        # scale to predict matching outputs, so we only normalize for the
+        # classification head.
+        if self.task == "classification":
+            x = instance_normalize(x)
 
         # CNN branch processes (batch, window, n_vars) directly
         branch_emb = self.branch(x)  # (batch, rank)
