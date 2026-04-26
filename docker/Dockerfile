@@ -29,6 +29,14 @@ FROM base AS train
 RUN pip install -e ".[fm,dev]"
 RUN pip install aeon peft lightgbm
 
+# State-space models (Mamba) — required by fkmad and mambasl. Prebuilt wheels
+# from PyPI match the CUDA 12.4 runtime in the base image. --no-build-isolation
+# avoids pip trying to re-resolve torch and forcing a source build (which would
+# fail because this image uses cudnn-runtime and has no nvcc).
+RUN pip install --no-build-isolation \
+        "causal-conv1d>=1.4.0" \
+        "mamba-ssm>=2.2.0"
+
 # Copy configs, scripts, tests
 COPY configs/ configs/
 COPY scripts/ scripts/
