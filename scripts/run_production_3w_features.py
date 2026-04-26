@@ -48,17 +48,32 @@ from offshore_dl.utils.reproducibility import set_global_seed
 
 try:
     from offshore_dl.models.fkmad import FKMADModel
-except (ImportError, ModuleNotFoundError, RuntimeError):
+except Exception as _fkmad_err:  # noqa: BLE001
+    import logging as _logging_fkmad
+
+    _logging_fkmad.getLogger(__name__).warning(
+        "FKMADModel import failed: %r", _fkmad_err
+    )
     FKMADModel = None
 
 try:
     from offshore_dl.models.mambasl import MambaSLModel
-except (ImportError, ModuleNotFoundError, RuntimeError):
+except Exception as _mambasl_err:  # noqa: BLE001
+    import logging as _logging_mambasl
+
+    _logging_mambasl.getLogger(__name__).warning(
+        "MambaSLModel import failed: %r", _mambasl_err
+    )
     MambaSLModel = None
 
 try:
     from offshore_dl.models.convtimenet import ConvTimeNetModel
-except (ImportError, ModuleNotFoundError, RuntimeError):
+except Exception as _convtimenet_err:  # noqa: BLE001
+    import logging as _logging_convtimenet
+
+    _logging_convtimenet.getLogger(__name__).warning(
+        "ConvTimeNetModel import failed: %r", _convtimenet_err
+    )
     ConvTimeNetModel = None
 
 try:
@@ -229,12 +244,10 @@ if ConvTranModel is not None:
         "overrides": {},
     }
 
-if InceptionTimeModel is not None:
-    MODELS["inception_time"] = {
-        "class": InceptionTimeModel,
-        "config": "configs/models/inception_time.yaml",
-        "overrides": {},
-    }
+# InceptionTime feature-variant removed from 3w-features table — the compressed
+# (14, 27) input is too short for InceptionTime's wide-kernel multi-scale design
+# (val loss plateaus at log(10)≈random). Use `inception_time_raw` (720×27 raw
+# windows) instead — that's the substrate the architecture was designed for.
 
 TREE_MODELS = ["random_forest"]
 HYDRA_MODELS = ["hydra_rocket"]
@@ -245,19 +258,17 @@ RAW_MODELS = [
     "convtran_raw",
     "inception_time_raw",
 ]
-# ALL_MODELS includes all known model names (even optional ones) so --models
-# validation accepts them regardless of whether CUDA imports succeeded.
-_OPTIONAL_FEATURE_MODELS = [
-    m for m in ["fkmad", "mambasl", "convtimenet"] if m not in MODELS
-]
 MULTISCALE_MODELS = ["multiscale_rf", "multiscale_deeponet"]
 WAVELET_MODELS = ["wavelet_rf", "wavelet_deeponet"]
 PHYSICS_MODELS = ["physics_rf", "physics_deeponet"]
 WINDOW_MODELS = ["window360_rf", "window1440_rf"]
+# ALL_MODELS is built strictly from registered models + the standalone
+# training paths (RF, hydra_rocket, multiscale, …).  If a CUDA-only import
+# fails, the name is correctly excluded from --models validation instead of
+# raising a misleading KeyError inside the main loop.
 ALL_MODELS = list(
     dict.fromkeys(
         list(MODELS.keys())
-        + _OPTIONAL_FEATURE_MODELS
         + TREE_MODELS
         + HYDRA_MODELS
         + RAW_MODELS
@@ -271,21 +282,7 @@ ALL_MODELS = list(
 RESULTS_DIR = Path("results")
 
 
-def _make_serializable(obj):
-    """Convert non-serializable types for JSON output."""
-    if isinstance(obj, dict):
-        return {k: _make_serializable(v) for k, v in obj.items() if k != "study"}
-    elif isinstance(obj, (list, tuple)):
-        return [_make_serializable(v) for v in obj]
-    elif isinstance(obj, (np.integer,)):
-        return int(obj)
-    elif isinstance(obj, (np.floating, float)):
-        return float(obj)
-    elif isinstance(obj, np.ndarray):
-        return obj.tolist()
-    elif isinstance(obj, torch.Tensor):
-        return obj.tolist()
-    return obj
+from offshore_dl.utils.serialization import make_serializable as _make_serializable
 
 
 def _compute_class_weights(y_train: np.ndarray, n_classes: int) -> torch.Tensor:
@@ -346,20 +343,32 @@ def _run_rf_model(
     inner_splits = inner_cv.get_splits(len(train_pool))
     cv_fold_results = []
 
-    # Setup MLflow
+    # Setup MLflow.  On singularity, cwd /app is read-only — avoid the default
+    # ``./mlruns`` directory.  Honour ``MLFLOW_TRACKING_URI`` when set (e.g.
+    # ``http://localhost:5000`` from the slurm wrapper).  Fall back to a
+    # writable path under ``results/`` when the env var is absent.  Any
+    # failure to connect is downgraded to a warning so RF still trains.
+    import os
+
     mlflow = None
     if use_mlflow:
         try:
             import mlflow as _mlflow
 
-            _mlflow.set_tracking_uri("mlruns")
+            env_uri = os.environ.get("MLFLOW_TRACKING_URI", "").strip()
+            if env_uri:
+                _mlflow.set_tracking_uri(env_uri)
+            else:
+                local_mlruns = RESULTS_DIR / "mlruns"
+                local_mlruns.mkdir(parents=True, exist_ok=True)
+                _mlflow.set_tracking_uri(local_mlruns.resolve().as_uri())
             _mlflow.set_experiment("3w-random-forest")
             mlflow = _mlflow
-        except ImportError:
-            pass
-
-    if False:  # Temporarily disabling MLFlow start run loop specifically improper continuous occurred locally repeat next
-        mlflow.log_params({k: str(v) for k, v in arch.items()})
+        except (ImportError, OSError, PermissionError) as _mlflow_err:
+            logger.warning(
+                "MLflow disabled for random_forest: %s", _mlflow_err
+            )
+            mlflow = None
 
     for fold_idx, (local_train, local_val) in enumerate(inner_splits):
         logger.info(
@@ -384,8 +393,12 @@ def _run_rf_model(
             metrics["f1_macro"],
         )
         if mlflow:
-            mlflow.log_metric(f"cv_fold_{fold_idx}_accuracy", metrics["accuracy"])
-            mlflow.log_metric(f"cv_fold_{fold_idx}_f1_macro", metrics["f1_macro"])
+            try:
+                mlflow.log_metric(f"cv_fold_{fold_idx}_accuracy", metrics["accuracy"])
+                mlflow.log_metric(f"cv_fold_{fold_idx}_f1_macro", metrics["f1_macro"])
+            except Exception as _mlflow_log_err:  # noqa: BLE001
+                logger.warning("MLflow log_metric failed: %s", _mlflow_log_err)
+                mlflow = None
 
     # Aggregate CV metrics
     cv_agg = {}
@@ -413,10 +426,15 @@ def _run_rf_model(
     )
 
     if mlflow:
-        for k, v in test_metrics.items():
-            if isinstance(v, (int, float)):
-                mlflow.log_metric(f"test_{k}", v)
-        mlflow.end_run()
+        try:
+            for k, v in test_metrics.items():
+                if isinstance(v, (int, float)):
+                    mlflow.log_metric(f"test_{k}", v)
+            mlflow.end_run()
+        except Exception as _mlflow_log_err:  # noqa: BLE001
+            logger.warning(
+                "MLflow final log/end_run failed: %s", _mlflow_log_err
+            )
 
     result = {
         "test_metrics": test_metrics,
@@ -686,7 +704,9 @@ def main() -> None:
     if needs_feature_dataset:
         logger.info("Loading 3W dataset with feature extraction …")
         ds_start = time.time()
-        feature_dataset = ThreeWFeatureDataset("configs/data/3w.yaml")
+        feature_dataset = ThreeWFeatureDataset(
+            "configs/data/3w.yaml", cache_in_memory=False
+        )
         logger.info(
             "  3W loaded: %d samples (%.1fs)",
             len(feature_dataset),
@@ -763,22 +783,24 @@ def main() -> None:
     summary: dict[str, dict] = {}
 
     for model_name in models_to_run:
+        # WAVELET/PHYSICS/WINDOW/MULTISCALE/RAW/HYDRA variants have dedicated
+        # training blocks further down.  ``wavelet_rf``/``physics_rf``/
+        # ``window*_rf`` have ``class: None`` because they are trained via
+        # ``_run_rf_model`` rather than the generic ``_run_model`` path.
         if (
             model_name in RAW_MODELS
             or model_name in HYDRA_MODELS
             or model_name in MULTISCALE_MODELS
             or model_name in WINDOW_MODELS
+            or model_name in WAVELET_MODELS
+            or model_name in PHYSICS_MODELS
         ):
             continue
 
-        dataset_for_model = physics_dataset if model_name in PHYSICS_MODELS else dataset
+        dataset_for_model = dataset
 
         logger.info("─" * 60)
-        logger.info(
-            "TRAINING: %s on 3W %s",
-            model_name.upper(),
-            "physics features" if model_name in PHYSICS_MODELS else "features",
-        )
+        logger.info("TRAINING: %s on 3W features", model_name.upper())
         logger.info("─" * 60)
 
         start = time.time()
@@ -1120,6 +1142,123 @@ def main() -> None:
             traceback.print_exc()
             for wavelet_name in WAVELET_MODELS:
                 summary[wavelet_name] = {"status": "error", "error": str(e)}
+            summary_path.write_text(json.dumps(_make_serializable(summary), indent=2))
+
+    run_physics = any(
+        (args.models is None) or (m in args.models) for m in PHYSICS_MODELS
+    )
+    if run_physics:
+        logger.info("─" * 60)
+        logger.info("PHYSICS FEATURE CLASSIFICATION (14 stats + physics → 14×27)")
+        logger.info("─" * 60)
+        try:
+            if physics_dataset is None:
+                physics_dataset = ThreeWPhysicsDataset("configs/data/3w_physics.yaml")
+                logger.info(
+                    "  Physics loaded: %d samples", len(physics_dataset)
+                )
+            physics_labels = np.array(
+                [physics_dataset[i][1] for i in range(len(physics_dataset))]
+            )
+            physics_groups = np.array(
+                [
+                    physics_dataset[i][2]["instance_id"]
+                    for i in range(len(physics_dataset))
+                ]
+            )
+            physics_models_to_run = [
+                m for m in PHYSICS_MODELS if (args.models is None) or (m in args.models)
+            ]
+            for physics_name in physics_models_to_run:
+                physics_item_start = time.time()
+                if physics_name == "physics_rf":
+                    physics_results = _run_rf_model(
+                        dataset=physics_dataset,
+                        labels=physics_labels,
+                        groups=physics_groups,
+                        train_pool=train_pool,
+                        test_indices=test_indices,
+                        use_mlflow=False,
+                    )
+                elif physics_name == "physics_deeponet":
+                    set_global_seed(42)
+                    physics_entry = MODELS[physics_name]
+                    physics_cfg = load_merged_config(
+                        "configs/base.yaml",
+                        physics_entry["dataset_config"],
+                        physics_entry["config"],
+                    )
+                    physics_cfg.training.max_epochs = args.max_epochs
+                    physics_cfg.training.batch_size = args.batch_size
+                    physics_cfg.device = args.device
+                    physics_cfg.training.scheduler = "cosine"
+                    physics_kwargs = {
+                        "task": "classification",
+                        "n_vars": physics_dataset.n_vars,
+                        "n_classes": physics_cfg.data.n_classes,
+                        "window_size": physics_entry["window_size"],
+                    }
+                    if hasattr(physics_cfg, "model") and hasattr(
+                        physics_cfg.model, "architecture"
+                    ):
+                        physics_kwargs.update(
+                            OmegaConf.to_container(
+                                physics_cfg.model.architecture,
+                                resolve=True,
+                            )
+                        )
+                    if hasattr(physics_cfg, "model") and hasattr(
+                        physics_cfg.model, "training"
+                    ):
+                        physics_kwargs["lr"] = physics_cfg.model.training.lr
+                        if hasattr(physics_cfg.model.training, "weight_decay"):
+                            physics_kwargs["weight_decay"] = (
+                                physics_cfg.model.training.weight_decay
+                            )
+                    physics_kwargs["class_weights"] = _compute_class_weights(
+                        physics_labels[train_pool],
+                        physics_cfg.data.n_classes,
+                    )
+                    physics_kwargs.update(physics_entry.get("overrides", {}))
+                    physics_inner_cv = StratifiedGroupKFoldSKLearn(
+                        n_folds=5,
+                        labels=physics_labels[train_pool],
+                        groups=physics_groups[train_pool],
+                        seed=42,
+                    )
+                    physics_runner = ExperimentRunner(
+                        model_class=physics_entry["class"],
+                        dataset=physics_dataset,
+                        cv_strategy=physics_inner_cv,
+                        cfg=physics_cfg,
+                        model_kwargs=physics_kwargs,
+                    )
+                    physics_results = physics_runner.run_nested(
+                        train_pool=train_pool,
+                        test_indices=test_indices,
+                        use_mlflow=False,
+                    )
+                else:
+                    continue
+                physics_elapsed = time.time() - physics_item_start
+                physics_out = RESULTS_DIR / physics_name / "3w.json"
+                physics_out.parent.mkdir(parents=True, exist_ok=True)
+                physics_out.write_text(
+                    json.dumps(_make_serializable(physics_results), indent=2)
+                )
+                physics_agg = physics_results.get("test_metrics", {})
+                summary[physics_name] = {
+                    "status": "ok",
+                    "elapsed": round(physics_elapsed, 1),
+                    "test_metrics": physics_agg,
+                }
+                logger.info("✓ %s completed (%.1fs)", physics_name, physics_elapsed)
+            summary_path.write_text(json.dumps(_make_serializable(summary), indent=2))
+        except Exception as e:
+            logger.error("✗ physics failed: %s", e)
+            traceback.print_exc()
+            for physics_name in PHYSICS_MODELS:
+                summary[physics_name] = {"status": "error", "error": str(e)}
             summary_path.write_text(json.dumps(_make_serializable(summary), indent=2))
 
     run_window = any((args.models is None) or (m in args.models) for m in WINDOW_MODELS)
@@ -1691,12 +1830,11 @@ def main() -> None:
         }
         summary_path.write_text(json.dumps(_make_serializable(summary), indent=2))
 
+    # InceptionTime dropped entirely — both feature and raw variants collapse to
+    # a single-class predictor under this training setup (val loss never
+    # improves past epoch 1). See notes above the MODELS dict.
     RAW_DL_MODELS = {
         "convtran_raw": (ConvTranModel, "configs/models/convtran.yaml"),
-        "inception_time_raw": (
-            InceptionTimeModel,
-            "configs/models/inception_time.yaml",
-        ),
     }
     for raw_name, (raw_cls, raw_cfg_path) in RAW_DL_MODELS.items():
         run_this = (args.models is None) or (raw_name in args.models)

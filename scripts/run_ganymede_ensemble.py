@@ -23,7 +23,6 @@ Notes
 from __future__ import annotations
 
 import argparse
-import importlib
 import json
 import logging
 import sys
@@ -35,15 +34,20 @@ from sklearn.linear_model import LinearRegression
 
 # Allow invocation from project root.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from offshore_dl.data.datasets import GanymedeDataset
-from offshore_dl.evaluation.cv import (
-    GroupedExpandingWindowCV,
-    GroupedTemporalHoldoutSplitter,
-)
 from offshore_dl.evaluation.metrics import MetricRegistry
 from offshore_dl.run_experiment import build_experiment
 from offshore_dl.utils.reproducibility import set_global_seed
+from offshore_dl.utils.serialization import make_serializable as _make_serializable
+from sweep_utils import (
+    FM_WRAPPER_MAP,
+    load_fm_class as _load_fm_class,
+    make_holdout as _make_holdout,
+    make_inner_cv as _make_inner_cv,
+    sample_groups as _sample_groups,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -57,49 +61,6 @@ HORIZONS = [7, 14, 30, 90]
 FM_MODELS = ["timesfm", "tirex", "chronos"]
 TRAINED_MODELS = ["lstm", "deeponet", "patchtst"]
 DEFAULT_MODELS = FM_MODELS + TRAINED_MODELS
-
-FM_WRAPPER_MAP = {
-    "chronos": ("offshore_dl.models.chronos_wrapper", "ChronosWrapper"),
-    "timesfm": ("offshore_dl.models.timesfm_wrapper", "TimesFMWrapper"),
-    "tirex": ("offshore_dl.models.tirex_wrapper", "TiRexWrapper"),
-}
-
-
-def _make_serializable(obj):
-    if isinstance(obj, dict):
-        return {k: _make_serializable(v) for k, v in obj.items()}
-    if isinstance(obj, (list, tuple)):
-        return [_make_serializable(v) for v in obj]
-    if isinstance(obj, (np.integer,)):
-        return int(obj)
-    if isinstance(obj, (np.floating, float)):
-        return float(obj)
-    if isinstance(obj, np.ndarray):
-        return obj.tolist()
-    if isinstance(obj, torch.Tensor):
-        return obj.tolist()
-    return obj
-
-
-def _sample_groups(dataset: GanymedeDataset) -> np.ndarray:
-    return np.array([well_idx for well_idx, _ in dataset._samples], dtype=np.int32)
-
-
-def _make_holdout(dataset: GanymedeDataset) -> GroupedTemporalHoldoutSplitter:
-    return GroupedTemporalHoldoutSplitter(
-        test_ratio=0.2, groups=_sample_groups(dataset)
-    )
-
-
-def _make_inner_cv(
-    dataset: GanymedeDataset,
-    indices: np.ndarray,
-) -> GroupedExpandingWindowCV:
-    return GroupedExpandingWindowCV(
-        groups=_sample_groups(dataset)[indices],
-        n_splits=3,
-        min_train_ratio=0.5,
-    )
 
 
 def _load_json(path: Path) -> dict | None:
@@ -155,11 +116,6 @@ def _bundle_from_result(model_name: str, result: dict) -> dict | None:
         "test_predictions": np.asarray(result["test_predictions"], dtype=np.float32),
         "test_targets": np.asarray(result["test_targets"], dtype=np.float32),
     }
-
-
-def _load_fm_class(model_name: str):
-    module_path, class_name = FM_WRAPPER_MAP[model_name]
-    return getattr(importlib.import_module(module_path), class_name)
 
 
 def _predict_fm_indices(

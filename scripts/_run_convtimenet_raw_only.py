@@ -29,19 +29,7 @@ logger = logging.getLogger(__name__)
 RESULTS_DIR = Path("results")
 
 
-def _make_serializable(obj):
-    """Recursively convert numpy types for JSON."""
-    if isinstance(obj, dict):
-        return {k: _make_serializable(v) for k, v in obj.items()}
-    if isinstance(obj, list):
-        return [_make_serializable(v) for v in obj]
-    if isinstance(obj, np.integer):
-        return int(obj)
-    if isinstance(obj, np.floating):
-        return float(obj)
-    if isinstance(obj, np.ndarray):
-        return obj.tolist()
-    return obj
+from offshore_dl.utils.serialization import make_serializable as _make_serializable
 
 
 def main():

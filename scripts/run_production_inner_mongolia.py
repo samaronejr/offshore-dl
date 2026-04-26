@@ -32,18 +32,26 @@ from pathlib import Path
 
 # Allow invocation from project root or via docker_run.sh
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # for sweep_utils
 
 import numpy as np
 import torch
-from omegaconf import OmegaConf
 
 from offshore_dl.data.datasets import InnerMongoliaDataset
-from offshore_dl.evaluation.cv import (
-    GroupedExpandingWindowCV,
-    GroupedTemporalHoldoutSplitter,
-)
-from offshore_dl.evaluation.metrics import MetricRegistry
 from offshore_dl.utils.reproducibility import set_global_seed
+from sweep_utils import (
+    FM_WRAPPER_MAP,
+    safe_well as _safe_well,
+    sample_groups as _sample_groups,
+    make_holdout as _make_holdout,
+    make_inner_cv as _make_inner_cv,
+    aggregate as _aggregate,
+    zero_shot_evaluate as _zero_shot_evaluate,
+    load_fm_class as _load_fm_class,
+    parse_horizons as _parse_horizons,
+    parse_modes as _parse_modes,
+    parse_wells as _parse_wells,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -95,114 +103,10 @@ WELLS = [
     "60-34H",
 ]
 
-FM_WRAPPER_MAP = {
-    "chronos": ("offshore_dl.models.chronos_wrapper", "ChronosWrapper"),
-    "timesfm": ("offshore_dl.models.timesfm_wrapper", "TimesFMWrapper"),
-    "tirex": ("offshore_dl.models.tirex_wrapper", "TiRexWrapper"),
-}
-
 RESULTS_DIR = Path("results")
 
 
-# ═══════════════════════════════════════════════════════════════════
-# Helpers
-# ═══════════════════════════════════════════════════════════════════
-
-
-def _safe_well(name: str) -> str:
-    return name.replace("/", "_")
-
-
-def _make_serializable(obj):
-    """Convert non-serializable types for JSON output."""
-    if isinstance(obj, dict):
-        return {k: _make_serializable(v) for k, v in obj.items() if k != "study"}
-    elif isinstance(obj, (list, tuple)):
-        return [_make_serializable(v) for v in obj]
-    elif isinstance(obj, (np.integer,)):
-        return int(obj)
-    elif isinstance(obj, (np.floating, float)):
-        return float(obj)
-    elif isinstance(obj, np.ndarray):
-        return obj.tolist()
-    elif isinstance(obj, torch.Tensor):
-        return obj.tolist()
-    return obj
-
-
-def _sample_groups(dataset: InnerMongoliaDataset) -> np.ndarray:
-    """Return per-sample well-group IDs for grouped temporal splitting."""
-    return np.array([well_idx for well_idx, _ in dataset._samples], dtype=np.int32)
-
-
-def _make_holdout(dataset: InnerMongoliaDataset) -> GroupedTemporalHoldoutSplitter:
-    """Create a per-well temporal holdout splitter for this dataset."""
-    return GroupedTemporalHoldoutSplitter(
-        test_ratio=0.2,
-        groups=_sample_groups(dataset),
-    )
-
-
-def _make_inner_cv(
-    dataset: InnerMongoliaDataset,
-    indices: np.ndarray,
-) -> GroupedExpandingWindowCV:
-    """Create grouped expanding CV restricted to a subset of samples."""
-    return GroupedExpandingWindowCV(
-        groups=_sample_groups(dataset)[indices],
-        n_splits=3,
-        min_train_ratio=0.5,
-    )
-
-
-def _aggregate(fold_results: list[dict]) -> dict:
-    """Aggregate per-fold metrics into mean/std summaries."""
-    agg: dict[str, float] = {}
-    if not fold_results:
-        return agg
-    for key in fold_results[0]["metrics"]:
-        values = [
-            fr["metrics"][key]
-            for fr in fold_results
-            if np.isfinite(fr["metrics"].get(key, float("nan")))
-        ]
-        if values:
-            agg[f"{key}_mean"] = float(np.mean(values))
-            agg[f"{key}_std"] = float(np.std(values))
-    return agg
-
-
-def _zero_shot_evaluate(model, dataset, val_idx, batch_size=32, max_samples=None):
-    """Run zero-shot FM inference on a validation set."""
-    if max_samples and len(val_idx) > max_samples:
-        val_idx = val_idx[:max_samples]
-
-    all_preds = []
-    all_targets = []
-
-    for i in range(0, len(val_idx), batch_size):
-        batch_idx = val_idx[i : i + batch_size]
-        batch_x = torch.stack([dataset[j][0] for j in batch_idx])
-        batch_y = torch.stack([dataset[j][1] for j in batch_idx])
-        batch = (batch_x, batch_y, [{}] * len(batch_idx))
-
-        preds = model.predict(batch)
-        all_preds.append(preds.cpu())
-        all_targets.append(batch_y.cpu())
-
-    predictions = torch.cat(all_preds).numpy()
-    targets = torch.cat(all_targets).numpy()
-
-    return MetricRegistry.compute("forecasting", predictions, targets)
-
-
-def _load_fm_class(model_name: str):
-    """Dynamically import an FM wrapper class."""
-    module_path, class_name = FM_WRAPPER_MAP[model_name]
-    import importlib
-
-    mod = importlib.import_module(module_path)
-    return getattr(mod, class_name)
+from offshore_dl.utils.serialization import make_serializable as _make_serializable
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -486,27 +390,45 @@ def _run_fm_per_well(
 # ═══════════════════════════════════════════════════════════════════
 
 
-def _build_plan(models: list[str], multi_well_only: bool = False) -> list[dict]:
-    """Build the ordered list of runs for the sweep."""
+def _build_plan(
+    models: list[str],
+    multi_well_only: bool = False,
+    horizons: list[int] | None = None,
+    modes: list[str] | None = None,
+    wells: list[str] | None = None,
+) -> list[dict]:
+    """Build the ordered list of runs for the sweep.
+
+    Filters:
+      - ``horizons`` — subset of HORIZONS (defaults to all).
+      - ``modes`` — subset of MODES (defaults to all).
+      - ``wells`` — subset of WELLS applied to per_well mode only.
+      - ``multi_well_only`` — legacy flag; equivalent to ``modes=["multi_well"]``.
+    """
+    h_list = list(horizons) if horizons else list(HORIZONS)
+    m_list = list(modes) if modes else list(MODES)
+    if multi_well_only:
+        m_list = [m for m in m_list if m == "multi_well"]
+    w_list = list(wells) if wells else list(WELLS)
+
     plan: list[dict] = []
     for model in models:
         is_fm = model in FM_MODELS
         is_tree = model in TREE_MODELS
-        for horizon in HORIZONS:
-            # multi_well
-            plan.append(
-                {
-                    "model": model,
-                    "horizon": horizon,
-                    "mode": "multi_well",
-                    "well": None,
-                    "is_fm": is_fm,
-                    "is_tree": is_tree,
-                }
-            )
-            # per_well: individual wells
-            if not multi_well_only:
-                for well in WELLS:
+        for horizon in h_list:
+            if "multi_well" in m_list:
+                plan.append(
+                    {
+                        "model": model,
+                        "horizon": horizon,
+                        "mode": "multi_well",
+                        "well": None,
+                        "is_fm": is_fm,
+                        "is_tree": is_tree,
+                    }
+                )
+            if "per_well" in m_list:
+                for well in w_list:
                     plan.append(
                         {
                             "model": model,
@@ -588,10 +510,62 @@ def main() -> None:
         action="store_true",
         help="Run only multi_well mode, skip per_well",
     )
+    parser.add_argument(
+        "--horizons",
+        nargs="+",
+        type=int,
+        default=None,
+        help=f"Subset of horizons to run; default = all {HORIZONS}",
+    )
+    parser.add_argument(
+        "--modes",
+        nargs="+",
+        default=None,
+        choices=MODES,
+        help=f"Subset of modes to run; default = all {MODES}",
+    )
+    parser.add_argument(
+        "--wells",
+        nargs="+",
+        default=None,
+        help=(
+            "Subset of wells for per_well mode. Either explicit IDs "
+            "(e.g. 54-16X 55-15) or a Python-style slice START:END "
+            "into the dataset WELLS list (e.g. 0:10)."
+        ),
+    )
 
     args = parser.parse_args()
 
-    plan = _build_plan(args.models, multi_well_only=args.multi_well_only)
+    horizons_filt = _parse_horizons(args.horizons, HORIZONS)
+    modes_filt = _parse_modes(args.modes, MODES)
+    wells_filt = _parse_wells(args.wells, WELLS)
+
+    plan = _build_plan(
+        args.models,
+        multi_well_only=args.multi_well_only,
+        horizons=horizons_filt,
+        modes=modes_filt,
+        wells=wells_filt,
+    )
+
+    # Sweep plan summary — helps SLURM array tasks confirm their slice.
+    modes_expanded = list(modes_filt)
+    if args.multi_well_only:
+        modes_expanded = [m for m in modes_expanded if m == "multi_well"]
+    n_expected = (
+        len(args.models)
+        * len(horizons_filt)
+        * (
+            (1 if "multi_well" in modes_expanded else 0)
+            + (len(wells_filt) if "per_well" in modes_expanded else 0)
+        )
+    )
+    print(
+        f"[sweep plan] models={args.models} horizons={horizons_filt} "
+        f"modes={modes_expanded} wells={len(wells_filt)} "
+        f"→ expected_runs={n_expected} actual_plan={len(plan)}"
+    )
 
     if args.dry_run:
         _print_plan(plan)
@@ -600,10 +574,13 @@ def main() -> None:
     logger.info("═" * 70)
     logger.info("INNER MONGOLIA PRODUCTION SWEEP — %d runs", len(plan))
     logger.info(
-        "  device=%s  max_epochs=%s  models=%s",
+        "  device=%s  max_epochs=%s  models=%s  horizons=%s  modes=%s  wells=%d",
         args.device,
         args.max_epochs,
         args.models,
+        horizons_filt,
+        modes_expanded,
+        len(wells_filt),
     )
     logger.info("═" * 70)
 

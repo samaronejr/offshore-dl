@@ -32,18 +32,23 @@ from pathlib import Path
 
 # Allow invocation from project root or via docker_run.sh
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))  # for sweep_utils
 
 import numpy as np
 import torch
-from omegaconf import OmegaConf
 
 from offshore_dl.data.datasets import VolveDataset
-from offshore_dl.evaluation.cv import (
-    GroupedExpandingWindowCV,
-    GroupedTemporalHoldoutSplitter,
-)
-from offshore_dl.evaluation.metrics import MetricRegistry
 from offshore_dl.utils.reproducibility import set_global_seed
+from sweep_utils import (
+    FM_WRAPPER_MAP,
+    safe_well as _safe_well,
+    sample_groups as _sample_groups,
+    make_holdout as _make_holdout,
+    make_inner_cv as _make_inner_cv,
+    aggregate as _aggregate,
+    zero_shot_evaluate as _zero_shot_evaluate,
+    load_fm_class as _load_fm_class,
+)
 
 logging.basicConfig(
     level=logging.INFO,
@@ -72,114 +77,10 @@ WELLS = [
     "NO_15_9-F-15_D",
 ]
 
-FM_WRAPPER_MAP = {
-    "chronos": ("offshore_dl.models.chronos_wrapper", "ChronosWrapper"),
-    "timesfm": ("offshore_dl.models.timesfm_wrapper", "TimesFMWrapper"),
-    "tirex": ("offshore_dl.models.tirex_wrapper", "TiRexWrapper"),
-}
-
 RESULTS_DIR = Path("results")
 
 
-# ═══════════════════════════════════════════════════════════════════
-# Helpers
-# ═══════════════════════════════════════════════════════════════════
-
-
-def _safe_well(name: str) -> str:
-    return name.replace("/", "_")
-
-
-def _make_serializable(obj):
-    """Convert non-serializable types for JSON output."""
-    if isinstance(obj, dict):
-        return {k: _make_serializable(v) for k, v in obj.items() if k != "study"}
-    elif isinstance(obj, (list, tuple)):
-        return [_make_serializable(v) for v in obj]
-    elif isinstance(obj, (np.integer,)):
-        return int(obj)
-    elif isinstance(obj, (np.floating, float)):
-        return float(obj)
-    elif isinstance(obj, np.ndarray):
-        return obj.tolist()
-    elif isinstance(obj, torch.Tensor):
-        return obj.tolist()
-    return obj
-
-
-def _sample_groups(dataset: VolveDataset) -> np.ndarray:
-    """Return per-sample well-group IDs for grouped temporal splitting."""
-    return np.array([well_idx for well_idx, _ in dataset._samples], dtype=np.int32)
-
-
-def _make_holdout(dataset: VolveDataset) -> GroupedTemporalHoldoutSplitter:
-    """Create a per-well temporal holdout splitter for this dataset."""
-    return GroupedTemporalHoldoutSplitter(
-        test_ratio=0.2,
-        groups=_sample_groups(dataset),
-    )
-
-
-def _make_inner_cv(
-    dataset: VolveDataset,
-    indices: np.ndarray,
-) -> GroupedExpandingWindowCV:
-    """Create grouped expanding CV restricted to a subset of samples."""
-    return GroupedExpandingWindowCV(
-        groups=_sample_groups(dataset)[indices],
-        n_splits=3,
-        min_train_ratio=0.5,
-    )
-
-
-def _aggregate(fold_results: list[dict]) -> dict:
-    """Aggregate per-fold metrics into mean/std summaries."""
-    agg: dict[str, float] = {}
-    if not fold_results:
-        return agg
-    for key in fold_results[0]["metrics"]:
-        values = [
-            fr["metrics"][key]
-            for fr in fold_results
-            if np.isfinite(fr["metrics"].get(key, float("nan")))
-        ]
-        if values:
-            agg[f"{key}_mean"] = float(np.mean(values))
-            agg[f"{key}_std"] = float(np.std(values))
-    return agg
-
-
-def _zero_shot_evaluate(model, dataset, val_idx, batch_size=32, max_samples=None):
-    """Run zero-shot FM inference on a validation set."""
-    if max_samples and len(val_idx) > max_samples:
-        val_idx = val_idx[:max_samples]
-
-    all_preds = []
-    all_targets = []
-
-    for i in range(0, len(val_idx), batch_size):
-        batch_idx = val_idx[i : i + batch_size]
-        batch_x = torch.stack([dataset[j][0] for j in batch_idx])
-        batch_y = torch.stack([dataset[j][1] for j in batch_idx])
-        batch = (batch_x, batch_y, [{}] * len(batch_idx))
-
-        preds = model.predict(batch)
-        all_preds.append(preds.cpu())
-        all_targets.append(batch_y.cpu())
-
-    predictions = torch.cat(all_preds).numpy()
-    targets = torch.cat(all_targets).numpy()
-
-    return MetricRegistry.compute("forecasting", predictions, targets)
-
-
-def _load_fm_class(model_name: str):
-    """Dynamically import an FM wrapper class."""
-    module_path, class_name = FM_WRAPPER_MAP[model_name]
-    import importlib
-
-    mod = importlib.import_module(module_path)
-    return getattr(mod, class_name)
+from offshore_dl.utils.serialization import make_serializable as _make_serializable
 
 
 # ═══════════════════════════════════════════════════════════════════
