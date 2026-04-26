@@ -125,10 +125,16 @@ class MetricRegistry:
                 targets_bin = label_binarize(targets, classes=class_labels)
                 if prediction_scores is not None:
                     # Use probability scores (preferred — gives true AUC-PR curve)
-                    scores = np.asarray(prediction_scores)
+                    scores = np.asarray(prediction_scores, dtype=np.float64)
                     if scores.ndim == 1 or scores.shape[-1] != len(class_labels):
                         # Fallback to binarized hard labels if scores shape doesn't match
                         scores = label_binarize(predictions, classes=class_labels)
+                    else:
+                        # Sanitize non-finite scores (NaN/Inf from divergent training
+                        # batches or sensor outliers) — sklearn's AP raises ValueError
+                        # on NaN, which would otherwise drop us into the except clause
+                        # and silently emit auc_pr=0.0.
+                        scores = np.nan_to_num(scores, nan=0.0, posinf=0.0, neginf=0.0)
                 else:
                     # Fallback: binarized hard predictions (degenerate single-point PR)
                     scores = label_binarize(predictions, classes=class_labels)
