@@ -48,6 +48,8 @@ class TimesFMWrapper(BaseModel):
         lr: Unused (zero-shot).
     """
 
+    is_zero_shot = True
+
     def __init__(
         self,
         task: str,
@@ -117,6 +119,7 @@ class TimesFMWrapper(BaseModel):
             - anomaly: ``(batch, window, n_vars)`` — predicts each channel
         """
         self._load_model()
+        device = x.device
 
         if self.task == "forecasting":
             # Extract target channel: (batch, window) → numpy
@@ -126,7 +129,7 @@ class TimesFMWrapper(BaseModel):
             inputs = [arr for arr in x_np]
             # TimesFM forecast returns (mean_forecast, full_forecast)
             mean_forecast, full_forecast = self._model.forecast(inputs)
-            return torch.tensor(mean_forecast, dtype=torch.float32)
+            return torch.as_tensor(mean_forecast, dtype=torch.float32, device=device)
 
         elif self.task == "anomaly":
             # NOTE: FMs forecast the NEXT window of values, not reconstruct the
@@ -141,7 +144,7 @@ class TimesFMWrapper(BaseModel):
                 x_np = context.detach().cpu().numpy()
                 inputs = [arr for arr in x_np]
                 mean_forecast, full_forecast = self._model.forecast(inputs)
-                pred = torch.tensor(mean_forecast, dtype=torch.float32)
+                pred = torch.as_tensor(mean_forecast, dtype=torch.float32, device=device)
                 all_preds.append(pred)
 
             # Stack: (batch, window, n_vars)
@@ -152,7 +155,8 @@ class TimesFMWrapper(BaseModel):
 
     def training_step(self, batch: tuple) -> torch.Tensor:
         warnings.warn("TimesFM is zero-shot — training_step is a no-op", stacklevel=2)
-        return torch.tensor(0.0, requires_grad=True)
+        device = batch[0].device if batch and isinstance(batch[0], torch.Tensor) else self._dummy.device
+        return torch.tensor(0.0, device=device, requires_grad=True)
 
     def predict(self, batch: tuple) -> torch.Tensor:
         features, _targets, _metadata = batch

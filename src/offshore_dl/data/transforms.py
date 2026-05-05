@@ -242,9 +242,7 @@ def detect_shutdowns(
 
     # Causal consecutive-zero counter: reset to 0 on any non-zero day.
     # Each day only sees its own history, not future days.
-    consecutive = is_zero.astype(int).groupby(
-        (~is_zero).cumsum()
-    ).cumcount() + is_zero.astype(int)
+    consecutive = is_zero.astype(int).groupby((~is_zero).cumsum()).cumsum()
 
     df["is_shutdown"] = (consecutive >= zero_days_threshold) & is_zero
     return df

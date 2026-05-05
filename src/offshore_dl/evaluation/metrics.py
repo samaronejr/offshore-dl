@@ -49,8 +49,11 @@ class MetricRegistry:
         seasonal_period: int = 7,
         instance_ids: np.ndarray | None = None,
         y_train: np.ndarray | None = None,
+        groups: np.ndarray | None = None,
+        y_train_groups: np.ndarray | None = None,
+        mase_aggregation: str = "group_weighted",
         prediction_scores: np.ndarray | None = None,
-    ) -> dict[str, float]:
+    ) -> dict:
         """Compute all metrics for the given task.
 
         Args:
@@ -61,6 +64,10 @@ class MetricRegistry:
             seasonal_period: Period for MASE naive denominator (forecasting).
             instance_ids: Per-sample instance IDs for EDR computation (classification).
             y_train: Training targets for MASE denominator (forecasting).
+            groups: Per-sample forecasting group IDs aligned to predictions/targets.
+            y_train_groups: Training group IDs aligned to y_train samples.
+            mase_aggregation: Primary MASE aggregation when group data is available:
+                ``"group_weighted"``, ``"group_macro"``, or ``"flat"``.
             prediction_scores: Probability scores for AUC-PR (classification).
 
         Returns:
@@ -78,6 +85,9 @@ class MetricRegistry:
                 predictions, targets,
                 seasonal_period=seasonal_period,
                 y_train=y_train,
+                groups=groups,
+                y_train_groups=y_train_groups,
+                mase_aggregation=mase_aggregation,
             )
         elif task == "anomaly":
             return MetricRegistry._anomaly_metrics(predictions, targets)
@@ -202,14 +212,19 @@ class MetricRegistry:
         targets: np.ndarray,
         seasonal_period: int = 7,
         y_train: np.ndarray | None = None,
-    ) -> dict[str, float]:
+        groups: np.ndarray | None = None,
+        y_train_groups: np.ndarray | None = None,
+        mase_aggregation: str = "group_weighted",
+    ) -> dict:
         """Compute forecasting metrics.
 
         Returns:
-            Dict with mae, rmse, r2, mase.
+            Dict with mae, rmse, r2, and explicit MASE aggregation/provenance.
         """
-        predictions = np.asarray(predictions, dtype=np.float64).ravel()
-        targets = np.asarray(targets, dtype=np.float64).ravel()
+        predictions_raw = np.asarray(predictions, dtype=np.float64)
+        targets_raw = np.asarray(targets, dtype=np.float64)
+        predictions = predictions_raw.ravel()
+        targets = targets_raw.ravel()
 
         results: dict[str, float] = {}
 
@@ -230,24 +245,127 @@ class MetricRegistry:
         else:
             results["r2_prod"] = results["r2"]
 
-        # MASE: Mean Absolute Scaled Error
-        # Denominator: MAE of naive seasonal forecast on TRAINING data
-        # (Hyndman & Koehler, 2006)
-        scale_data = y_train if y_train is not None else targets
-        scale_data = np.asarray(scale_data, dtype=np.float64).ravel()
-        n_scale = len(scale_data)
-        if n_scale > seasonal_period:
-            naive_errors = np.abs(scale_data[seasonal_period:] - scale_data[:-seasonal_period])
-            naive_mae = np.mean(naive_errors)
-            if naive_mae > 1e-12:
-                results["mase"] = results["mae"] / naive_mae
+        mase_flat, flat_source = MetricRegistry._compute_mase_flat(
+            predictions,
+            targets,
+            seasonal_period=seasonal_period,
+            y_train=y_train,
+        )
+        results["mase_flat"] = mase_flat
+        results["mase_group_macro"] = float("nan")
+        results["mase_group_weighted"] = float("nan")
+        results["mase_denominator_source"] = flat_source
+
+        group_metrics = MetricRegistry._compute_grouped_mase(
+            predictions_raw,
+            targets_raw,
+            groups=groups,
+            y_train=y_train,
+            y_train_groups=y_train_groups,
+            seasonal_period=seasonal_period,
+        )
+        if group_metrics is not None:
+            results.update(group_metrics)
+            results["mase_denominator_source"] = "grouped_train" if y_train is not None else "grouped_eval"
+            if mase_aggregation == "group_macro":
+                results["mase"] = results["mase_group_macro"]
+                results["mase_aggregation"] = "group_macro"
+            elif mase_aggregation == "flat":
+                results["mase"] = results["mase_flat"]
+                results["mase_aggregation"] = "flat"
+            elif mase_aggregation == "group_weighted":
+                results["mase"] = results["mase_group_weighted"]
+                results["mase_aggregation"] = "group_weighted"
             else:
-                results["mase"] = 0.0  # perfect naive → 0
+                msg = "mase_aggregation must be 'group_weighted', 'group_macro', or 'flat'"
+                raise ValueError(msg)
         else:
-            # Series too short for seasonal naive
-            results["mase"] = float("inf")
+            results["mase"] = results["mase_flat"]
+            results["mase_aggregation"] = "flat_fallback"
 
         return results
+
+    @staticmethod
+    def _compute_mase_flat(
+        predictions: np.ndarray,
+        targets: np.ndarray,
+        *,
+        seasonal_period: int,
+        y_train: np.ndarray | None,
+    ) -> tuple[float, str]:
+        """Compute flat MASE and denominator provenance."""
+        scale_data = y_train if y_train is not None else targets
+        source = "train_flat" if y_train is not None else "eval_flat"
+        scale_data = np.asarray(scale_data, dtype=np.float64).ravel()
+        if len(scale_data) <= seasonal_period:
+            return float("inf"), source
+        naive_errors = np.abs(scale_data[seasonal_period:] - scale_data[:-seasonal_period])
+        naive_mae = float(np.mean(naive_errors))
+        if naive_mae <= 1e-12:
+            return 0.0, source
+        mae = float(mean_absolute_error(targets, predictions))
+        return mae / naive_mae, source
+
+    @staticmethod
+    def _compute_grouped_mase(
+        predictions: np.ndarray,
+        targets: np.ndarray,
+        *,
+        groups: np.ndarray | None,
+        y_train: np.ndarray | None,
+        y_train_groups: np.ndarray | None,
+        seasonal_period: int,
+    ) -> dict[str, float] | None:
+        """Compute macro/weighted group MASE when group metadata is aligned."""
+        if groups is None:
+            return None
+
+        groups = np.asarray(groups)
+        n_samples = predictions.shape[0] if predictions.ndim > 0 else len(groups)
+        if len(groups) != n_samples:
+            logger.warning("Ignoring grouped MASE: groups length does not match samples")
+            return None
+
+        pred_2d = np.asarray(predictions, dtype=np.float64).reshape(n_samples, -1)
+        target_2d = np.asarray(targets, dtype=np.float64).reshape(n_samples, -1)
+
+        train_by_group: dict[object, np.ndarray] = {}
+        if y_train is not None and y_train_groups is not None:
+            y_train_arr = np.asarray(y_train, dtype=np.float64)
+            y_train_groups_arr = np.asarray(y_train_groups)
+            n_train_samples = y_train_arr.shape[0] if y_train_arr.ndim > 0 else len(y_train_groups_arr)
+            if len(y_train_groups_arr) == n_train_samples:
+                y_train_2d = y_train_arr.reshape(n_train_samples, -1)
+                for group in pd_unique(y_train_groups_arr):
+                    train_by_group[group] = y_train_2d[y_train_groups_arr == group].ravel()
+
+        group_mases = []
+        group_weights = []
+        for group in pd_unique(groups):
+            mask = groups == group
+            group_errors = np.abs(pred_2d[mask] - target_2d[mask]).ravel()
+            group_mae = float(np.mean(group_errors))
+            scale_data = train_by_group.get(group)
+            if scale_data is None:
+                scale_data = target_2d[mask].ravel()
+            if len(scale_data) <= seasonal_period:
+                group_mase = float("inf")
+            else:
+                naive_mae = float(np.mean(np.abs(scale_data[seasonal_period:] - scale_data[:-seasonal_period])))
+                group_mase = 0.0 if naive_mae <= 1e-12 else group_mae / naive_mae
+            if np.isfinite(group_mase):
+                group_mases.append(group_mase)
+                group_weights.append(int(mask.sum()))
+
+        if not group_mases:
+            return None
+
+        weights = np.asarray(group_weights, dtype=np.float64)
+        mases = np.asarray(group_mases, dtype=np.float64)
+        return {
+            "mase_group_macro": float(np.mean(mases)),
+            "mase_group_weighted": float(np.average(mases, weights=weights)),
+        }
 
     @staticmethod
     def _anomaly_metrics(
@@ -266,13 +384,17 @@ class MetricRegistry:
         predictions = np.asarray(predictions, dtype=np.float64)
         targets = np.asarray(targets, dtype=np.float64)
 
-        # Per-sample reconstruction error (RMSE across features, not L2 norm).
-        # For multidimensional reconstructions, this is sqrt(mean((pred-tgt)^2))
-        # per sample, which differs from L2 norm by a factor of sqrt(n_features).
-        if predictions.ndim > 1:
-            errors = np.sqrt(np.mean((predictions - targets) ** 2, axis=-1))
-        else:
+        sq_error = (predictions - targets) ** 2
+        timestep_errors = None
+        if predictions.ndim == 1:
             errors = np.abs(predictions - targets)
+        elif predictions.ndim == 2:
+            errors = np.sqrt(np.mean(sq_error, axis=1))
+        elif predictions.ndim == 3:
+            errors = np.sqrt(np.mean(sq_error, axis=(1, 2)))
+            timestep_errors = np.sqrt(np.mean(sq_error, axis=2))
+        else:
+            errors = np.sqrt(np.mean(sq_error.reshape(sq_error.shape[0], -1), axis=1))
 
         results: dict[str, float] = {
             "error_mean": float(np.mean(errors)),
@@ -281,8 +403,23 @@ class MetricRegistry:
             "error_p95": float(np.percentile(errors, 95)),
             "error_p99": float(np.percentile(errors, 99)),
         }
+        if timestep_errors is not None:
+            results.update(
+                {
+                    "timestep_error_mean": float(np.mean(timestep_errors)),
+                    "timestep_error_std": float(np.std(timestep_errors)),
+                    "timestep_error_p50": float(np.percentile(timestep_errors, 50)),
+                    "timestep_error_p95": float(np.percentile(timestep_errors, 95)),
+                    "timestep_error_p99": float(np.percentile(timestep_errors, 99)),
+                }
+            )
 
         return results
+
+
+def pd_unique(values: np.ndarray) -> np.ndarray:
+    """Stable unique values for object or numeric group arrays without pandas."""
+    return np.asarray(list(dict.fromkeys(np.asarray(values).tolist())), dtype=object)
 
 
 def format_metrics(results: dict[str, float], task: str = "") -> str:

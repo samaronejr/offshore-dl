@@ -51,6 +51,7 @@ class PatchTSTModel(BaseModel):
         n_vars: int,
         loss_type: str = "ce",
         focal_gamma: float = 2.0,
+        label_smoothing: float = 0.0,
         class_weights: torch.Tensor | None = None,
         patch_len: int = 16,
         stride: int = 8,
@@ -71,6 +72,7 @@ class PatchTSTModel(BaseModel):
             n_vars=n_vars,
             loss_type=loss_type,
             focal_gamma=focal_gamma,
+            label_smoothing=label_smoothing,
             class_weights=class_weights,
         )
         self.n_classes = n_classes
@@ -79,6 +81,32 @@ class PatchTSTModel(BaseModel):
         self.lr = lr
         self.weight_decay = weight_decay
         self.target_channel = kwargs.get("target_channel", 0)
+
+        patch_len = int(patch_len)
+        stride = int(stride)
+        window_size = int(window_size)
+        if window_size <= 0:
+            msg = f"window_size must be positive for PatchTST, got {window_size}."
+            raise ValueError(msg)
+        if patch_len <= 0:
+            msg = f"patch_len must be positive for PatchTST, got {patch_len}."
+            raise ValueError(msg)
+        if stride <= 0:
+            msg = f"stride must be positive for PatchTST, got {stride}."
+            raise ValueError(msg)
+        if patch_len > window_size:
+            msg = (
+                f"PatchTST patch_len must be <= window_size so at least one patch "
+                f"can be extracted, got patch_len={patch_len}, window_size={window_size}."
+            )
+            raise ValueError(msg)
+        n_patches = ((window_size - patch_len) // stride) + 1
+        if n_patches < 1:
+            msg = (
+                f"PatchTST configuration yields no valid patches: "
+                f"window_size={window_size}, patch_len={patch_len}, stride={stride}."
+            )
+            raise ValueError(msg)
 
         # Build HF PatchTST config
         hf_config = PatchTSTConfig(

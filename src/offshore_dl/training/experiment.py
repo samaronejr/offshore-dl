@@ -271,6 +271,18 @@ class ExperimentRunner:
         self.cfg = cfg
         self.model_kwargs = model_kwargs or {}
 
+    @staticmethod
+    def _zero_epoch_history() -> dict:
+        """History shape used when a zero-shot model intentionally skips fit."""
+        return {
+            "train_loss": [],
+            "val_loss": [],
+            "epochs_run": 0,
+            "best_epoch": None,
+            "stopped_early": False,
+            "cost": {},
+        }
+
     def run(
         self,
         experiment_name: str | None = None,
@@ -556,14 +568,18 @@ class ExperimentRunner:
 
         device = getattr(self.cfg, "device", "cpu")
         trainer = Trainer(cfg=self.cfg, device=device)
-        retrain_history = trainer.fit(
-            model,
-            train_loader,
-            retrain_val_loader,
-            max_epochs=(
-                self.cfg.training.max_epochs if hasattr(self.cfg, "training") else 5
-            ),
-        )
+        model.to(trainer.device)
+        if getattr(model, "is_zero_shot", False):
+            retrain_history = self._zero_epoch_history()
+        else:
+            retrain_history = trainer.fit(
+                model,
+                train_loader,
+                retrain_val_loader,
+                max_epochs=(
+                    self.cfg.training.max_epochs if hasattr(self.cfg, "training") else 5
+                ),
+            )
 
         # Log retrain per-epoch curves to MLflow
         if mlflow is not None:
@@ -603,6 +619,7 @@ class ExperimentRunner:
         all_preds, all_targets = [], []
         all_scores = []
         all_instance_ids = []
+        all_groups = []
         for batch in test_loader:
             batch = tuple(
                 t.to(trainer.device) if isinstance(t, torch.Tensor) else t
@@ -618,6 +635,10 @@ class ExperimentRunner:
                 instance_ids = self._extract_instance_ids(metadata)
                 if instance_ids is not None:
                     all_instance_ids.append(instance_ids)
+            if task == "forecasting":
+                group_ids = self._extract_group_ids(metadata)
+                if group_ids is not None:
+                    all_groups.append(group_ids)
             if isinstance(targets, torch.Tensor):
                 all_targets.append(targets.cpu())
             else:
@@ -630,6 +651,12 @@ class ExperimentRunner:
             np.concatenate(all_instance_ids)
             if all_instance_ids
             and sum(len(x) for x in all_instance_ids) == len(predictions)
+            else None
+        )
+        groups = (
+            np.concatenate(all_groups)
+            if all_groups
+            and sum(len(x) for x in all_groups) == len(predictions)
             else None
         )
 
@@ -647,15 +674,24 @@ class ExperimentRunner:
 
         # Collect training targets for MASE denominator (subsample for efficiency)
         y_train_for_mase = None
+        y_train_groups_for_mase = None
         if task == "forecasting":
             try:
                 rng = np.random.default_rng(42)
                 sample_idx = rng.choice(
                     len(train_pool), size=min(5000, len(train_pool)), replace=False
                 )
-                y_train_for_mase = np.array(
-                    [self.dataset[int(train_pool[int(i)])][1].numpy() for i in sample_idx]
-                ).ravel()
+                train_targets = []
+                train_groups = []
+                for i in sample_idx:
+                    _, target, metadata = self.dataset[int(train_pool[int(i)])]
+                    train_targets.append(target.numpy() if hasattr(target, "numpy") else target)
+                    group_id = self._extract_single_group_id(metadata)
+                    if group_id is not None:
+                        train_groups.append(group_id)
+                y_train_for_mase = np.array(train_targets)
+                if len(train_groups) == len(train_targets):
+                    y_train_groups_for_mase = np.asarray(train_groups, dtype=object)
                 if target_mean is not None and target_std is not None:
                     y_train_for_mase = NormalizedSubset.denormalize_targets(
                         y_train_for_mase,
@@ -674,6 +710,8 @@ class ExperimentRunner:
             prediction_scores=prediction_scores,
             instance_ids=instance_ids,
             y_train=y_train_for_mase,
+            groups=groups,
+            y_train_groups=y_train_groups_for_mase,
         )
 
         logger.info(
@@ -848,14 +886,18 @@ class ExperimentRunner:
             # Train
             device = getattr(self.cfg, "device", "cpu")
             trainer = Trainer(cfg=self.cfg, device=device)
-            history = trainer.fit(
-                model,
-                train_loader,
-                val_loader,
-                max_epochs=self.cfg.training.max_epochs
-                if hasattr(self.cfg, "training")
-                else 5,
-            )
+            model.to(trainer.device)
+            if getattr(model, "is_zero_shot", False):
+                history = self._zero_epoch_history()
+            else:
+                history = trainer.fit(
+                    model,
+                    train_loader,
+                    val_loader,
+                    max_epochs=self.cfg.training.max_epochs
+                    if hasattr(self.cfg, "training")
+                    else 5,
+                )
 
             # Log per-epoch metrics to MLflow
             if mlflow and child_run:
@@ -875,6 +917,7 @@ class ExperimentRunner:
             all_targets = []
             all_scores = []
             all_instance_ids = []
+            all_groups = []
             for batch in val_loader:
                 batch = tuple(
                     t.to(trainer.device) if isinstance(t, torch.Tensor) else t
@@ -890,6 +933,10 @@ class ExperimentRunner:
                     instance_ids = self._extract_instance_ids(metadata)
                     if instance_ids is not None:
                         all_instance_ids.append(instance_ids)
+                if task == "forecasting":
+                    group_ids = self._extract_group_ids(metadata)
+                    if group_ids is not None:
+                        all_groups.append(group_ids)
                 if isinstance(targets, torch.Tensor):
                     all_targets.append(targets.cpu())
                 else:
@@ -902,6 +949,12 @@ class ExperimentRunner:
                 np.concatenate(all_instance_ids)
                 if all_instance_ids
                 and sum(len(x) for x in all_instance_ids) == len(predictions)
+                else None
+            )
+            groups = (
+                np.concatenate(all_groups)
+                if all_groups
+                and sum(len(x) for x in all_groups) == len(predictions)
                 else None
             )
 
@@ -919,18 +972,26 @@ class ExperimentRunner:
                 )
 
             y_train_for_mase = None
+            y_train_groups_for_mase = None
             if task == "forecasting":
                 try:
                     rng = np.random.default_rng(42)
                     sample_idx = rng.choice(
                         len(train_idx), size=min(5000, len(train_idx)), replace=False
                     )
-                    y_train_for_mase = np.array(
-                        [
-                            self.dataset[int(train_idx[i])][1].numpy()
-                            for i in sample_idx
-                        ]
-                    ).ravel()
+                    train_targets = []
+                    train_groups = []
+                    for i in sample_idx:
+                        _, target, metadata = self.dataset[int(train_idx[i])]
+                        train_targets.append(
+                            target.numpy() if hasattr(target, "numpy") else target
+                        )
+                        group_id = self._extract_single_group_id(metadata)
+                        if group_id is not None:
+                            train_groups.append(group_id)
+                    y_train_for_mase = np.array(train_targets)
+                    if len(train_groups) == len(train_targets):
+                        y_train_groups_for_mase = np.asarray(train_groups, dtype=object)
                     if target_mean is not None and target_std is not None:
                         y_train_for_mase = NormalizedSubset.denormalize_targets(
                             y_train_for_mase,
@@ -950,6 +1011,8 @@ class ExperimentRunner:
                 prediction_scores=prediction_scores,
                 instance_ids=instance_ids,
                 y_train=y_train_for_mase,
+                groups=groups,
+                y_train_groups=y_train_groups_for_mase,
             )
 
             # Log fold metrics to MLflow
@@ -1064,6 +1127,49 @@ class ExperimentRunner:
         if instance_ids.ndim == 0:
             instance_ids = instance_ids.reshape(1)
         return instance_ids
+
+    @staticmethod
+    def _extract_group_ids(metadata: Any) -> np.ndarray | None:
+        """Extract per-sample forecasting group IDs from collated metadata."""
+        if isinstance(metadata, dict):
+            for key in ("well_id", "well_idx", "well", "group", "instance_id"):
+                if key in metadata:
+                    values = metadata[key]
+                    break
+            else:
+                return None
+        elif isinstance(metadata, list) and metadata and isinstance(metadata[0], dict):
+            values = [
+                ExperimentRunner._extract_single_group_id(m)
+                for m in metadata
+            ]
+        else:
+            return None
+
+        if isinstance(values, torch.Tensor):
+            values = values.detach().cpu().numpy()
+        elif isinstance(values, tuple):
+            values = list(values)
+
+        values = np.asarray(values, dtype=object)
+        if values.ndim == 0:
+            values = values.reshape(1)
+        return values
+
+    @staticmethod
+    def _extract_single_group_id(metadata: Any) -> object | None:
+        """Extract one group ID from uncollated dataset metadata."""
+        if not isinstance(metadata, dict):
+            return None
+        for key in ("well_id", "well_idx", "well", "group", "instance_id"):
+            if key in metadata:
+                value = metadata[key]
+                if isinstance(value, torch.Tensor):
+                    if value.numel() == 1:
+                        return value.detach().cpu().item()
+                    return tuple(value.detach().cpu().numpy().tolist())
+                return value
+        return None
 
     @staticmethod
     def _aggregate_costs(costs: list[dict]) -> dict:

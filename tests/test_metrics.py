@@ -215,6 +215,43 @@ class TestForecastingMetrics:
             metrics_without_train["mase"]
         )
 
+    def test_mase_exposes_group_aware_aggregations(self) -> None:
+        predictions = np.array([[3.0], [5.0], [11.0], [13.0]])
+        targets = np.array([[2.0], [4.0], [10.0], [10.0]])
+        groups = np.array(["a", "a", "b", "b"])
+        y_train = np.array([[0.0], [1.0], [2.0], [3.0], [10.0], [12.0], [14.0], [16.0]])
+        y_train_groups = np.array(["a", "a", "a", "a", "b", "b", "b", "b"])
+
+        results = MetricRegistry.compute(
+            "forecasting",
+            predictions,
+            targets,
+            seasonal_period=1,
+            y_train=y_train,
+            groups=groups,
+            y_train_groups=y_train_groups,
+        )
+
+        assert results["mase_flat"] == pytest.approx(results["mae"] / (16.0 / 7.0))
+        assert results["mase_group_macro"] == pytest.approx((1.0 + 1.0) / 2.0)
+        assert results["mase_group_weighted"] == pytest.approx(1.0)
+        assert results["mase"] == pytest.approx(results["mase_group_weighted"])
+        assert results["mase_aggregation"] == "group_weighted"
+        assert results["mase_denominator_source"] == "grouped_train"
+
+    def test_mase_flat_fallback_marks_provenance(self) -> None:
+        results = MetricRegistry.compute(
+            "forecasting",
+            np.array([1.0, 2.0, 3.0]),
+            np.array([1.0, 2.5, 4.0]),
+            seasonal_period=1,
+            y_train=np.array([0.0, 1.0, 2.0, 3.0]),
+        )
+
+        assert results["mase"] == pytest.approx(results["mase_flat"])
+        assert results["mase_aggregation"] == "flat_fallback"
+        assert results["mase_denominator_source"] == "train_flat"
+
 
 # ═══════════════════════════════════════════════════════════════════
 # Anomaly Metrics Tests
@@ -253,6 +290,25 @@ class TestAnomalyMetrics:
         preds = np.array([1.5, 2.5, 3.5, 4.5, 5.5])
         results = MetricRegistry.compute("anomaly", preds, targets)
         assert results["error_mean"] == pytest.approx(0.5)
+
+    def test_2d_errors_are_per_sample_feature_rmse(self) -> None:
+        targets = np.zeros((2, 2))
+        preds = np.array([[3.0, 4.0], [0.0, 0.0]])
+        results = MetricRegistry.compute("anomaly", preds, targets)
+        assert results["error_mean"] == pytest.approx(np.sqrt(12.5) / 2.0)
+        assert "timestep_error_mean" not in results
+
+    def test_3d_errors_are_per_window_and_timestep_rmse(self) -> None:
+        targets = np.zeros((2, 2, 2))
+        preds = np.array(
+            [
+                [[3.0, 4.0], [0.0, 0.0]],
+                [[0.0, 0.0], [0.0, 0.0]],
+            ]
+        )
+        results = MetricRegistry.compute("anomaly", preds, targets)
+        assert results["error_mean"] == pytest.approx(1.25)
+        assert results["timestep_error_mean"] == pytest.approx(np.sqrt(12.5) / 4.0)
 
 
 # ═══════════════════════════════════════════════════════════════════

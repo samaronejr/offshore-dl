@@ -51,4 +51,4 @@ model:
       choices: [16, 32, 64, 128]
     scheduler:
       type: "categorical"
-      choices: ["cosine", "step", "onecycle"]
+      choices: ["cosine", "onecycle"]

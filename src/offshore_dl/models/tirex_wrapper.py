@@ -49,6 +49,8 @@ class TiRexWrapper(BaseModel):
         lr: Unused (zero-shot).
     """
 
+    is_zero_shot = True
+
     def __init__(
         self,
         task: str,
@@ -97,6 +99,7 @@ class TiRexWrapper(BaseModel):
             - anomaly: ``(batch, window, n_vars)`` — predicts each channel
         """
         self._load_model()
+        device = x.device
 
         if self.task == "forecasting":
             # Extract target channel: (batch, window)
@@ -108,7 +111,7 @@ class TiRexWrapper(BaseModel):
             # mean shape: (batch, horizon)
             if not isinstance(mean, torch.Tensor):
                 mean = torch.tensor(mean, dtype=torch.float32)
-            return mean
+            return mean.to(device=device)
 
         elif self.task == "anomaly":
             # NOTE: FMs forecast the NEXT window of values, not reconstruct the
@@ -125,7 +128,7 @@ class TiRexWrapper(BaseModel):
                 )
                 if not isinstance(mean, torch.Tensor):
                     mean = torch.tensor(mean, dtype=torch.float32)
-                all_preds.append(mean)
+                all_preds.append(mean.to(device=device))
 
             # Stack: (batch, window, n_vars)
             return torch.stack(all_preds, dim=-1)
@@ -135,7 +138,8 @@ class TiRexWrapper(BaseModel):
 
     def training_step(self, batch: tuple) -> torch.Tensor:
         warnings.warn("TiRex is zero-shot — training_step is a no-op", stacklevel=2)
-        return torch.tensor(0.0, requires_grad=True)
+        device = batch[0].device if batch and isinstance(batch[0], torch.Tensor) else self._dummy.device
+        return torch.tensor(0.0, device=device, requires_grad=True)
 
     def predict(self, batch: tuple) -> torch.Tensor:
         features, _targets, _metadata = batch

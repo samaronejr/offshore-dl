@@ -91,6 +91,7 @@ class InceptionTimeModel(BaseModel):
         n_vars: int = 27,
         loss_type: str = "ce",
         focal_gamma: float = 2.0,
+        label_smoothing: float = 0.0,
         n_filters: int = 32,
         kernel_sizes: Sequence[int] = (10, 20, 40),
         depth: int = 6,
@@ -106,6 +107,7 @@ class InceptionTimeModel(BaseModel):
             n_vars=n_vars,
             loss_type=loss_type,
             focal_gamma=focal_gamma,
+            label_smoothing=label_smoothing,
             class_weights=class_weights,
         )
         if task != "classification":

@@ -345,6 +345,51 @@ class _ScoreAwareModel(BaseModel):
         return torch.optim.SGD([self.dummy], lr=0.0)
 
 
+class _ZeroShotForecastModel(BaseModel):
+    """Zero-shot model that must be moved to device but not fitted."""
+
+    is_zero_shot = True
+    fit_calls = 0
+    to_calls = 0
+
+    def __init__(self, task="forecasting", n_vars=10, horizon=5) -> None:
+        super().__init__(task=task, n_vars=n_vars)
+        self.horizon = horizon
+        self.dummy = nn.Parameter(torch.tensor(0.0))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return torch.zeros(x.shape[0], self.horizon, device=x.device) + self.dummy
+
+    def to(self, *args, **kwargs):
+        type(self).to_calls += 1
+        return super().to(*args, **kwargs)
+
+    def training_step(self, batch):
+        type(self).fit_calls += 1
+        return torch.tensor(0.0, requires_grad=True)
+
+    def predict(self, batch):
+        return self.forward(batch[0])
+
+    def configure_optimizers(self, cfg=None) -> torch.optim.Optimizer:
+        return torch.optim.SGD([self.dummy], lr=0.0)
+
+
+class _GroupedForecastDataset(torch.utils.data.Dataset):
+    """Forecasting dataset with group metadata for MASE plumbing tests."""
+
+    def __init__(self) -> None:
+        self.X = torch.randn(12, 4, 2)
+        self.y = torch.arange(12, dtype=torch.float32).view(12, 1)
+        self.groups = np.array(["a"] * 6 + ["b"] * 6)
+
+    def __len__(self) -> int:
+        return len(self.X)
+
+    def __getitem__(self, i: int):
+        return self.X[i], self.y[i], {"well_id": self.groups[i]}
+
+
 class TestExperimentRunner:
     """Tests for the ExperimentRunner orchestration."""
 
@@ -419,6 +464,35 @@ class TestExperimentRunner:
         results = runner.run(use_mlflow=False)
         assert "mae" in results["fold_results"][0]["metrics"]
 
+    def test_forecasting_experiment_threads_grouped_mase_metadata(self) -> None:
+        ds = _GroupedForecastDataset()
+        cv = TemporalSplitCV(train_ratio=0.7)
+        cfg = OmegaConf.create(
+            {
+                "training": {
+                    "batch_size": 4,
+                    "max_epochs": 1,
+                    "early_stopping_patience": 5,
+                    "gradient_clip_val": 1.0,
+                },
+            }
+        )
+        runner = ExperimentRunner(
+            model_class=DummyModel,
+            dataset=ds,
+            cv_strategy=cv,
+            cfg=cfg,
+            model_kwargs={"task": "forecasting", "n_vars": 2, "horizon": 1},
+        )
+
+        results = runner.run(use_mlflow=False)
+        metrics = results["fold_results"][0]["metrics"]
+
+        assert "mase_flat" in metrics
+        assert "mase_group_macro" in metrics
+        assert "mase_group_weighted" in metrics
+        assert metrics["mase_aggregation"] in {"group_weighted", "flat_fallback"}
+
     def test_anomaly_experiment(self) -> None:
         ds = _make_tiny_dataset("anomaly")
         cv = TemporalSplitCV(train_ratio=0.7)
@@ -441,6 +515,39 @@ class TestExperimentRunner:
         )
         results = runner.run(use_mlflow=False)
         assert "error_mean" in results["fold_results"][0]["metrics"]
+
+    def test_zero_shot_experiment_skips_fit_and_returns_zero_epoch_history(self) -> None:
+        _ZeroShotForecastModel.fit_calls = 0
+        _ZeroShotForecastModel.to_calls = 0
+        ds = _make_tiny_dataset("forecasting", horizon=5)
+        cv = TemporalSplitCV(train_ratio=0.7)
+        cfg = OmegaConf.create(
+            {
+                "training": {
+                    "batch_size": 8,
+                    "max_epochs": 3,
+                    "early_stopping_patience": 5,
+                    "gradient_clip_val": 1.0,
+                },
+            }
+        )
+        runner = ExperimentRunner(
+            model_class=_ZeroShotForecastModel,
+            dataset=ds,
+            cv_strategy=cv,
+            cfg=cfg,
+            model_kwargs={"task": "forecasting", "n_vars": 10, "horizon": 5},
+        )
+
+        results = runner.run(use_mlflow=False)
+        history = results["fold_results"][0]["history"]
+
+        assert _ZeroShotForecastModel.fit_calls == 0
+        assert _ZeroShotForecastModel.to_calls >= 1
+        assert history["epochs_run"] == 0
+        assert history["best_epoch"] is None
+        assert history["final_train_loss"] is None
+        assert history["final_val_loss"] is None
 
     def test_aggregate_metrics(self) -> None:
         ds = _make_tiny_dataset("classification", n_classes=3, n=60)

@@ -57,12 +57,23 @@ def _simplex_etf(n_classes: int, embed_dim: int) -> torch.Tensor:
 
     Args:
         n_classes: Number of classes K.
-        embed_dim: Embedding dimension d (must be >= K-1).
+        embed_dim: Embedding dimension d (must be >= K for this SVD construction).
 
     Returns:
         ETF matrix of shape (K, d).
     """
     K = n_classes
+    if K < 2:
+        msg = f"n_classes must be at least 2 for simplex ETF, got {K}."
+        raise ValueError(msg)
+    if embed_dim < K:
+        msg = (
+            f"embed_dim must be at least n_classes for simplex ETF "
+            f"initialization with this construction, got embed_dim={embed_dim}, "
+            f"n_classes={K}."
+        )
+        raise ValueError(msg)
+
     identity = torch.eye(K)
     ones = torch.ones(K, K) / K
     centered = identity - ones
@@ -289,6 +300,7 @@ class DeepONetModel(BaseModel):
         weight_decay: float = 0.0001,
         loss_type: str = "ce",
         focal_gamma: float = 2.0,
+        label_smoothing: float = 0.0,
         class_weights: torch.Tensor | None = None,
         trunk_clf: bool = False,
         class_embed_dim: int = 8,
@@ -301,6 +313,7 @@ class DeepONetModel(BaseModel):
             n_vars=n_vars,
             loss_type=loss_type,
             focal_gamma=focal_gamma,
+            label_smoothing=label_smoothing,
             class_weights=class_weights,
         )
         self.rank = rank

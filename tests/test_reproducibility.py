@@ -99,3 +99,51 @@ class TestTrainingReproducibility:
             losses.append(history["train_loss"])
 
         assert losses[0] == losses[1], f"Losses differ: {losses[0]} vs {losses[1]}"
+
+class TestStrictReproducibility:
+    """Strict mode documents and enforces CUDA/CUBLAS limitations."""
+
+    def test_strict_uses_error_mode_for_deterministic_algorithms(self, monkeypatch) -> None:
+        import offshore_dl.utils.reproducibility as repro
+
+        calls = []
+        monkeypatch.setattr(torch.cuda, "is_initialized", lambda: False)
+        monkeypatch.setattr(torch.cuda, "is_available", lambda: False)
+        monkeypatch.setattr(
+            torch,
+            "use_deterministic_algorithms",
+            lambda enabled, warn_only=True: calls.append((enabled, warn_only)),
+        )
+
+        repro.set_global_seed(123, strict=True)
+
+        assert calls == [(True, False)]
+
+    def test_non_strict_uses_warn_only_for_deterministic_algorithms(self, monkeypatch) -> None:
+        import offshore_dl.utils.reproducibility as repro
+
+        calls = []
+        monkeypatch.setattr(torch.cuda, "is_initialized", lambda: False)
+        monkeypatch.setattr(torch.cuda, "is_available", lambda: False)
+        monkeypatch.setattr(
+            torch,
+            "use_deterministic_algorithms",
+            lambda enabled, warn_only=True: calls.append((enabled, warn_only)),
+        )
+
+        repro.set_global_seed(123)
+
+        assert calls == [(True, True)]
+
+    def test_strict_raises_if_cuda_initialized_before_cublas_config(self, monkeypatch) -> None:
+        import os
+        import offshore_dl.utils.reproducibility as repro
+
+        monkeypatch.delenv("CUBLAS_WORKSPACE_CONFIG", raising=False)
+        monkeypatch.setattr(torch.cuda, "is_initialized", lambda: True)
+
+        import pytest
+        with pytest.raises(RuntimeError, match="CUBLAS_WORKSPACE_CONFIG"):
+            repro.set_global_seed(123, strict=True)
+
+        assert os.environ.get("CUBLAS_WORKSPACE_CONFIG") is None

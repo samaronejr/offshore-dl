@@ -34,14 +34,19 @@ from offshore_dl.evaluation.cv import (
     GroupedExpandingWindowCV,
     SlidingWindowCV,
     StratifiedGroupKFoldSKLearn,
+    resolve_cv_gap,
 )
 from offshore_dl.models.chronos_wrapper import ChronosWrapper
 from offshore_dl.models.convtran import ConvTranModel
 from offshore_dl.models.deeponet import DeepONetModel
 from offshore_dl.models.inception_time import InceptionTimeModel
 from offshore_dl.models.lstm import LSTMModel
-from offshore_dl.models.patchtst import PatchTSTModel
 from offshore_dl.models.tcn import TCNModel
+
+try:
+    from offshore_dl.models.patchtst import PatchTSTModel
+except (ImportError, ModuleNotFoundError, RuntimeError):
+    PatchTSTModel = None
 
 try:
     from offshore_dl.models.timesfm_wrapper import TimesFMWrapper
@@ -71,6 +76,72 @@ from offshore_dl.training.experiment import ExperimentRunner
 from offshore_dl.utils.config import load_merged_config
 from offshore_dl.utils.reproducibility import set_global_seed
 
+
+def _cfg_get(node, key: str, default=None):
+    """Return ``node.key`` for OmegaConf/dict-like configs without requiring it."""
+    if node is None:
+        return default
+    if hasattr(node, key):
+        return getattr(node, key)
+    if isinstance(node, dict):
+        return node.get(key, default)
+    return default
+
+
+def _cv_setting(data_cfg, legacy_cv_cfg, top_level_key: str, legacy_key: str, default=None):
+    """Read new top-level CV fields while preserving older nested test shape."""
+    value = _cfg_get(data_cfg, top_level_key)
+    if value is not None:
+        return value
+    return _cfg_get(legacy_cv_cfg, legacy_key, default)
+
+
+def _forecast_cv_gap(cfg, ds) -> int:
+    """Resolve forecasting CV embargo gap from explicit policy config.
+
+    Preferred config shape is ``data.cv_gap_policy`` / ``data.cv_gap``.
+    The older nested ``data.cv.gap_policy`` / ``data.cv.gap`` shape is accepted
+    for compatibility with tests and external overrides.
+    """
+    data_cfg = _cfg_get(cfg, "data")
+    legacy_cv_cfg = _cfg_get(data_cfg, "cv")
+    explicit_gap = _cv_setting(data_cfg, legacy_cv_cfg, "cv_gap", "gap")
+    if explicit_gap is not None:
+        return int(explicit_gap)
+
+    policy = _cv_setting(
+        data_cfg, legacy_cv_cfg, "cv_gap_policy", "gap_policy", "causal_horizon"
+    )
+    horizon = int(getattr(ds, "horizon", _cfg_get(data_cfg, "horizon", 0)))
+    input_window = int(
+        getattr(ds, "input_window", getattr(ds, "window_size", ds[0][0].shape[0]))
+    )
+    dataset_gap = int(
+        getattr(ds, "gap", _cfg_get(_cfg_get(data_cfg, "forecasting"), "gap", 0))
+    )
+    return resolve_cv_gap(
+        policy,
+        task="forecasting",
+        input_window=input_window,
+        horizon=horizon,
+        dataset_gap=dataset_gap,
+    )
+
+
+def _cdf_cv_gap(cfg) -> int:
+    """Resolve CDF/anomaly CV embargo gap from explicit policy config."""
+    data_cfg = _cfg_get(cfg, "data")
+    legacy_cv_cfg = _cfg_get(data_cfg, "cv")
+    explicit_gap = _cv_setting(data_cfg, legacy_cv_cfg, "cv_gap", "gap")
+    if explicit_gap is not None:
+        return int(explicit_gap)
+
+    policy = _cv_setting(
+        data_cfg, legacy_cv_cfg, "cv_gap_policy", "gap_policy", "strict_raw_row"
+    )
+    window_size = int(_cfg_get(_cfg_get(data_cfg, "preprocessing"), "window_size", 1))
+    return resolve_cv_gap(policy, task="anomaly", window_size=window_size)
+
 logger = logging.getLogger(__name__)
 
 
@@ -81,13 +152,14 @@ logger = logging.getLogger(__name__)
 MODEL_REGISTRY: dict[str, type] = {
     "lstm": LSTMModel,
     "deeponet": DeepONetModel,
-    "patchtst": PatchTSTModel,
     "tcn": TCNModel,
     "inception_time": InceptionTimeModel,
     "convtran": ConvTranModel,
     "chronos": ChronosWrapper,
 }
 
+if PatchTSTModel is not None:
+    MODEL_REGISTRY["patchtst"] = PatchTSTModel
 if TimesFMWrapper is not None:
     MODEL_REGISTRY["timesfm"] = TimesFMWrapper
 if TiRexWrapper is not None:
@@ -178,6 +250,7 @@ DATASET_REGISTRY: dict[str, dict] = {
             groups=np.array([well_idx for well_idx, _ in ds._samples], dtype=np.int32),
             n_splits=3,
             min_train_ratio=0.5,
+            gap=_forecast_cv_gap(cfg, ds),
         ),
         "model_kwargs": lambda ds, cfg: {
             "task": "forecasting",
@@ -195,6 +268,7 @@ DATASET_REGISTRY: dict[str, dict] = {
             groups=np.array([well_idx for well_idx, _ in ds._samples], dtype=np.int32),
             n_splits=3,
             min_train_ratio=0.5,
+            gap=_forecast_cv_gap(cfg, ds),
         ),
         "model_kwargs": lambda ds, cfg: {
             "task": "forecasting",
@@ -212,6 +286,7 @@ DATASET_REGISTRY: dict[str, dict] = {
             groups=np.array([well_idx for well_idx, _ in ds._samples], dtype=np.int32),
             n_splits=3,
             min_train_ratio=0.5,
+            gap=_forecast_cv_gap(cfg, ds),
         ),
         "model_kwargs": lambda ds, cfg: {
             "task": "forecasting",
@@ -229,6 +304,7 @@ DATASET_REGISTRY: dict[str, dict] = {
             groups=np.array([well_idx for well_idx, _ in ds._samples], dtype=np.int32),
             n_splits=3,
             min_train_ratio=0.5,
+            gap=_forecast_cv_gap(cfg, ds),
         ),
         "model_kwargs": lambda ds, cfg: {
             "task": "forecasting",
@@ -245,6 +321,7 @@ DATASET_REGISTRY: dict[str, dict] = {
         "cv_factory": lambda cfg, ds: SlidingWindowCV(
             n_splits=3,
             train_ratio=cfg.data.preprocessing.train_ratio,
+            gap=_cdf_cv_gap(cfg),
         ),
         "model_kwargs": lambda ds, cfg: {
             "task": "anomaly",
@@ -326,7 +403,7 @@ def build_experiment(
                 flat_model_cfg.pop(reserved_key, None)
             model_kwargs.update(flat_model_cfg)
 
-    for key in ("loss_type", "focal_gamma"):
+    for key in ("loss_type", "focal_gamma", "label_smoothing"):
         if hasattr(cfg, "model") and hasattr(cfg.model, key):
             model_kwargs[key] = getattr(cfg.model, key)
 

@@ -11,6 +11,7 @@ from offshore_dl.data.transforms import (
     causal_forward_fill,
     compute_class_weights,
     compute_zscore_stats,
+    detect_shutdowns,
     detect_frozen_values,
     sliding_window_segmentation,
 )
@@ -181,3 +182,22 @@ class TestComputeClassWeights:
         labels = np.array([0, 0, 1, 1, np.nan, np.nan])
         weights = compute_class_weights(labels)
         assert len(weights) == 2
+
+
+class TestDetectShutdowns:
+    """Causal zero-run shutdown detection."""
+
+    def test_threshold_two_flags_only_second_zero_after_nonzero(self) -> None:
+        df = pd.DataFrame({"gas": [5.0, 0.0, 0.0, 3.0]})
+        result = detect_shutdowns(df, gas_column="gas", zero_days_threshold=2)
+        assert result["is_shutdown"].tolist() == [False, False, True, False]
+
+    def test_run_at_beginning_is_causal(self) -> None:
+        df = pd.DataFrame({"gas": [0.0, 0.0, 0.0, 1.0]})
+        result = detect_shutdowns(df, gas_column="gas", zero_days_threshold=2)
+        assert result["is_shutdown"].tolist() == [False, True, True, False]
+
+    def test_nan_counts_as_zero_and_resets_after_nonzero(self) -> None:
+        df = pd.DataFrame({"gas": [1.0, np.nan, 0.0, 2.0, np.nan]})
+        result = detect_shutdowns(df, gas_column="gas", zero_days_threshold=2)
+        assert result["is_shutdown"].tolist() == [False, False, True, False, False]

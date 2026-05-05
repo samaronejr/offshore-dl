@@ -17,6 +17,10 @@ from offshore_dl.evaluation.cv import (
     SlidingWindowCV,
     StratifiedGroupKFoldSKLearn,
     TemporalSplitCV,
+    resolve_cv_gap,
+    resolve_cv_gap_from_config,
+    target_interval,
+    validate_raw_row_embargo,
 )
 
 
@@ -67,6 +71,81 @@ class TestExpandingWindowCV:
         for train_idx, val_idx in splits:
             assert len(train_idx) > 0
             assert len(val_idx) > 0
+
+
+class TestCVGapPolicy:
+    """Explicit embargo policy helpers."""
+
+    def test_cdf_strict_raw_row_gap_from_config(self) -> None:
+        cfg = {
+            "task": "anomaly",
+            "cv_gap_policy": "strict_raw_row",
+            "cv_gap": None,
+            "preprocessing": {"window_size": 48},
+        }
+        assert resolve_cv_gap_from_config(cfg) == 47
+
+    def test_forecasting_causal_horizon_gap_from_config(self) -> None:
+        cfg = {
+            "task": "forecasting",
+            "cv_gap_policy": "causal_horizon",
+            "cv_gap": None,
+            "forecasting": {"input_window": 90, "default_horizon": 30, "gap": 0},
+        }
+        assert resolve_cv_gap_from_config(cfg) == 30
+
+    def test_forecasting_strict_raw_row_gap(self) -> None:
+        assert resolve_cv_gap(
+            "strict_raw_row",
+            task="forecasting",
+            input_window=90,
+            dataset_gap=3,
+            horizon=30,
+        ) == 122
+
+    def test_raw_row_embargo_detects_overlap_and_strict_gap_prevents_it(self) -> None:
+        train_idx = np.array([0, 1])
+        val_idx = np.array([2])
+        with pytest.raises(ValueError, match="Raw-row embargo violation"):
+            validate_raw_row_embargo(
+                train_idx,
+                val_idx,
+                task="anomaly",
+                window_size=4,
+            )
+
+        train_idx = np.array([0])
+        val_idx = np.array([4])
+        assert validate_raw_row_embargo(
+            train_idx,
+            val_idx,
+            task="anomaly",
+            window_size=4,
+        )["passed"]
+
+    def test_forecasting_causal_horizon_documents_target_embargo(self) -> None:
+        input_window = 5
+        horizon = 3
+        train_target = target_interval(0, input_window=input_window, horizon=horizon)
+        val_target = target_interval(3 + horizon, input_window=input_window, horizon=horizon)
+        assert train_target[1] < val_target[0]
+
+    def test_forecasting_strict_raw_row_embargo(self) -> None:
+        with pytest.raises(ValueError):
+            validate_raw_row_embargo(
+                [0],
+                [3],
+                task="forecasting",
+                input_window=5,
+                horizon=2,
+            )
+        assert validate_raw_row_embargo(
+            [0],
+            [7],
+            task="forecasting",
+            input_window=5,
+            horizon=2,
+        )["passed"]
 
 
 # ═══════════════════════════════════════════════════════════════════

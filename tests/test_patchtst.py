@@ -266,3 +266,39 @@ class TestPatchTSTIntegration:
         )
         results = runner.run(use_mlflow=False)
         assert "error_mean" in results["fold_results"][0]["metrics"]
+
+
+class TestPatchTSTPatchValidation:
+    def test_patch_len_must_fit_inside_window(self) -> None:
+        with pytest.raises(ValueError, match="patch_len must be <= window_size"):
+            PatchTSTModel(
+                task="classification",
+                n_vars=3,
+                n_classes=2,
+                window_size=4,
+                patch_len=8,
+                stride=1,
+                d_model=16,
+                n_heads=2,
+                n_layers=1,
+                d_ff=32,
+            )
+
+    @pytest.mark.parametrize(
+        ("patch_len", "stride", "match"),
+        [(0, 1, "patch_len must be positive"), (2, 0, "stride must be positive")],
+    )
+    def test_patch_parameters_must_be_positive(self, patch_len, stride, match) -> None:
+        with pytest.raises(ValueError, match=match):
+            PatchTSTModel(
+                task="classification",
+                n_vars=3,
+                n_classes=2,
+                window_size=4,
+                patch_len=patch_len,
+                stride=stride,
+                d_model=16,
+                n_heads=2,
+                n_layers=1,
+                d_ff=32,
+            )

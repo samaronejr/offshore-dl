@@ -144,3 +144,8 @@ class TestBackwardCompatibility:
         x = torch.randn(4, 14, 27)
         out = model(x)
         assert out.shape == (4, 10)
+
+
+def test_simplex_etf_rejects_embed_dim_smaller_than_class_count() -> None:
+    with pytest.raises(ValueError, match="embed_dim must be at least n_classes"):
+        _simplex_etf(n_classes=10, embed_dim=9)
