@@ -64,6 +64,14 @@ class TestExpandingWindowCV:
         for train_idx, val_idx in splits:
             assert val_idx.min() - train_idx.max() > 1, "Gap should separate train/val"
 
+    def test_gap_preserves_validation_block_size_when_space_remains(self) -> None:
+        cv = ExpandingWindowCV(n_splits=3, min_train_ratio=0.5, gap=10)
+        splits = cv.get_splits(300)
+
+        assert [len(val_idx) for _, val_idx in splits[:2]] == [50, 50]
+        for train_idx, val_idx in splits:
+            assert val_idx.min() - train_idx.max() == 11
+
     def test_small_dataset(self) -> None:
         cv = ExpandingWindowCV(n_splits=3, min_train_ratio=0.5)
         splits = cv.get_splits(10)
@@ -225,6 +233,24 @@ class TestGroupedExpandingWindowCV:
                 assert len(group_train) > 0
                 assert len(group_val) > 0
                 assert group_train.max() < group_val.min()
+
+    def test_grouped_gap_preserves_per_group_validation_block_size(self) -> None:
+        groups = np.array(["well_a"] * 300 + ["well_b"] * 300)
+        cv = GroupedExpandingWindowCV(
+            groups=groups,
+            n_splits=3,
+            min_train_ratio=0.5,
+            gap=10,
+        )
+        splits = cv.get_splits(len(groups))
+
+        assert len(splits) == 3
+        for train_idx, val_idx in splits[:2]:
+            for group in np.unique(groups):
+                group_train = train_idx[groups[train_idx] == group]
+                group_val = val_idx[groups[val_idx] == group]
+                assert len(group_val) == 50
+                assert group_val.min() - group_train.max() == 11
 
 
 # ═══════════════════════════════════════════════════════════════════

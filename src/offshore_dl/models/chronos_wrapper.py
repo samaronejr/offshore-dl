@@ -93,8 +93,9 @@ class ChronosWrapper(BaseModel):
         device = x.device
 
         if self.task == "forecasting":
-            # Extract target channel: (batch, window)
-            context = x[:, :, self.target_channel]
+            # Extract target channel on CPU because the Chronos pipeline is
+            # loaded with ``device_map="cpu"``.
+            context = x[:, :, self.target_channel].detach().cpu()
             pred_length = self.horizon
 
             # Chronos predict: returns (batch, n_samples, pred_length)
@@ -114,7 +115,7 @@ class ChronosWrapper(BaseModel):
             # Per-channel prediction for reconstruction
             all_preds = []
             for ch in range(self.n_vars):
-                context = x[:, :, ch]  # (batch, window)
+                context = x[:, :, ch].detach().cpu()  # (batch, window)
                 with torch.no_grad():
                     samples = self._pipeline.predict(context, prediction_length=self.window_size)
                 median = samples.median(dim=1).values  # (batch, window)

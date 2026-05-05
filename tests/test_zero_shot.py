@@ -7,14 +7,20 @@ from offshore_dl.models.chronos_wrapper import ChronosWrapper
 
 
 class _DummyChronosPipeline:
+    def __init__(self) -> None:
+        self.seen_devices: list[str] = []
+
     def predict(self, context: torch.Tensor, prediction_length: int) -> torch.Tensor:
+        self.seen_devices.append(context.device.type)
         batch = context.shape[0]
         base = context[:, -1:].repeat(1, prediction_length).to(dtype=torch.float32)
         return base.unsqueeze(1).repeat(1, 3, 1)
 
 
-def _install_dummy_chronos(model: ChronosWrapper) -> None:
-    model._pipeline = _DummyChronosPipeline()
+def _install_dummy_chronos(model: ChronosWrapper) -> _DummyChronosPipeline:
+    pipeline = _DummyChronosPipeline()
+    model._pipeline = pipeline
+    return pipeline
 
 
 
@@ -78,6 +84,37 @@ class TestChronosWrapper:
         x = torch.randn(3, 6, 2)
         out = model(x)
         assert model.is_zero_shot is True
+        assert out.device == x.device
+
+    def test_forecasting_passes_cpu_context_to_pipeline(self) -> None:
+        model = ChronosWrapper(task="forecasting", n_vars=2, horizon=4, window_size=6)
+        pipeline = _install_dummy_chronos(model)
+        x = torch.randn(3, 6, 2)
+
+        out = model(x)
+
+        assert pipeline.seen_devices == ["cpu"]
+        assert out.device == x.device
+
+    def test_anomaly_passes_cpu_contexts_to_pipeline(self) -> None:
+        model = ChronosWrapper(task="anomaly", n_vars=3, window_size=6)
+        pipeline = _install_dummy_chronos(model)
+        x = torch.randn(3, 6, 3)
+
+        out = model(x)
+
+        assert pipeline.seen_devices == ["cpu", "cpu", "cpu"]
+        assert out.device == x.device
+
+    @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA not available")
+    def test_cuda_input_passes_cpu_context_and_returns_cuda_output(self) -> None:
+        model = ChronosWrapper(task="forecasting", n_vars=2, horizon=4, window_size=6)
+        pipeline = _install_dummy_chronos(model)
+        x = torch.randn(3, 6, 2, device="cuda")
+
+        out = model(x)
+
+        assert pipeline.seen_devices == ["cpu"]
         assert out.device == x.device
 
     def test_training_step_loss_follows_batch_device(self) -> None:

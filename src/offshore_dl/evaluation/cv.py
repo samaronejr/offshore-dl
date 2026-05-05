@@ -439,7 +439,7 @@ class ExpandingWindowCV(BaseCVStrategy):
         for i in range(self.n_splits):
             train_end = min_train + i * block_size
             val_start = train_end + self.gap
-            val_end = min(train_end + block_size, n_samples)
+            val_end = min(val_start + block_size, n_samples)
 
             if val_start >= n_samples or val_start >= val_end:
                 break

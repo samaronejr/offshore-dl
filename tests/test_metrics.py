@@ -252,6 +252,77 @@ class TestForecastingMetrics:
         assert results["mase_aggregation"] == "flat_fallback"
         assert results["mase_denominator_source"] == "train_flat"
 
+    def test_mase_flat_zero_denominator_nonzero_error_is_inf(self) -> None:
+        results = MetricRegistry.compute(
+            "forecasting",
+            np.array([2.0, 2.0, 2.0]),
+            np.array([1.0, 1.0, 1.0]),
+            seasonal_period=1,
+            y_train=np.ones(4),
+        )
+
+        assert np.isinf(results["mase_flat"])
+        assert np.isinf(results["mase"])
+        assert results["mase_aggregation"] == "flat_fallback"
+
+    def test_mase_flat_zero_denominator_perfect_forecast_is_zero(self) -> None:
+        results = MetricRegistry.compute(
+            "forecasting",
+            np.array([1.0, 1.0, 1.0]),
+            np.array([1.0, 1.0, 1.0]),
+            seasonal_period=1,
+            y_train=np.ones(4),
+        )
+
+        assert results["mase_flat"] == pytest.approx(0.0)
+        assert results["mase"] == pytest.approx(0.0)
+
+    def test_mase_grouped_zero_denominator_nonzero_error_is_inf(self) -> None:
+        results = MetricRegistry.compute(
+            "forecasting",
+            np.array([[2.0], [2.0], [5.0], [5.0]]),
+            np.array([[1.0], [1.0], [3.0], [3.0]]),
+            seasonal_period=1,
+            groups=np.array(["a", "a", "b", "b"]),
+            y_train=np.array([[1.0], [1.0], [1.0], [3.0], [3.0], [3.0]]),
+            y_train_groups=np.array(["a", "a", "a", "b", "b", "b"]),
+        )
+
+        assert np.isinf(results["mase_group_macro"])
+        assert np.isinf(results["mase_group_weighted"])
+        assert np.isinf(results["mase"])
+
+    def test_mase_grouped_zero_denominator_perfect_forecast_is_zero(self) -> None:
+        results = MetricRegistry.compute(
+            "forecasting",
+            np.array([[1.0], [1.0], [3.0], [3.0]]),
+            np.array([[1.0], [1.0], [3.0], [3.0]]),
+            seasonal_period=1,
+            groups=np.array(["a", "a", "b", "b"]),
+            y_train=np.array([[1.0], [1.0], [1.0], [3.0], [3.0], [3.0]]),
+            y_train_groups=np.array(["a", "a", "a", "b", "b", "b"]),
+        )
+
+        assert results["mase_group_macro"] == pytest.approx(0.0)
+        assert results["mase_group_weighted"] == pytest.approx(0.0)
+        assert results["mase"] == pytest.approx(0.0)
+
+    def test_mase_grouped_mixed_finite_and_inf_preserves_inf_aggregates(self) -> None:
+        results = MetricRegistry.compute(
+            "forecasting",
+            np.array([[2.0], [4.0], [11.0], [11.0]]),
+            np.array([[1.0], [3.0], [10.0], [10.0]]),
+            seasonal_period=1,
+            groups=np.array(["finite", "finite", "zero", "zero"]),
+            y_train=np.array([[0.0], [1.0], [2.0], [10.0], [10.0], [10.0]]),
+            y_train_groups=np.array(["finite", "finite", "finite", "zero", "zero", "zero"]),
+        )
+
+        assert np.isinf(results["mase_group_macro"])
+        assert np.isinf(results["mase_group_weighted"])
+        assert np.isinf(results["mase"])
+        assert results["mase_aggregation"] == "group_weighted"
+
 
 # ═══════════════════════════════════════════════════════════════════
 # Anomaly Metrics Tests

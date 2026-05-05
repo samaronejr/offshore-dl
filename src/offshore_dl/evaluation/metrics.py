@@ -301,9 +301,9 @@ class MetricRegistry:
             return float("inf"), source
         naive_errors = np.abs(scale_data[seasonal_period:] - scale_data[:-seasonal_period])
         naive_mae = float(np.mean(naive_errors))
-        if naive_mae <= 1e-12:
-            return 0.0, source
         mae = float(mean_absolute_error(targets, predictions))
+        if naive_mae <= 1e-12:
+            return (0.0 if mae <= 1e-12 else float("inf")), source
         return mae / naive_mae, source
 
     @staticmethod
@@ -316,7 +316,11 @@ class MetricRegistry:
         y_train_groups: np.ndarray | None,
         seasonal_period: int,
     ) -> dict[str, float] | None:
-        """Compute macro/weighted group MASE when group metadata is aligned."""
+        """Compute macro/weighted group MASE when group metadata is aligned.
+
+        Grouped denominators use available per-group training or evaluation target
+        window samples, not reconstructed contiguous raw per-well time series.
+        """
         if groups is None:
             return None
 
@@ -352,10 +356,13 @@ class MetricRegistry:
                 group_mase = float("inf")
             else:
                 naive_mae = float(np.mean(np.abs(scale_data[seasonal_period:] - scale_data[:-seasonal_period])))
-                group_mase = 0.0 if naive_mae <= 1e-12 else group_mae / naive_mae
-            if np.isfinite(group_mase):
-                group_mases.append(group_mase)
-                group_weights.append(int(mask.sum()))
+                group_mase = (
+                    0.0 if naive_mae <= 1e-12 and group_mae <= 1e-12
+                    else float("inf") if naive_mae <= 1e-12
+                    else group_mae / naive_mae
+                )
+            group_mases.append(group_mase)
+            group_weights.append(int(mask.sum()))
 
         if not group_mases:
             return None

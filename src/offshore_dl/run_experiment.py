@@ -332,6 +332,28 @@ DATASET_REGISTRY: dict[str, dict] = {
 }
 
 
+def _sanitize_patchtst_short_window(model_kwargs: dict) -> None:
+    """Clamp generic PatchTST kwargs that are invalid only for short windows.
+
+    Direct ``PatchTSTModel`` construction remains fail-fast; this helper is
+    applied only by ``build_experiment()`` after dataset/config kwargs are
+    merged so short-window datasets do not inherit unsafe default patch config.
+    """
+    window_size = model_kwargs.get("window_size")
+    patch_len = model_kwargs.get("patch_len")
+    stride = model_kwargs.get("stride")
+
+    if window_size is None or patch_len is None:
+        return
+
+    if patch_len > window_size and window_size > 0:
+        patch_len = max(1, window_size)
+        model_kwargs["patch_len"] = patch_len
+
+    if stride is not None and stride > patch_len and patch_len > 0:
+        model_kwargs["stride"] = patch_len
+
+
 def build_experiment(
     model_name: str,
     dataset_name: str,
@@ -413,6 +435,9 @@ def build_experiment(
             model_kwargs["lr"] = cfg.model.training.lr
         if hasattr(cfg.model.training, "weight_decay"):
             model_kwargs["weight_decay"] = cfg.model.training.weight_decay
+
+    if model_name == "patchtst":
+        _sanitize_patchtst_short_window(model_kwargs)
 
     runner = ExperimentRunner(
         model_class=model_class,
