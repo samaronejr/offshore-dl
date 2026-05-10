@@ -1,0 +1,9 @@
+# Stage 1 3W classification HPO manifest.
+# One model per SLURM array task; blank/comment lines are ignored.
+lstm
+patchtst
+deeponet
+fkmad
+mambasl
+convtimenet
+random_forest

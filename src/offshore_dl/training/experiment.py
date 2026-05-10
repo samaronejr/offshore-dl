@@ -322,12 +322,16 @@ class ExperimentRunner:
         self,
         experiment_name: str | None = None,
         use_mlflow: bool = True,
+        fold_callback: Any | None = None,
     ) -> dict:
         """Run the full experiment across CV folds.
 
         Args:
             experiment_name: MLflow experiment name override.
             use_mlflow: Enable/disable MLflow logging.
+            fold_callback: Optional callback invoked after each completed fold
+                with ``(fold_idx, cumulative_fold_results)``. HPO uses this to
+                report intermediate values and prune weak trials.
 
         Returns:
             Dict with 'fold_results' (list of per-fold dicts),
@@ -398,6 +402,8 @@ class ExperimentRunner:
                 fold_results.append(fold_result)
                 if "cost" in fold_result:
                     all_costs.append(fold_result["cost"])
+                if fold_callback is not None:
+                    fold_callback(fold_idx, fold_results)
 
         finally:
             if parent_run and mlflow:

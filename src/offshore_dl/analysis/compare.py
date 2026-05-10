@@ -51,13 +51,46 @@ ALL_MODELS = [
 ALL_TRACKS = ["3w", "ganymede", "cdf"]
 
 
+def _contains_result_jsons(root: Path) -> bool:
+    """Return True when ``root`` looks like a benchmark result directory."""
+    if not root.exists():
+        return False
+    if (root / "tirex_3w_nested.json").exists():
+        return True
+    for model in [*ALL_MODELS, "baselines"]:
+        model_dir = root / model
+        if model_dir.is_dir() and any(model_dir.glob("*.json")):
+            return True
+    return False
+
+
+def resolve_results_dir(results_dir: str | Path = "results") -> Path:
+    """Resolve legacy ``results`` roots after pre/post-fix partitioning.
+
+    Existing analysis entry points historically accepted ``results/`` directly.
+    After benchmark outputs were partitioned into ``results/pre_fix`` and
+    ``results/post_fix``, callers should still be able to pass the parent root.
+    Prefer repaired outputs when present, otherwise fall back to the archived
+    pre-fix snapshot.
+    """
+    root = Path(results_dir)
+    if _contains_result_jsons(root):
+        return root
+
+    for child_name in ("post_fix", "pre_fix"):
+        child = root / child_name
+        if _contains_result_jsons(child):
+            return child
+    return root
+
+
 def load_all_results(results_dir: str | Path = "results") -> dict[str, dict[str, dict]]:
     """Load all model results from disk.
 
     Returns:
         Nested dict: ``results[model][track] = result_dict``.
     """
-    results_dir = Path(results_dir)
+    results_dir = resolve_results_dir(results_dir)
     all_results: dict[str, dict[str, dict]] = {}
 
     for model in ALL_MODELS:
@@ -486,6 +519,7 @@ def load_multihorizon_results(
         ``{model: {horizon: result_dict}}`` — only populated for models
         that have ``ganymede_h{h}_multi_well.json`` files.
     """
+    results_dir = resolve_results_dir(results_dir)
     mh: dict[str, dict[int, dict]] = {}
     for model in ALL_MODELS:
         model_horizons: dict[int, dict] = {}
@@ -503,6 +537,7 @@ def load_multihorizon_results(
 
 def load_baseline_mae(results_dir: Path) -> float | None:
     """Load seasonal naive baseline MAE for table footer."""
+    results_dir = resolve_results_dir(results_dir)
     path = results_dir / "baselines" / "ganymede_seasonal_naive_baseline.json"
     if not path.exists():
         logger.warning("Missing baseline file: %s", path)
@@ -594,6 +629,7 @@ def load_perwell_results(
         ``perwell_results = {model: {well_name: result_dict}}`` and
         ``multiwell_results = {model: result_dict}``.
     """
+    results_dir = resolve_results_dir(results_dir)
     perwell: dict[str, dict[str, dict]] = {}
     multiwell: dict[str, dict] = {}
 

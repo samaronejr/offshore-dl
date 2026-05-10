@@ -335,6 +335,26 @@ class ThreeWFeatureDataset(BaseDataset):
             n,
         )
 
+    def release_inner_cache(self) -> None:
+        """Drop wrapped raw 3W caches after feature pre-computation.
+
+        ``ThreeWFeatureDataset`` serves its own pre-computed statistical
+        descriptor cache from ``self._feature_cache``.  The wrapped
+        ``ThreeWDataset`` may still retain large raw DataFrame/array caches that
+        are useful only while descriptors are being built.  HPO jobs can call
+        this after initialization to reclaim RAM before training starts.
+
+        This method intentionally clears only the wrapped dataset caches; it
+        does not touch this feature dataset's descriptor cache.
+        """
+        data_cache = getattr(self._inner, "_data_cache", None)
+        if data_cache is not None:
+            data_cache.clear()
+
+        feature_cache = getattr(self._inner, "_feature_cache", None)
+        if feature_cache is not None:
+            feature_cache.clear()
+
     def __getitem__(self, index: int) -> tuple[torch.Tensor, int, dict]:
         features = self._feature_cache[index]  # (14, n_vars) pre-computed
         return torch.from_numpy(features), self._labels[index], self._metadata[index]

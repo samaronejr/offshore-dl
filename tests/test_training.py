@@ -15,6 +15,7 @@ from offshore_dl.models.base import BaseModel, model_summary
 from offshore_dl.models.dummy import DummyModel
 from offshore_dl.training.experiment import ExperimentRunner, NormalizedSubset
 from offshore_dl.training.optuna_utils import (
+    OptunaObjective,
     convergence_callback,
     create_study,
     run_hpo,
@@ -250,6 +251,31 @@ class TestTrainer:
         trainer = Trainer(device="cpu")
         history = trainer.fit(model, train_loader, val_loader, max_epochs=2)
         assert len(history["train_loss"]) == 2
+
+    def test_classification_checkpoint_metric_tracks_f1_macro(self) -> None:
+        model = DummyModel(task="classification", n_vars=10, n_classes=3)
+        train_loader, val_loader = _make_classification_loaders(
+            n_vars=10, n_classes=3, batch_size=4
+        )
+        cfg = OmegaConf.create(
+            {
+                "training": {
+                    "batch_size": 4,
+                    "max_epochs": 2,
+                    "early_stopping_patience": 5,
+                    "gradient_clip_val": 1.0,
+                    "checkpoint_metric": "f1_macro",
+                    "checkpoint_mode": "max",
+                }
+            }
+        )
+        trainer = Trainer(cfg=cfg, device="cpu")
+        history = trainer.fit(model, train_loader, val_loader)
+
+        assert history["best_metric_name"] == "f1_macro"
+        assert history["best_metric_mode"] == "max"
+        assert history["best_metric"] is not None
+        assert "f1_macro" in history["val_metrics"][0]
 
 
 class TestCostTracker:
@@ -956,6 +982,31 @@ class TestOptunaIntegration:
         assert result["n_trials_completed"] == 2
         assert "best_value" in result
         assert "best_params" in result
+
+    def test_optuna_objective_reports_fold_intermediates(self) -> None:
+        class FakeTrial:
+            def __init__(self):
+                self.reports = []
+
+            def report(self, value, step):
+                self.reports.append((value, step))
+
+            def should_prune(self):
+                return False
+
+        objective = OptunaObjective(
+            model_class=DummyModel,
+            dataset=_make_tiny_dataset("classification", n=10, n_classes=3),
+            cv_strategy=TemporalSplitCV(train_ratio=0.7),
+            base_cfg=OmegaConf.create({}),
+            model_kwargs={"task": "classification", "n_vars": 10, "n_classes": 3},
+            primary_metric="f1_macro",
+        )
+        trial = FakeTrial()
+        callback = objective._make_fold_callback(trial)
+        callback(0, [{"metrics": {"f1_macro": 0.25}, "history": {}}])
+
+        assert trial.reports == [(0.25, 0)]
 
 
 # ═══════════════════════════════════════════════════════════════════
