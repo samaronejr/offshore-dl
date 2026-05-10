@@ -17,6 +17,7 @@ import torch
 import torch.nn as nn
 from omegaconf import DictConfig
 
+from offshore_dl.evaluation.metrics import MetricRegistry
 from offshore_dl.models.base import model_summary
 
 logger = logging.getLogger(__name__)
@@ -71,33 +72,55 @@ class CostTracker:
 
 
 class EarlyStopping:
-    """Stop training when validation loss stops improving.
+    """Stop training when the monitored validation quantity stops improving.
 
     Args:
         patience: Number of epochs to wait for improvement.
         min_delta: Minimum change to qualify as improvement.
+        mode: ``"min"`` for loss-like metrics or ``"max"`` for score-like
+            metrics.
     """
 
-    def __init__(self, patience: int = 10, min_delta: float = 0.0) -> None:
+    def __init__(
+        self,
+        patience: int = 10,
+        min_delta: float = 0.0,
+        mode: str = "min",
+    ) -> None:
+        if mode not in {"min", "max"}:
+            msg = f"Unknown early stopping mode: {mode!r}"
+            raise ValueError(msg)
         self.patience = patience
         self.min_delta = min_delta
-        self.best_loss: float = float("inf")
+        self.mode = mode
+        self.best_value: float = float("inf") if mode == "min" else float("-inf")
+        # Backwards-compatible alias used by older code/tests for loss mode.
+        self.best_loss: float = self.best_value
         self.counter: int = 0
         self.best_epoch: int = 0
         self.should_stop: bool = False
 
-    def step(self, val_loss: float, epoch: int) -> bool:
+    def is_improvement(self, value: float) -> bool:
+        """Return whether ``value`` improves over the current best."""
+        if value is None or not np.isfinite(value):
+            return False
+        if self.mode == "min":
+            return value < self.best_value - self.min_delta
+        return value > self.best_value + self.min_delta
+
+    def step(self, value: float, epoch: int) -> bool:
         """Check if training should stop.
 
         Args:
-            val_loss: Current epoch's validation loss.
+            value: Current epoch's monitored validation quantity.
             epoch: Current epoch number.
 
         Returns:
             True if training should stop.
         """
-        if val_loss < self.best_loss - self.min_delta:
-            self.best_loss = val_loss
+        if self.is_improvement(value):
+            self.best_value = value
+            self.best_loss = value
             self.counter = 0
             self.best_epoch = epoch
         else:
@@ -166,10 +189,19 @@ class Trainer:
         gradient_clip_val = gradient_clip_val or (
             cfg_t.gradient_clip_val if cfg_t else 1.0
         )
+        checkpoint_metric = (
+            getattr(cfg_t, "checkpoint_metric", "val_loss") if cfg_t else "val_loss"
+        )
+        checkpoint_mode = getattr(cfg_t, "checkpoint_mode", None) if cfg_t else None
+        if checkpoint_mode is None:
+            checkpoint_mode = "min" if checkpoint_metric == "val_loss" else "max"
+        if checkpoint_mode not in {"min", "max"}:
+            msg = f"Unknown checkpoint_mode: {checkpoint_mode!r}"
+            raise ValueError(msg)
 
         model = model.to(self.device)
         optimizer = model.configure_optimizers(self.cfg)
-        early_stopping = EarlyStopping(patience=patience)
+        early_stopping = EarlyStopping(patience=patience, mode=checkpoint_mode)
         best_state = None
 
         # ── LR scheduler ──
@@ -189,8 +221,12 @@ class Trainer:
         history = {
             "train_loss": [],
             "val_loss": [],
+            "val_metrics": [],
             "epochs_run": 0,
             "best_epoch": 0,
+            "best_metric_name": checkpoint_metric,
+            "best_metric_mode": checkpoint_mode,
+            "best_metric": None,
             "stopped_early": False,
         }
 
@@ -231,15 +267,35 @@ class Trainer:
                 # ── Validate ──
                 model.eval()
                 val_losses = []
+                val_preds = []
+                val_targets = []
                 for batch in val_loader:
                     batch = self._to_device(batch)
                     result = model.validation_step(batch)
                     val_loss_item = result["loss"].item()
                     if not (np.isnan(val_loss_item) or np.isinf(val_loss_item)):
                         val_losses.append(val_loss_item)
+                    if checkpoint_metric != "val_loss":
+                        preds = result.get("predictions")
+                        targets = result.get("targets")
+                        if isinstance(preds, torch.Tensor):
+                            val_preds.append(preds.detach().cpu())
+                        if isinstance(targets, torch.Tensor):
+                            val_targets.append(targets.detach().cpu())
 
                 avg_val_loss = (
                     float(np.mean(val_losses)) if val_losses else float("nan")
+                )
+                val_metrics = self._compute_validation_metrics(
+                    model,
+                    checkpoint_metric,
+                    val_preds,
+                    val_targets,
+                )
+                monitored_value = (
+                    avg_val_loss
+                    if checkpoint_metric == "val_loss"
+                    else val_metrics.get(checkpoint_metric, float("nan"))
                 )
                 if np.isnan(avg_val_loss):
                     logger.warning(
@@ -258,32 +314,37 @@ class Trainer:
 
                 history["train_loss"].append(avg_train_loss)
                 history["val_loss"].append(avg_val_loss)
+                history["val_metrics"].append(val_metrics)
 
                 current_lr = optimizer.param_groups[0]["lr"]
                 logger.info(
-                    "Epoch %d/%d — train_loss=%.6f, val_loss=%.6f, lr=%.2e",
+                    "Epoch %d/%d — train_loss=%.6f, val_loss=%.6f, %s=%s, lr=%.2e",
                     epoch + 1,
                     max_epochs,
                     avg_train_loss,
                     avg_val_loss,
+                    checkpoint_metric,
+                    (
+                        f"{monitored_value:.6f}"
+                        if np.isfinite(monitored_value)
+                        else "nan"
+                    ),
                     current_lr,
                 )
 
-                # ── Checkpoint best (skip if val loss is NaN) ──
-                if (
-                    not np.isnan(avg_val_loss)
-                    and avg_val_loss <= early_stopping.best_loss
-                ):
+                # ── Checkpoint best by configured validation metric ──
+                if early_stopping.is_improvement(monitored_value):
                     best_state = copy.deepcopy(model.state_dict())
                     if checkpoint_dir:
                         self.save_checkpoint(model, optimizer, epoch, checkpoint_dir)
 
                 # ── Early stopping ──
-                if early_stopping.step(avg_val_loss, epoch):
+                if early_stopping.step(monitored_value, epoch):
                     logger.info(
-                        "Early stopping at epoch %d (best: %d)",
+                        "Early stopping at epoch %d (best: %d by %s)",
                         epoch + 1,
                         early_stopping.best_epoch + 1,
+                        checkpoint_metric,
                     )
                     history["stopped_early"] = True
                     break
@@ -297,9 +358,38 @@ class Trainer:
 
             history["epochs_run"] = epoch + 1
             history["best_epoch"] = early_stopping.best_epoch
+            if np.isfinite(early_stopping.best_value):
+                history["best_metric"] = float(early_stopping.best_value)
 
         history["cost"] = cost_tracker.results
         return history
+
+    @staticmethod
+    def _compute_validation_metrics(
+        model: nn.Module,
+        checkpoint_metric: str,
+        predictions: list[torch.Tensor],
+        targets: list[torch.Tensor],
+    ) -> dict:
+        """Compute epoch validation metrics needed for checkpoint selection."""
+        if checkpoint_metric == "val_loss" or not predictions or not targets:
+            return {}
+
+        task = getattr(model, "task", None)
+        if task is None:
+            return {}
+
+        try:
+            pred_np = torch.cat(predictions).numpy()
+            target_np = torch.cat(targets).numpy()
+            return MetricRegistry.compute(task, pred_np, target_np)
+        except Exception as exc:
+            logger.warning(
+                "Could not compute validation metric %s for checkpointing: %s",
+                checkpoint_metric,
+                exc,
+            )
+            return {}
 
     def _to_device(self, batch: tuple) -> tuple:
         """Move batch tensors to the training device."""

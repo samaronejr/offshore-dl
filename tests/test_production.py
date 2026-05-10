@@ -41,7 +41,7 @@ class TestGanymedeOutputNaming:
             patch("offshore_dl.run_experiment.build_experiment", return_value=(mock_runner, MagicMock())),
             patch("offshore_dl.run_experiment._make_serializable", side_effect=lambda x: x),
         ):
-            import tempfile, json  # noqa: E401
+            import tempfile
 
             with tempfile.TemporaryDirectory() as tmpdir:
                 run_and_save(
@@ -471,3 +471,98 @@ class TestGanymedeMultiHorizonConfig:
         cfg = OmegaConf.load("configs/data/ganymede.yaml")
         modes = list(cfg.data.modes)
         assert set(modes) == {"per_well", "multi_well"}, f"Expected per_well+multi_well, got {modes}"
+
+
+# ────────────────────────────────────────────────────────────────
+# Forecasting MASE rerun manifest and Volve filtering
+# ────────────────────────────────────────────────────────────────
+
+class TestForecastingMaseManifest:
+    """Verify rerun manifests are shell-safe for SLURM array parsing."""
+
+    def test_manifest_uses_lf_line_endings(self, tmp_path):
+        from scripts.build_forecasting_mase_manifest import main
+
+        output = tmp_path / "forecasting_mase_manifest.tsv"
+        with patch.object(
+            sys,
+            "argv",
+            [
+                "build_forecasting_mase_manifest.py",
+                "--output",
+                str(output),
+                "--datasets",
+                "ganymede",
+                "--models",
+                "lstm",
+                "--wells-per-chunk",
+                "10",
+            ],
+        ):
+            assert main() == 0
+
+        data = output.read_bytes()
+        assert b"\r" not in data
+        assert b"\n" in data
+
+    def test_manifest_chunks_expected_small_filter(self):
+        from scripts.build_forecasting_mase_manifest import build_rows
+
+        rows = build_rows(["ganymede"], ["lstm"], wells_per_chunk=10)
+
+        assert len(rows) == 4
+        assert {row["dataset"] for row in rows} == {"ganymede"}
+        assert {row["model"] for row in rows} == {"lstm"}
+        assert {row["modes"] for row in rows} == {"multi_well,per_well"}
+
+
+class TestVolveProductionFilters:
+    """Verify bounded Volve production plans used by rerun arrays."""
+
+    def test_build_plan_filters_horizon_mode_and_well(self):
+        import scripts.run_production_volve as volve
+
+        plan = volve._build_plan(
+            ["lstm"],
+            horizons=[7],
+            modes=["per_well"],
+            wells=["NO_15_9-F-1_C"],
+        )
+
+        assert plan == [
+            {
+                "model": "lstm",
+                "horizon": 7,
+                "mode": "per_well",
+                "well": "NO_15_9-F-1_C",
+                "is_fm": False,
+                "is_tree": False,
+            }
+        ]
+
+    def test_results_dir_cli_sets_repaired_output_root(self, tmp_path, monkeypatch):
+        import scripts.run_production_volve as volve
+
+        output_dir = tmp_path / "post_fix"
+        monkeypatch.setattr(
+            sys,
+            "argv",
+            [
+                "run_production_volve.py",
+                "--dry-run",
+                "--models",
+                "lstm",
+                "--horizons",
+                "7",
+                "--modes",
+                "per_well",
+                "--wells",
+                "NO_15_9-F-1_C",
+                "--results-dir",
+                str(output_dir),
+            ],
+        )
+
+        volve.main()
+
+        assert volve.RESULTS_DIR == output_dir

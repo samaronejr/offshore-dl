@@ -66,3 +66,41 @@ def test_optuna_optimizer_params_reach_kwargs_and_both_config_paths(monkeypatch)
     assert captured["cfg"].training.scheduler == "cosine"
     assert captured["cfg"].model.training.scheduler == "cosine"
     assert captured["cfg"].training.batch_size == 16
+
+
+def test_final_eval_best_params_reach_kwargs_and_both_config_paths() -> None:
+    from scripts.run_optuna_hpo import _apply_best_params_to_final_eval
+
+    cfg = OmegaConf.create(
+        {
+            "training": {"lr": 0.001, "weight_decay": 0.0001, "batch_size": 64},
+            "model": {"training": {"lr": 0.001, "weight_decay": 0.0001}},
+        }
+    )
+
+    kwargs = _apply_best_params_to_final_eval(
+        best_params={
+            "lr": 0.0042,
+            "weight_decay": 0.0123,
+            "scheduler": "reduce_on_plateau",
+            "batch_size": 16,
+            "branch_width": 128,
+            "dropout": 0.25,
+        },
+        base_kwargs={"task": "classification", "n_vars": 3},
+        cfg=cfg,
+    )
+
+    assert kwargs["lr"] == 0.0042
+    assert kwargs["weight_decay"] == 0.0123
+    assert kwargs["branch_hidden"] == [128, 128]
+    assert "branch_width" not in kwargs
+    assert kwargs["dropout"] == 0.25
+
+    assert cfg.training.lr == 0.0042
+    assert cfg.training.weight_decay == 0.0123
+    assert cfg.model.training.lr == 0.0042
+    assert cfg.model.training.weight_decay == 0.0123
+    assert cfg.training.scheduler == "reduce_on_plateau"
+    assert cfg.model.training.scheduler == "reduce_on_plateau"
+    assert cfg.training.batch_size == 16

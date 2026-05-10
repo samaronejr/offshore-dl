@@ -39,6 +39,11 @@ class TestLoadConfig:
         assert cfg.optuna.n_trials_min == 50
         assert cfg.optuna.pruner == "median"
 
+    def test_base_config_has_checkpoint_defaults(self, configs_dir: Path) -> None:
+        cfg = load_config(configs_dir / "base.yaml")
+        assert cfg.training.checkpoint_metric == "val_loss"
+        assert cfg.training.checkpoint_mode == "min"
+
     def test_cli_override(self, configs_dir: Path) -> None:
         cfg = load_config(
             configs_dir / "base.yaml",
@@ -74,6 +79,13 @@ class TestLoadMergedConfig:
             overrides=["data.forecasting.default_horizon=7"],
         )
         assert cfg.data.forecasting.default_horizon == 7
+
+    def test_hpo_scheduler_choices_are_supported(self, configs_dir: Path) -> None:
+        supported = {"cosine", "onecycle", "reduce_on_plateau"}
+        for model_name in ("lstm", "deeponet"):
+            cfg = load_config(configs_dir / "models" / f"{model_name}.yaml")
+            choices = set(cfg.model.optuna_search_space.scheduler.choices)
+            assert choices <= supported
 
 
 class TestConfigToFlatDict:

@@ -38,6 +38,23 @@ def test_physics_feature_extractor_is_deterministic() -> None:
     assert np.array_equal(first, second)
 
 
+def test_threew_feature_dataset_release_inner_cache() -> None:
+    """Feature HPO can drop raw caches after descriptor pre-computation."""
+
+    class DummyInner:
+        def __init__(self) -> None:
+            self._data_cache = {"instance": object()}
+            self._feature_cache = {"instance": np.zeros((4, 2), dtype=np.float32)}
+
+    dataset = ThreeWFeatureDataset.__new__(ThreeWFeatureDataset)
+    dataset._inner = DummyInner()
+
+    dataset.release_inner_cache()
+
+    assert dataset._inner._data_cache == {}
+    assert dataset._inner._feature_cache == {}
+
+
 def test_threew_physics_dataset_concatenates_features(monkeypatch) -> None:
     stat_features = torch.zeros((14, 27), dtype=torch.float32)
     raw_tensor = torch.ones((720, 27), dtype=torch.float32)

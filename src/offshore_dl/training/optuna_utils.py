@@ -7,6 +7,7 @@ and an objective wrapper around ExperimentRunner.
 from __future__ import annotations
 
 import logging
+import inspect
 from typing import Any
 
 from omegaconf import DictConfig, OmegaConf
@@ -18,6 +19,7 @@ def create_study(
     cfg: DictConfig,
     study_name: str,
     direction: str = "minimize",
+    load_if_exists: bool = True,
 ) -> Any:
     """Create an Optuna study with configured pruner and storage.
 
@@ -25,6 +27,9 @@ def create_study(
         cfg: Config with optuna.storage and optuna.pruner settings.
         study_name: Name for the study.
         direction: "minimize" or "maximize".
+        load_if_exists: Whether to resume an existing study with the same
+            name/storage. Campaign HPO should pass ``False`` unless explicit
+            resume is intended.
 
     Returns:
         optuna.Study instance.
@@ -52,11 +57,16 @@ def create_study(
         storage=storage,
         direction=direction,
         pruner=pruner,
-        load_if_exists=True,
+        load_if_exists=load_if_exists,
         sampler=optuna.samplers.TPESampler(seed=42),
     )
 
-    logger.info("Optuna study created: %s (storage: %s)", study_name, storage)
+    logger.info(
+        "Optuna study created: %s (storage: %s, load_if_exists=%s)",
+        study_name,
+        storage,
+        load_if_exists,
+    )
     return study
 
 
@@ -171,13 +181,51 @@ class OptunaObjective:
             model_kwargs=kwargs,
         )
 
-        results = runner.run(use_mlflow=False)
+        run_kwargs = {"use_mlflow": False}
+        if "fold_callback" in inspect.signature(runner.run).parameters:
+            run_kwargs["fold_callback"] = self._make_fold_callback(trial)
+        results = runner.run(**run_kwargs)
         aggregate = results.get("aggregate", {})
 
-        # Return primary metric
+        return self._objective_value(results, aggregate)
+
+    def _make_fold_callback(self, trial):
+        """Create a fold callback that reports cumulative Optuna metrics.
+
+        Reporting after each completed fold lets Optuna prune weak trials
+        before all folds finish.
+        """
+
+        def callback(fold_idx: int, fold_results: list[dict]) -> None:
+            if not fold_results:
+                return
+
+            from offshore_dl.training.experiment import ExperimentRunner
+
+            aggregate = ExperimentRunner._aggregate_folds(fold_results)
+            value = self._objective_value({"fold_results": fold_results}, aggregate)
+            if value is None:
+                return
+
+            import optuna
+
+            trial.report(float(value), step=fold_idx)
+            if trial.should_prune():
+                msg = (
+                    f"Trial pruned after fold {fold_idx + 1} "
+                    f"({self.primary_metric}={value:.6f})"
+                )
+                raise optuna.TrialPruned(msg)
+
+        return callback
+
+    def _objective_value(self, results: dict, aggregate: dict | None = None) -> float:
+        """Extract the scalar objective value from fold results."""
+        aggregate = aggregate or {}
+
         metric_key = f"{self.primary_metric}_mean"
         if metric_key in aggregate:
-            return aggregate[metric_key]
+            return float(aggregate[metric_key])
 
         # Fallback: use mean val_loss from fold histories
         val_losses = []
@@ -218,6 +266,7 @@ def run_hpo(
     n_trials: int | None = None,
     study_name: str | None = None,
     direction: str = "minimize",
+    resume: bool = True,
 ) -> dict:
     """Run hyperparameter optimization.
 
@@ -231,6 +280,7 @@ def run_hpo(
         search_space: Param search space.
         n_trials: Number of trials override.
         study_name: Study name override.
+        resume: Whether to load an existing study when storage/name match.
 
     Returns:
         Dict with best_trial, best_params, best_value, study.
@@ -238,11 +288,17 @@ def run_hpo(
     if study_name is None:
         study_name = f"{model_class.__name__}_{type(dataset).__name__}"
 
-    n_trials = n_trials or (cfg.optuna.n_trials_min if hasattr(cfg, "optuna") else 10)
+    if n_trials is None:
+        n_trials = cfg.optuna.n_trials_min if hasattr(cfg, "optuna") else 10
     patience = cfg.optuna.convergence_patience if hasattr(cfg, "optuna") else 20
     threshold = cfg.optuna.convergence_threshold if hasattr(cfg, "optuna") else 0.005
 
-    study = create_study(cfg, study_name, direction=direction)
+    study = create_study(
+        cfg,
+        study_name,
+        direction=direction,
+        load_if_exists=resume,
+    )
     objective = OptunaObjective(
         model_class=model_class,
         dataset=dataset,

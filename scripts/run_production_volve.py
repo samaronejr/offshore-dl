@@ -25,6 +25,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import sys
 import time
 import traceback
@@ -35,19 +36,19 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))  # for sweep_utils
 
 import numpy as np
-import torch
 
 from offshore_dl.data.datasets import VolveDataset
 from offshore_dl.utils.reproducibility import set_global_seed
 from sweep_utils import (
-    FM_WRAPPER_MAP,
     safe_well as _safe_well,
-    sample_groups as _sample_groups,
     make_holdout as _make_holdout,
     make_inner_cv as _make_inner_cv,
     aggregate as _aggregate,
     zero_shot_evaluate as _zero_shot_evaluate,
     load_fm_class as _load_fm_class,
+    parse_horizons as _parse_horizons,
+    parse_modes as _parse_modes,
+    parse_wells as _parse_wells,
 )
 
 logging.basicConfig(
@@ -77,7 +78,7 @@ WELLS = [
     "NO_15_9-F-15_D",
 ]
 
-RESULTS_DIR = Path("results")
+RESULTS_DIR = Path(os.environ.get("OFFSHORE_DL_RESULTS_DIR", "results/post_fix"))
 
 
 from offshore_dl.utils.serialization import make_serializable as _make_serializable
@@ -360,27 +361,40 @@ def _run_fm_per_well(
 # ═══════════════════════════════════════════════════════════════════
 
 
-def _build_plan(models: list[str], multi_well_only: bool = False) -> list[dict]:
+def _build_plan(
+    models: list[str],
+    multi_well_only: bool = False,
+    horizons: list[int] | None = None,
+    modes: list[str] | None = None,
+    wells: list[str] | None = None,
+) -> list[dict]:
     """Build the ordered list of runs for the sweep."""
+    horizons = horizons or HORIZONS
+    modes = ["multi_well"] if multi_well_only else (modes or MODES)
+    wells = wells or WELLS
+
     plan: list[dict] = []
     for model in models:
         is_fm = model in FM_MODELS
         is_tree = model in TREE_MODELS
-        for horizon in HORIZONS:
+        for horizon in horizons:
             # multi_well
-            plan.append(
-                {
-                    "model": model,
-                    "horizon": horizon,
-                    "mode": "multi_well",
-                    "well": None,
-                    "is_fm": is_fm,
-                    "is_tree": is_tree,
-                }
-            )
+            if "multi_well" in modes:
+                plan.append(
+                    {
+                        "model": model,
+                        "horizon": horizon,
+                        "mode": "multi_well",
+                        "well": None,
+                        "is_fm": is_fm,
+                        "is_tree": is_tree,
+                    }
+                )
             # per_well: individual wells
-            if not multi_well_only:
+            if "per_well" in modes:
                 for well in WELLS:
+                    if well not in wells:
+                        continue
                     plan.append(
                         {
                             "model": model,
@@ -420,6 +434,7 @@ def _print_plan(plan: list[dict]) -> None:
 
 
 def main() -> None:
+    global RESULTS_DIR
     set_global_seed(42)
 
     parser = argparse.ArgumentParser(
@@ -458,14 +473,56 @@ def main() -> None:
         help="Skip runs whose result JSON already exists",
     )
     parser.add_argument(
+        "--results-dir",
+        default=str(RESULTS_DIR),
+        help=(
+            "Output root for result JSONs. Defaults to OFFSHORE_DL_RESULTS_DIR "
+            "or results/post_fix for repaired reruns."
+        ),
+    )
+    parser.add_argument(
         "--multi-well-only",
         action="store_true",
         help="Run only multi_well mode, skip per_well",
     )
+    parser.add_argument(
+        "--horizons",
+        nargs="+",
+        type=int,
+        default=None,
+        help=f"Subset of horizons to run; default = all {HORIZONS}",
+    )
+    parser.add_argument(
+        "--modes",
+        nargs="+",
+        default=None,
+        choices=MODES,
+        help=f"Subset of modes to run; default = all {MODES}",
+    )
+    parser.add_argument(
+        "--wells",
+        nargs="+",
+        default=None,
+        help=(
+            "Subset of wells for per_well mode. Either explicit IDs "
+            "(e.g. NO_15_9-F-1_C) or a Python-style slice START:END "
+            "into the dataset WELLS list (e.g. 0:3)."
+        ),
+    )
 
     args = parser.parse_args()
+    RESULTS_DIR = Path(args.results_dir)
 
-    plan = _build_plan(args.models, multi_well_only=args.multi_well_only)
+    horizons_filt = _parse_horizons(args.horizons, HORIZONS)
+    modes_filt = _parse_modes(args.modes, MODES)
+    wells_filt = _parse_wells(args.wells, WELLS)
+    plan = _build_plan(
+        args.models,
+        multi_well_only=args.multi_well_only,
+        horizons=horizons_filt,
+        modes=modes_filt,
+        wells=wells_filt,
+    )
 
     if args.dry_run:
         _print_plan(plan)
@@ -478,6 +535,12 @@ def main() -> None:
         args.device,
         args.max_epochs,
         args.models,
+    )
+    logger.info(
+        "  horizons=%s  modes=%s  wells=%d",
+        horizons_filt,
+        ["multi_well"] if args.multi_well_only else modes_filt,
+        len(wells_filt),
     )
     logger.info("═" * 70)
 

@@ -21,16 +21,17 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import sys
 import time
 import traceback
+from datetime import datetime, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 import numpy as np
 import optuna
-import torch
 from omegaconf import OmegaConf
 
 from offshore_dl.utils.config import load_merged_config
@@ -50,7 +51,217 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-RESULTS_DIR = Path("results")
+DEFAULT_HPO_OUTPUT_DIR = Path("results/hpo")
+STAGE1_3W_MANIFEST = Path("scripts/hpo_3w_models.txt")
+
+
+def _utc_campaign_id(prefix: str = "hpo") -> str:
+    """Return a filesystem-safe UTC campaign id."""
+    stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    return f"{prefix}-{stamp}"
+
+
+def _load_model_manifest(path: Path = STAGE1_3W_MANIFEST) -> list[str]:
+    """Load model names from a manifest, ignoring blanks and comments."""
+    if not path.exists():
+        return []
+    models = []
+    for raw in path.read_text().splitlines():
+        line = raw.split("#", 1)[0].strip()
+        if line:
+            models.append(line)
+    return models
+
+
+def _load_3w_feature_dataset_for_hpo() -> ThreeWFeatureDataset:
+    """Load 3W statistical features with an HPO-safe memory profile.
+
+    The default 3W config keeps raw instance DataFrames in memory.  That is
+    convenient for interactive training but too large for the lab GPU
+    partition: Stage-1 HPO array tasks were killed while pre-computing
+    descriptors.  For HPO we cache only raw float arrays during descriptor
+    extraction, then release those raw caches because the feature dataset serves
+    pre-computed ``(14, 27)`` matrices afterwards.
+    """
+    dataset = ThreeWFeatureDataset("configs/data/3w.yaml", cache_in_memory=False)
+    dataset.release_inner_cache()
+    return dataset
+
+
+def _resolve_output_dir(output_dir: str | Path) -> Path:
+    """Resolve the HPO output root."""
+    return Path(output_dir)
+
+
+def _result_dir(output_dir: Path, dataset: str, campaign_id: str | None) -> Path:
+    """Directory for per-model HPO artifacts."""
+    base = output_dir / dataset
+    return base / campaign_id if campaign_id else base
+
+
+def _result_path(
+    output_dir: Path,
+    dataset: str,
+    campaign_id: str | None,
+    model_name: str,
+    horizon: str | None = None,
+) -> Path:
+    """Path to a per-model result JSON."""
+    suffix = f"_{horizon}" if dataset in {"ganymede", "spe_berg", "volve"} else ""
+    return _result_dir(output_dir, dataset, campaign_id) / f"{model_name}{suffix}.json"
+
+
+def _summary_path(output_dir: Path, dataset: str, campaign_id: str | None) -> Path:
+    """Path to a campaign or legacy summary JSON."""
+    if campaign_id:
+        return _result_dir(output_dir, dataset, campaign_id) / "summary.json"
+    return output_dir / f"summary_{dataset}.json"
+
+
+def _has_nonempty_mapping(value: object) -> bool:
+    return isinstance(value, dict) and bool(value)
+
+
+def _is_complete_hpo_result(data: dict, dataset: str = "3w") -> bool:
+    """Return True only for final, benchmark-usable HPO JSON artifacts."""
+    if not isinstance(data, dict):
+        return False
+    hpo = data.get("hpo")
+    if not _has_nonempty_mapping(hpo):
+        return False
+    if not _has_nonempty_mapping(hpo.get("best_params")):
+        return False
+    if hpo.get("best_value") is None or hpo.get("n_trials") is None:
+        return False
+
+    test_metrics = data.get("test_metrics")
+    cv_aggregate = data.get("cv_aggregate")
+    if not _has_nonempty_mapping(test_metrics) or not _has_nonempty_mapping(cv_aggregate):
+        return False
+    required_metric = "f1_macro" if dataset == "3w" else None
+    if required_metric and test_metrics.get(required_metric) is None:
+        return False
+
+    split_meta = data.get("split_metadata", {})
+    if not _has_nonempty_mapping(split_meta):
+        split_meta = {
+            k: data.get(k)
+            for k in ("n_train", "n_test", "n_cv_folds")
+            if data.get(k) is not None
+        }
+    return all(split_meta.get(k) is not None for k in ("n_train", "n_test", "n_cv_folds"))
+
+
+def _load_json(path: Path) -> dict | None:
+    try:
+        return json.loads(path.read_text())
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+def _should_skip_existing(path: Path, dataset: str, skip_existing: bool) -> bool:
+    """Decide whether an existing artifact is good enough to skip."""
+    if not skip_existing or not path.exists():
+        return False
+    data = _load_json(path)
+    if data is not None and _is_complete_hpo_result(data, dataset=dataset):
+        logger.info("Skipping valid complete artifact: %s", path)
+        return True
+    if os.environ.get("ALLOW_INCOMPLETE") == "1":
+        logger.warning("ALLOW_INCOMPLETE=1 — skipping incomplete artifact: %s", path)
+        return True
+    logger.warning("Existing artifact is incomplete/invalid; rerunning: %s", path)
+    return False
+
+
+def _configure_optuna_storage(
+    cfg,
+    storage_dir: str | Path | None,
+    storage_key: str,
+    *,
+    resume: bool,
+    force: bool,
+) -> None:
+    """Set a campaign-scoped SQLite storage path on the config."""
+    if storage_dir is None:
+        return
+    storage_path = Path(storage_dir)
+    storage_path.mkdir(parents=True, exist_ok=True)
+    db_path = storage_path / f"{storage_key}.db"
+    if db_path.exists() and not resume and force:
+        sqlite_paths = (
+            db_path,
+            db_path.with_suffix(".db-wal"),
+            db_path.with_suffix(".db-shm"),
+        )
+        for path in sqlite_paths:
+            if path.exists():
+                path.unlink()
+    elif db_path.exists() and not resume:
+        raise FileExistsError(
+            f"Optuna storage exists for {storage_key}: {db_path}. "
+            "Pass --resume to continue it or --force to replace it."
+        )
+    OmegaConf.update(cfg, "optuna.storage", f"sqlite:///{db_path}", merge=True)
+
+
+def _split_metadata(
+    *,
+    n_train: int,
+    n_test: int,
+    n_cv_folds: int,
+    n_trial_folds: int | None = None,
+) -> dict:
+    """Build common split metadata for result artifacts."""
+    meta = {
+        "n_train": int(n_train),
+        "n_test": int(n_test),
+        "n_cv_folds": int(n_cv_folds),
+    }
+    if n_trial_folds is not None:
+        meta["n_trial_folds"] = int(n_trial_folds)
+    return meta
+
+
+def _apply_best_params_to_final_eval(
+    *,
+    best_params: dict,
+    base_kwargs: dict,
+    cfg,
+) -> dict:
+    """Apply selected HPO params consistently for final retraining/eval.
+
+    ``BaseModel.configure_optimizers`` reads optimizer settings from config
+    before falling back to model attributes, so final evaluation must mirror
+    the trial-time routing in ``OptunaObjective`` for ``lr`` and
+    ``weight_decay``.
+    """
+    from offshore_dl.training.optuna_utils import OptunaObjective
+
+    final_kwargs = dict(base_kwargs)
+    for param_name, value in best_params.items():
+        if param_name in OptunaObjective.OPTIMIZER_PARAMS:
+            final_kwargs[param_name] = value
+            OmegaConf.update(cfg, f"training.{param_name}", value, merge=True)
+            OmegaConf.update(cfg, f"model.training.{param_name}", value, merge=True)
+        elif param_name in OptunaObjective.TRAINING_PARAMS:
+            OmegaConf.update(cfg, f"training.{param_name}", value, merge=True)
+            if param_name == "scheduler":
+                OmegaConf.update(
+                    cfg,
+                    "model.training.scheduler",
+                    value,
+                    merge=True,
+                )
+        else:
+            final_kwargs[param_name] = value
+
+    # Translate branch_width → branch_hidden (list of 2)
+    if "branch_width" in final_kwargs:
+        width = final_kwargs.pop("branch_width")
+        final_kwargs["branch_hidden"] = [width, width]
+
+    return final_kwargs
 
 
 def _load_pytorch_deps():
@@ -389,7 +600,18 @@ def _get_volve_models():
 # ═══════════════════════════════════════════════════════════════════
 
 
-def run_3w_hpo(model_name: str, n_trials: int, device: str) -> dict:
+def run_3w_hpo(
+    model_name: str,
+    n_trials: int,
+    device: str,
+    *,
+    campaign_id: str | None = None,
+    storage_dir: str | Path | None = None,
+    resume: bool = False,
+    force: bool = False,
+    trial_folds: int | None = None,
+    final_eval: bool = True,
+) -> dict:
     """Run HPO for a 3W model."""
     from offshore_dl.training.experiment import ExperimentRunner
     from offshore_dl.training.optuna_utils import run_hpo
@@ -409,8 +631,18 @@ def run_3w_hpo(model_name: str, n_trials: int, device: str) -> dict:
     cfg.training.batch_size = 64
     cfg.device = device
     cfg.training.scheduler = "cosine"
+    cfg.training.checkpoint_metric = "f1_macro"
+    cfg.training.checkpoint_mode = "max"
+    study_name = f"3w_{model_name}_{campaign_id}" if campaign_id else f"3w_{model_name}"
+    _configure_optuna_storage(
+        cfg,
+        storage_dir,
+        study_name,
+        resume=resume,
+        force=force,
+    )
 
-    dataset = ThreeWFeatureDataset("configs/data/3w.yaml")
+    dataset = _load_3w_feature_dataset_for_hpo()
     logger.info("  3W loaded: %d samples", len(dataset))
 
     # Holdout split for final evaluation
@@ -430,8 +662,9 @@ def run_3w_hpo(model_name: str, n_trials: int, device: str) -> dict:
     from torch.utils.data import Subset
     train_dataset = Subset(dataset, train_pool.tolist())
 
+    n_trial_folds = trial_folds or 5
     cv = StratifiedGroupKFoldSKLearn(
-        n_folds=5, labels=pool_labels, groups=pool_groups, seed=42,
+        n_folds=n_trial_folds, labels=pool_labels, groups=pool_groups, seed=42,
     )
 
     hpo_result = run_hpo(
@@ -443,8 +676,9 @@ def run_3w_hpo(model_name: str, n_trials: int, device: str) -> dict:
         primary_metric="f1_macro",
         search_space=search_space,
         n_trials=n_trials,
-        study_name=f"3w_{model_name}",
+        study_name=study_name,
         direction="maximize",
+        resume=resume,
     )
 
     logger.info("  Best params: %s (value=%.4f, trials=%d)",
@@ -458,34 +692,45 @@ def run_3w_hpo(model_name: str, n_trials: int, device: str) -> dict:
     best_cfg.training.batch_size = 64
     best_cfg.device = device
     best_cfg.training.scheduler = "cosine"
+    best_cfg.training.checkpoint_metric = "f1_macro"
+    best_cfg.training.checkpoint_mode = "max"
 
-    from offshore_dl.training.optuna_utils import OptunaObjective
-    for param_name, value in hpo_result["best_params"].items():
-        if param_name in OptunaObjective.TRAINING_PARAMS:
-            OmegaConf.update(best_cfg, f"training.{param_name}", value)
-        else:
-            best_kwargs[param_name] = value
-
-    # Translate branch_width → branch_hidden (list of 2)
-    if "branch_width" in best_kwargs:
-        w = best_kwargs.pop("branch_width")
-        best_kwargs["branch_hidden"] = [w, w]
-
-    final_cv = StratifiedGroupKFoldSKLearn(
-        n_folds=5, labels=pool_labels, groups=pool_groups, seed=42,
-    )
-    runner = ExperimentRunner(
-        model_class=entry["class"],
-        dataset=dataset,
-        cv_strategy=final_cv,
+    best_kwargs = _apply_best_params_to_final_eval(
+        best_params=hpo_result["best_params"],
+        base_kwargs=best_kwargs,
         cfg=best_cfg,
-        model_kwargs=best_kwargs,
     )
-    nested_result = runner.run_nested(
-        train_pool=train_pool,
-        test_indices=test_indices,
-        use_mlflow=True,
+
+    split_metadata = _split_metadata(
+        n_train=len(train_pool),
+        n_test=len(test_indices),
+        n_cv_folds=5,
+        n_trial_folds=n_trial_folds,
     )
+    if final_eval:
+        final_cv = StratifiedGroupKFoldSKLearn(
+            n_folds=5, labels=pool_labels, groups=pool_groups, seed=42,
+        )
+        runner = ExperimentRunner(
+            model_class=entry["class"],
+            dataset=dataset,
+            cv_strategy=final_cv,
+            cfg=best_cfg,
+            model_kwargs=best_kwargs,
+        )
+        nested_result = runner.run_nested(
+            train_pool=train_pool,
+            test_indices=test_indices,
+            use_mlflow=True,
+        )
+        test_metrics = nested_result["test_metrics"]
+        cv_aggregate = nested_result["cv_aggregate"]
+        retrain_history = nested_result.get("retrain_history", {})
+    else:
+        logger.warning("  Final evaluation disabled; artifact will not validate as complete")
+        test_metrics = {}
+        cv_aggregate = {}
+        retrain_history = {}
 
     return {
         "hpo": {
@@ -493,8 +738,12 @@ def run_3w_hpo(model_name: str, n_trials: int, device: str) -> dict:
             "best_value": hpo_result["best_value"],
             "n_trials": hpo_result["n_trials_completed"],
         },
-        "test_metrics": nested_result["test_metrics"],
-        "cv_aggregate": nested_result["cv_aggregate"],
+        "selection_metric": "f1_macro",
+        "checkpoint_metric": "f1_macro",
+        "test_metrics": test_metrics,
+        "cv_aggregate": cv_aggregate,
+        "split_metadata": split_metadata,
+        "retrain_history": retrain_history,
         "baseline_kwargs": entry["kwargs"],
         "best_kwargs": best_kwargs,
     }
@@ -522,7 +771,17 @@ def _suggest_param(trial, name: str, spec: dict):
         raise ValueError(msg)
 
 
-def run_3w_rf_hpo(n_trials: int, device: str) -> dict:
+def run_3w_rf_hpo(
+    n_trials: int,
+    device: str,
+    *,
+    campaign_id: str | None = None,
+    storage_dir: str | Path | None = None,
+    resume: bool = False,
+    force: bool = False,
+    trial_folds: int | None = None,
+    final_eval: bool = True,
+) -> dict:
     """Run sklearn Random Forest HPO for 3W classification.
 
     Custom Optuna objective: each trial samples RF hyperparameters from
@@ -544,7 +803,7 @@ def run_3w_rf_hpo(n_trials: int, device: str) -> dict:
     logger.info("  RF search space: %s", list(search_space.keys()))
 
     # Load dataset and extract numpy arrays
-    dataset = ThreeWFeatureDataset("configs/data/3w.yaml")
+    dataset = _load_3w_feature_dataset_for_hpo()
     n = len(dataset)
     logger.info("  3W loaded: %d samples", n)
 
@@ -577,10 +836,15 @@ def run_3w_rf_hpo(n_trials: int, device: str) -> dict:
     pool_groups = groups[train_pool]
 
     # Inner CV for trials
+    n_trial_folds = trial_folds or 5
     inner_cv = StratifiedGroupKFoldSKLearn(
-        n_folds=5, labels=pool_labels, groups=pool_groups, seed=42,
+        n_folds=n_trial_folds, labels=pool_labels, groups=pool_groups, seed=42,
     )
     inner_splits = inner_cv.get_splits(len(train_pool))
+    final_cv = StratifiedGroupKFoldSKLearn(
+        n_folds=5, labels=pool_labels, groups=pool_groups, seed=42,
+    )
+    final_splits = final_cv.get_splits(len(train_pool))
 
     # Optuna objective
     def objective(trial):
@@ -591,7 +855,7 @@ def run_3w_rf_hpo(n_trials: int, device: str) -> dict:
         rf_kwargs.update(params)
 
         fold_f1s = []
-        for local_train, local_val in inner_splits:
+        for fold_idx, (local_train, local_val) in enumerate(inner_splits):
             X_tr, Y_tr = X_train_pool[local_train], Y_train_pool[local_train]
             X_va, Y_va = X_train_pool[local_val], Y_train_pool[local_val]
 
@@ -604,6 +868,11 @@ def run_3w_rf_hpo(n_trials: int, device: str) -> dict:
                 "classification", preds, Y_va, prediction_scores=probs,
             )
             fold_f1s.append(metrics["f1_macro"])
+            trial.report(float(np.mean(fold_f1s)), step=fold_idx)
+            if trial.should_prune():
+                raise optuna.TrialPruned(
+                    f"RF trial pruned after fold {fold_idx + 1}"
+                )
 
         return float(np.mean(fold_f1s))
 
@@ -612,10 +881,23 @@ def run_3w_rf_hpo(n_trials: int, device: str) -> dict:
         "configs/base.yaml", "configs/data/3w.yaml",
         "configs/models/random_forest.yaml",
     )
-    study = optuna.create_study(
-        study_name="3w_random_forest",
+    study_name = (
+        f"3w_random_forest_{campaign_id}" if campaign_id else "3w_random_forest"
+    )
+    _configure_optuna_storage(
+        cfg,
+        storage_dir,
+        study_name,
+        resume=resume,
+        force=force,
+    )
+    from offshore_dl.training.optuna_utils import create_study
+
+    study = create_study(
+        cfg,
+        study_name=study_name,
         direction="maximize",
-        pruner=optuna.pruners.NopPruner(),
+        load_if_exists=resume,
     )
     study.optimize(objective, n_trials=n_trials)
 
@@ -628,16 +910,39 @@ def run_3w_rf_hpo(n_trials: int, device: str) -> dict:
     # ── Final evaluation with best params ──
     final_kwargs = dict(base_arch)
     final_kwargs.update(best_params)
+    split_metadata = _split_metadata(
+        n_train=len(train_pool),
+        n_test=len(test_indices),
+        n_cv_folds=len(final_splits),
+        n_trial_folds=n_trial_folds,
+    )
+    if not final_eval:
+        logger.warning("  Final evaluation disabled; artifact will not validate as complete")
+        return {
+            "hpo": {
+                "best_params": best_params,
+                "best_value": best_value,
+                "n_trials": n_completed,
+            },
+            "selection_metric": "f1_macro",
+            "checkpoint_metric": "not_applicable_sklearn",
+            "test_metrics": {},
+            "cv_aggregate": {},
+            "cv_fold_results": [],
+            "split_metadata": split_metadata,
+            "baseline_kwargs": base_arch,
+            "best_kwargs": final_kwargs,
+        }
 
     # Setup MLflow
     mlflow = None
     try:
         import mlflow as _mlflow
-        _mlflow.set_tracking_uri("mlruns")
+        _mlflow.set_tracking_uri(os.environ.get("MLFLOW_TRACKING_URI", "mlruns"))
         _mlflow.set_experiment("3w-random-forest-hpo")
         mlflow = _mlflow
-    except ImportError:
-        pass
+    except Exception as exc:
+        logger.warning("  MLflow unavailable for RF final eval (%s); continuing without tracking", exc)
 
     if mlflow:
         mlflow.start_run(run_name="rf_hpo_best_retrain")
@@ -646,7 +951,7 @@ def run_3w_rf_hpo(n_trials: int, device: str) -> dict:
 
     # Inner CV with best params for cv_aggregate
     cv_fold_results = []
-    for fold_idx, (local_train, local_val) in enumerate(inner_splits):
+    for fold_idx, (local_train, local_val) in enumerate(final_splits):
         X_tr, Y_tr = X_train_pool[local_train], Y_train_pool[local_train]
         X_va, Y_va = X_train_pool[local_val], Y_train_pool[local_val]
 
@@ -702,6 +1007,9 @@ def run_3w_rf_hpo(n_trials: int, device: str) -> dict:
         "test_metrics": test_metrics,
         "cv_aggregate": cv_agg,
         "cv_fold_results": cv_fold_results,
+        "selection_metric": "f1_macro",
+        "checkpoint_metric": "not_applicable_sklearn",
+        "split_metadata": split_metadata,
         "baseline_kwargs": base_arch,
         "best_kwargs": final_kwargs,
     }
@@ -771,17 +1079,11 @@ def run_ganymede_hpo(
     best_cfg.device = device
     best_cfg.training.scheduler = "cosine"
 
-    from offshore_dl.training.optuna_utils import OptunaObjective
-    for param_name, value in hpo_result["best_params"].items():
-        if param_name in OptunaObjective.TRAINING_PARAMS:
-            OmegaConf.update(best_cfg, f"training.{param_name}", value)
-        else:
-            best_kwargs[param_name] = value
-
-    # Translate branch_width → branch_hidden (list of 2)
-    if "branch_width" in best_kwargs:
-        w = best_kwargs.pop("branch_width")
-        best_kwargs["branch_hidden"] = [w, w]
+    best_kwargs = _apply_best_params_to_final_eval(
+        best_params=hpo_result["best_params"],
+        base_kwargs=best_kwargs,
+        cfg=best_cfg,
+    )
 
     final_cv = GroupedExpandingWindowCV(groups=groups, n_splits=3)
     runner = ExperimentRunner(
@@ -874,17 +1176,11 @@ def run_spe_berg_hpo(
     best_cfg.device = device
     best_cfg.training.scheduler = "cosine"
 
-    from offshore_dl.training.optuna_utils import OptunaObjective
-    for param_name, value in hpo_result["best_params"].items():
-        if param_name in OptunaObjective.TRAINING_PARAMS:
-            OmegaConf.update(best_cfg, f"training.{param_name}", value)
-        else:
-            best_kwargs[param_name] = value
-
-    # Translate branch_width → branch_hidden (list of 2)
-    if "branch_width" in best_kwargs:
-        w = best_kwargs.pop("branch_width")
-        best_kwargs["branch_hidden"] = [w, w]
+    best_kwargs = _apply_best_params_to_final_eval(
+        best_params=hpo_result["best_params"],
+        base_kwargs=best_kwargs,
+        cfg=best_cfg,
+    )
 
     final_cv = GroupedExpandingWindowCV(groups=groups, n_splits=3)
     runner = ExperimentRunner(
@@ -977,17 +1273,11 @@ def run_volve_hpo(
     best_cfg.device = device
     best_cfg.training.scheduler = "cosine"
 
-    from offshore_dl.training.optuna_utils import OptunaObjective
-    for param_name, value in hpo_result["best_params"].items():
-        if param_name in OptunaObjective.TRAINING_PARAMS:
-            OmegaConf.update(best_cfg, f"training.{param_name}", value)
-        else:
-            best_kwargs[param_name] = value
-
-    # Translate branch_width → branch_hidden (list of 2)
-    if "branch_width" in best_kwargs:
-        w = best_kwargs.pop("branch_width")
-        best_kwargs["branch_hidden"] = [w, w]
+    best_kwargs = _apply_best_params_to_final_eval(
+        best_params=hpo_result["best_params"],
+        base_kwargs=best_kwargs,
+        cfg=best_cfg,
+    )
 
     final_cv = GroupedExpandingWindowCV(groups=groups, n_splits=3)
     runner = ExperimentRunner(
@@ -1021,6 +1311,47 @@ def run_volve_hpo(
 from offshore_dl.utils.serialization import make_serializable as _make_serializable
 
 
+def _merge_summary(
+    *,
+    output_dir: Path,
+    dataset: str,
+    campaign_id: str | None,
+    models: list[str],
+    horizon: str,
+) -> dict:
+    """Merge per-model result JSONs into a compact status summary."""
+    summary = {}
+    for model_name in models:
+        path = _result_path(output_dir, dataset, campaign_id, model_name, horizon=horizon)
+        data = _load_json(path)
+        if data is None:
+            summary[model_name] = {
+                "status": "error",
+                "error": "missing_or_invalid_json",
+                "path": str(path),
+            }
+            continue
+        if not _is_complete_hpo_result(data, dataset=dataset):
+            summary[model_name] = {
+                "status": "error",
+                "error": "incomplete_hpo_result",
+                "path": str(path),
+                "hpo": data.get("hpo", {}),
+                "test_metrics": data.get("test_metrics", {}),
+            }
+            continue
+        summary[model_name] = {
+            "status": "ok",
+            "path": str(path),
+            "best_params": data.get("hpo", {}).get("best_params", {}),
+            "best_value": data.get("hpo", {}).get("best_value"),
+            "n_trials": data.get("hpo", {}).get("n_trials"),
+            "test_metrics": data.get("test_metrics", {}),
+            "cv_aggregate": data.get("cv_aggregate", {}),
+        }
+    return summary
+
+
 def main():
     parser = argparse.ArgumentParser(description="Optuna HPO for trained models")
     parser.add_argument("--dataset", required=True, choices=["3w", "ganymede", "spe_berg", "volve"],
@@ -1032,12 +1363,78 @@ def main():
     parser.add_argument("--n-trials", type=int, default=30,
                         help="Number of Optuna trials per model")
     parser.add_argument("--device", default="cuda")
+    parser.add_argument(
+        "--campaign-id",
+        default=None,
+        help=(
+            "Campaign identifier. For 3W, omitted means a fresh UTC id; "
+            "for forecasting datasets, omitted preserves legacy output paths."
+        ),
+    )
+    parser.add_argument(
+        "--output-dir",
+        default=str(DEFAULT_HPO_OUTPUT_DIR),
+        help="HPO output root (default: results/hpo)",
+    )
+    parser.add_argument(
+        "--storage-dir",
+        default=None,
+        help="Optuna SQLite directory (default: <output-dir>/<dataset>/<campaign-id>/optuna)",
+    )
+    parser.add_argument(
+        "--skip-existing",
+        action="store_true",
+        help="Skip only complete, validator-acceptable result JSONs",
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Overwrite existing artifacts and replace campaign storage when not resuming",
+    )
+    parser.add_argument(
+        "--no-summary",
+        action="store_true",
+        help="Do not write a summary JSON (use this in SLURM array tasks)",
+    )
+    parser.add_argument(
+        "--summary-only",
+        action="store_true",
+        help="Merge existing per-model campaign outputs into a summary and exit",
+    )
+    parser.add_argument(
+        "--trial-folds",
+        type=int,
+        default=None,
+        help="Use fewer inner folds during HPO trials; final evaluation remains full-fold",
+    )
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="Resume existing campaign Optuna studies instead of requiring fresh storage",
+    )
+    final_eval_group = parser.add_mutually_exclusive_group()
+    final_eval_group.add_argument(
+        "--final-eval",
+        dest="final_eval",
+        action="store_true",
+        help="Run final nested evaluation with best params (default)",
+    )
+    final_eval_group.add_argument(
+        "--no-final-eval",
+        dest="final_eval",
+        action="store_false",
+        help="Skip final nested evaluation; useful only for smoke/preflight runs",
+    )
+    parser.set_defaults(final_eval=True)
     args = parser.parse_args()
 
     if args.dataset == "3w":
         # Valid 3W models — names only for validation (lazy import of PyTorch deps)
         valid_models = {"lstm", "deeponet", "patchtst", "random_forest", "fkmad", "mambasl", "convtimenet"}
-        default_models = ["lstm", "deeponet", "patchtst", "random_forest", "fkmad", "mambasl", "convtimenet"]
+        default_models = _load_model_manifest() or [
+            "lstm", "deeponet", "patchtst", "random_forest",
+            "fkmad", "mambasl", "convtimenet",
+        ]
     elif args.dataset == "spe_berg":
         # Valid SPE BERG models
         valid_models = {"lstm", "deeponet", "patchtst", "tcn"}
@@ -1052,13 +1449,47 @@ def main():
         default_models = ["lstm", "deeponet", "patchtst", "tcn"]
 
     models = args.models or default_models
+    if args.trial_folds is not None and args.trial_folds < 2:
+        parser.error("--trial-folds must be >= 2")
+
+    output_dir = _resolve_output_dir(args.output_dir)
+    campaign_id = args.campaign_id
+    if args.dataset == "3w" and campaign_id is None:
+        campaign_id = _utc_campaign_id("3w-hpo")
+    storage_dir = args.storage_dir
+    if storage_dir is None and campaign_id:
+        storage_dir = output_dir / args.dataset / campaign_id / "optuna"
+
+    if args.summary_only:
+        summary = _merge_summary(
+            output_dir=output_dir,
+            dataset=args.dataset,
+            campaign_id=campaign_id,
+            models=models,
+            horizon=args.horizon,
+        )
+        path = _summary_path(output_dir, args.dataset, campaign_id)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(_make_serializable(summary), indent=2))
+        logger.info("HPO summary saved: %s", path)
+        if any(row.get("status") != "ok" for row in summary.values()):
+            raise SystemExit(1)
+        return
 
     logger.info("═" * 70)
     logger.info("OPTUNA HPO — %s", args.dataset.upper())
-    logger.info("  models=%s  n_trials=%d  device=%s", models, args.n_trials, args.device)
+    logger.info(
+        "  models=%s  n_trials=%d  device=%s  campaign=%s",
+        models,
+        args.n_trials,
+        args.device,
+        campaign_id or "legacy",
+    )
+    logger.info("  output_dir=%s  storage_dir=%s", output_dir, storage_dir or "config/default")
     logger.info("═" * 70)
 
     summary = {}
+    had_errors = False
     for model_name in models:
         if model_name not in valid_models:
             logger.warning("Unknown model: %s (skipping)", model_name)
@@ -1068,12 +1499,54 @@ def main():
         logger.info("HPO: %s", model_name)
         logger.info("─" * 60)
         start = time.time()
+        out_path = _result_path(
+            output_dir,
+            args.dataset,
+            campaign_id,
+            model_name,
+            horizon=args.horizon,
+        )
+        if not args.force and _should_skip_existing(
+            out_path,
+            args.dataset,
+            args.skip_existing,
+        ):
+            data = _load_json(out_path) or {}
+            summary[model_name] = {
+                "status": "ok",
+                "elapsed": 0.0,
+                "skipped": True,
+                "path": str(out_path),
+                "best_params": data.get("hpo", {}).get("best_params", {}),
+                "test_metrics": data.get("test_metrics", {}),
+            }
+            continue
+
         try:
             if args.dataset == "3w":
                 if model_name == "random_forest":
-                    result = run_3w_rf_hpo(args.n_trials, args.device)
+                    result = run_3w_rf_hpo(
+                        args.n_trials,
+                        args.device,
+                        campaign_id=campaign_id,
+                        storage_dir=storage_dir,
+                        resume=args.resume,
+                        force=args.force,
+                        trial_folds=args.trial_folds,
+                        final_eval=args.final_eval,
+                    )
                 else:
-                    result = run_3w_hpo(model_name, args.n_trials, args.device)
+                    result = run_3w_hpo(
+                        model_name,
+                        args.n_trials,
+                        args.device,
+                        campaign_id=campaign_id,
+                        storage_dir=storage_dir,
+                        resume=args.resume,
+                        force=args.force,
+                        trial_folds=args.trial_folds,
+                        final_eval=args.final_eval,
+                    )
             elif args.dataset == "spe_berg":
                 result = run_spe_berg_hpo(model_name, args.horizon, args.n_trials, args.device)
             elif args.dataset == "volve":
@@ -1084,10 +1557,7 @@ def main():
             elapsed = time.time() - start
 
             # Save per-model result
-            out_dir = RESULTS_DIR / "hpo" / args.dataset
-            out_dir.mkdir(parents=True, exist_ok=True)
-            suffix = f"_{args.horizon}" if args.dataset in ("ganymede", "spe_berg", "volve") else ""
-            out_path = out_dir / f"{model_name}{suffix}.json"
+            out_path.parent.mkdir(parents=True, exist_ok=True)
             out_path.write_text(json.dumps(_make_serializable(result), indent=2))
 
             tm = result.get("test_metrics", {})
@@ -1102,21 +1572,41 @@ def main():
 
             summary[model_name] = {
                 "status": "ok", "elapsed": round(elapsed, 1),
+                "path": str(out_path),
                 "best_params": result["hpo"]["best_params"],
                 "test_metrics": tm,
             }
 
         except Exception as e:
+            had_errors = True
             elapsed = time.time() - start
             logger.error("✗ %s failed: %s (%.1fs)", model_name, e, elapsed)
             traceback.print_exc()
-            summary[model_name] = {"status": "error", "error": str(e), "elapsed": round(elapsed, 1)}
+            error_result = {
+                "status": "error",
+                "error": str(e),
+                "traceback": traceback.format_exc(),
+                "elapsed": round(elapsed, 1),
+                "path": str(out_path),
+            }
+            summary[model_name] = error_result
+            try:
+                out_path.parent.mkdir(parents=True, exist_ok=True)
+                out_path.write_text(json.dumps(_make_serializable(error_result), indent=2))
+            except OSError as write_err:
+                logger.warning("Could not write error artifact %s: %s", out_path, write_err)
 
-    # Save summary
-    summary_path = RESULTS_DIR / "hpo" / f"summary_{args.dataset}.json"
-    summary_path.parent.mkdir(parents=True, exist_ok=True)
-    summary_path.write_text(json.dumps(_make_serializable(summary), indent=2))
-    logger.info("HPO summary saved: %s", summary_path)
+    # Save summary unless this is an array task.
+    if args.no_summary:
+        logger.info("HPO summary skipped (--no-summary)")
+    else:
+        summary_path = _summary_path(output_dir, args.dataset, campaign_id)
+        summary_path.parent.mkdir(parents=True, exist_ok=True)
+        summary_path.write_text(json.dumps(_make_serializable(summary), indent=2))
+        logger.info("HPO summary saved: %s", summary_path)
+
+    if had_errors:
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":

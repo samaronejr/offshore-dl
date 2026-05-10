@@ -31,6 +31,8 @@ training:
   max_epochs: 100
   early_stopping_patience: 20
   gradient_clip_val: 1.0
+  checkpoint_metric: "val_loss"
+  checkpoint_mode: "min"
   scheduler: "onecycle"
   scheduler_pct_start: 0.3
 
