@@ -1,9 +1,8 @@
 """Production training: LSTM, DeepONet, PatchTST on full 3W dataset.
 
 Trains all three models on the complete 3W dataset (no
-``max_instances_per_class`` limit) using ``TemporalSplitCV(train_ratio=0.7)``
-— NOT StratifiedGroupKFoldCV (D#41: folds_clf_02.csv incompatible with
-3W v2.0.0).
+``max_instances_per_class`` limit) using group-aware stratified CV over
+``instance_id`` so windows from the same physical event never cross folds.
 
 Uses direct ``ExperimentRunner`` construction (approach c from the plan)
 to avoid modifying DATASET_REGISTRY defaults.
@@ -38,13 +37,14 @@ import torch
 from omegaconf import OmegaConf
 
 from offshore_dl.data.datasets import ThreeWDataset
-from offshore_dl.evaluation.cv import TemporalSplitCV
+from offshore_dl.evaluation.cv import StratifiedGroupKFoldSKLearn
 from offshore_dl.models.deeponet import DeepONetModel
 from offshore_dl.models.lstm import LSTMModel
 from offshore_dl.models.patchtst import PatchTSTModel
 from offshore_dl.training.experiment import ExperimentRunner
 from offshore_dl.utils.config import load_merged_config
 from offshore_dl.utils.reproducibility import set_global_seed
+from offshore_dl.utils.results import resolve_results_dir
 
 logging.basicConfig(
     level=logging.INFO,
@@ -71,7 +71,7 @@ MODELS: dict[str, dict] = {
     },
 }
 
-RESULTS_DIR = Path("results")
+RESULTS_DIR = resolve_results_dir(for_write=True)
 
 
 from offshore_dl.utils.serialization import make_serializable as _make_serializable
@@ -84,11 +84,7 @@ def _run_model(
     batch_size: int,
     device: str,
 ) -> dict:
-    """Train one model on the full 3W dataset with TemporalSplitCV.
-
-    Follows approach (c): direct ExperimentRunner construction, bypassing
-    DATASET_REGISTRY (whose cv_factory defaults to StratifiedGroupKFoldCV).
-    """
+    """Train one model on the full 3W dataset with group-aware CV."""
     set_global_seed(42)
 
     entry = MODELS[model_name]
@@ -106,8 +102,15 @@ def _run_model(
     cfg.training.batch_size = batch_size
     cfg.device = device
 
-    # TemporalSplitCV — NOT StratifiedGroupKFoldCV
-    cv = TemporalSplitCV(train_ratio=0.7)
+    # Group-aware stratified CV: keep all windows from one instance together.
+    labels = np.array([w["class_id"] for w in dataset._windows])
+    groups = np.array([w["instance_id"] for w in dataset._windows])
+    cv = StratifiedGroupKFoldSKLearn(
+        n_folds=5,
+        labels=labels,
+        groups=groups,
+        seed=42,
+    )
 
     # Build model kwargs: task-specific + architecture from config
     model_kwargs = {
@@ -135,19 +138,34 @@ def _run_model(
         model_kwargs=model_kwargs,
     )
 
-    return runner.run(use_mlflow=True)
+    result = runner.run(use_mlflow=True)
+    result["split_protocol"] = "stratified_group_kfold"
+    result["split_metadata"] = {
+        "n_cv_folds": int(result.get("n_folds", 0)),
+        "group_key": "instance_id",
+        "stratify_key": "class_id",
+        "temporal_split": False,
+    }
+    return result
 
 
 def main() -> None:
+    global RESULTS_DIR
     parser = argparse.ArgumentParser(
-        description="Production training: 3 models on full 3W (TemporalSplitCV)",
+        description="Production training: 3 models on full 3W (stratified group CV)",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     parser.add_argument("--device", type=str, default="cuda", help="Compute device")
     parser.add_argument("--max-epochs", type=int, default=100, help="Max training epochs")
     parser.add_argument("--batch-size", type=int, default=128, help="Batch size")
+    parser.add_argument(
+        "--results-dir",
+        default=str(RESULTS_DIR),
+        help="Output root for repaired result JSONs (default: results/post_fix)",
+    )
 
     args = parser.parse_args()
+    RESULTS_DIR = resolve_results_dir(args.results_dir, for_write=True)
 
     logger.info("═" * 70)
     logger.info("3W PRODUCTION TRAINING — 3 models on full dataset")
@@ -194,6 +212,8 @@ def main() -> None:
                 "elapsed": round(elapsed, 1),
                 "aggregate": agg,
                 "n_folds": results.get("n_folds", 0),
+                "split_protocol": results.get("split_protocol"),
+                "split_metadata": results.get("split_metadata", {}),
             }
             logger.info("✓ %s: %s (%.1fs)", model_name, metric_str, elapsed)
 

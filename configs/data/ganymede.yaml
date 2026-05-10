@@ -15,6 +15,7 @@ data:
   target_column: "ALLOC_GAS_VOL_MMSCF"
   cv_gap_policy: "causal_horizon"  # auto cv_gap = forecasting.default_horizon
   cv_gap: null
+  strict_target_column: true
 
   # Feature columns to retain (after dropping 100%-missing ones)
   feature_columns:

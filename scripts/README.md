@@ -1,6 +1,6 @@
 # scripts/
 
-Production scripts, HPC job definitions, and utility wrappers.
+Production scripts, HPC job definitions, and utility wrappers. New production benchmark writers default to `results/post_fix/` unless `--results-dir` or `OFFSHORE_DL_RESULTS_DIR` is set; HPO stays under `results/hpo/` unless `--output-dir` is set.
 
 ## Production Sweeps
 
@@ -8,7 +8,7 @@ Production scripts, HPC job definitions, and utility wrappers.
 |--------|-------------|
 | `run_production_ganymede.py` | Full Ganymede sweep: 7 models × 4 horizons × (multi_well + 7 per_well). Supports `--models` filter and `--dry-run`. |
 | `run_production_3w_features.py` | 3W classification with statistical feature extraction. Supports `--models` filter. |
-| `run_production_3w.py` | 3W classification on raw 720-step windows (no feature extraction). |
+| `run_production_3w.py` | 3W classification on raw 720-step windows with stratified `instance_id` group CV (no feature extraction). |
 | `run_production_cdf.py` | CDF anomaly detection sweep: 6 models. |
 | `run_all_production.sh` | Runs all production sweeps sequentially. |
 

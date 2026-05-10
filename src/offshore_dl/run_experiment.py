@@ -75,6 +75,7 @@ except ImportError:
 from offshore_dl.training.experiment import ExperimentRunner
 from offshore_dl.utils.config import load_merged_config
 from offshore_dl.utils.reproducibility import set_global_seed
+from offshore_dl.utils.results import resolve_results_dir
 
 
 def _cfg_get(node, key: str, default=None):
@@ -158,6 +159,7 @@ logger = logging.getLogger(__name__)
 MODEL_REGISTRY: dict[str, type] = {
     "lstm": LSTMModel,
     "deeponet": DeepONetModel,
+    "deeponet_trunk_clf": DeepONetModel,
     "tcn": TCNModel,
     "inception_time": InceptionTimeModel,
     "convtran": ConvTranModel,
@@ -481,7 +483,7 @@ def run_and_save(
     batch_size: int | None = None,
     device: str = "cpu",
     use_mlflow: bool = True,
-    output_dir: str | Path = "results",
+    output_dir: str | Path | None = None,
     dataset_kwargs: dict | None = None,
 ) -> dict:
     """Run an experiment and save results to JSON.
@@ -513,7 +515,8 @@ def run_and_save(
     results = runner.run(use_mlflow=use_mlflow)
 
     # Save results
-    out_path = Path(output_dir) / model_name / f"{dataset_name}.json"
+    output_root = resolve_results_dir(output_dir, for_write=True)
+    out_path = output_root / model_name / f"{dataset_name}.json"
 
     # Encode horizon/mode in filename for ganymede multi-horizon runs
     if dataset_name == "ganymede" and dataset_kwargs:
@@ -523,13 +526,13 @@ def run_and_save(
         if well_name:
             safe_name = well_name.replace("/", "_")
             out_path = (
-                Path(output_dir)
+                output_root
                 / model_name
                 / f"ganymede_h{horizon}_{mode}_{safe_name}.json"
             )
         else:
             out_path = (
-                Path(output_dir) / model_name / f"ganymede_h{horizon}_{mode}.json"
+                output_root / model_name / f"ganymede_h{horizon}_{mode}.json"
             )
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -586,7 +589,10 @@ def main() -> None:
         "--no-mlflow", action="store_true", help="Disable MLflow logging"
     )
     parser.add_argument(
-        "--output-dir", type=str, default="results", help="Output directory for results"
+        "--output-dir",
+        type=str,
+        default=str(resolve_results_dir(for_write=True)),
+        help="Output directory for repaired result JSONs",
     )
     parser.add_argument(
         "--max-instances",

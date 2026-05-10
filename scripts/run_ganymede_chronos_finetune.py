@@ -21,10 +21,11 @@ import numpy as np
 import torch
 
 from offshore_dl.data.datasets import GanymedeDataset
-from offshore_dl.evaluation.cv import GroupedTemporalHoldoutSplitter
+from offshore_dl.evaluation.cv import GroupedTemporalHoldoutSplitter, resolve_cv_gap
 from offshore_dl.evaluation.metrics import MetricRegistry
 from offshore_dl.utils.config import load_merged_config
 from offshore_dl.utils.reproducibility import set_global_seed
+from offshore_dl.utils.results import resolve_results_dir
 
 logging.basicConfig(
     level=logging.INFO,
@@ -32,7 +33,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-RESULTS_DIR = Path("results") / "chronos_finetuned"
+RESULTS_DIR = resolve_results_dir(for_write=True) / "chronos_finetuned"
 DEFAULT_MODEL_NAME = "amazon/chronos-2"
 
 
@@ -53,8 +54,17 @@ def _sample_groups(dataset: GanymedeDataset) -> np.ndarray:
 
 
 def _make_holdout(dataset: GanymedeDataset) -> GroupedTemporalHoldoutSplitter:
+    data_cfg = dataset.cfg.data
+    gap = resolve_cv_gap(
+        data_cfg.get("cv_gap_policy", "causal_horizon"),
+        task="forecasting",
+        input_window=int(dataset.input_window),
+        horizon=int(dataset.horizon),
+        dataset_gap=int(dataset.gap),
+        explicit_gap=data_cfg.get("cv_gap", None),
+    )
     return GroupedTemporalHoldoutSplitter(
-        test_ratio=0.2, groups=_sample_groups(dataset)
+        test_ratio=0.2, groups=_sample_groups(dataset), gap=gap
     )
 
 
@@ -389,11 +399,18 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--cross-learning", action="store_true")
     parser.add_argument("--max-test-samples", type=int, default=None)
     parser.add_argument("--logging-steps", type=int, default=50)
+    parser.add_argument(
+        "--results-dir",
+        default=str(RESULTS_DIR),
+        help="Output root for repaired Chronos fine-tune artifacts.",
+    )
     return parser.parse_args()
 
 
 def main() -> None:
+    global RESULTS_DIR
     args = parse_args()
+    RESULTS_DIR = resolve_results_dir(args.results_dir, for_write=True)
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
     all_results = [run_horizon(args, horizon) for horizon in args.horizons]
     summary = {result["horizon"]: result["test_metrics"] for result in all_results}

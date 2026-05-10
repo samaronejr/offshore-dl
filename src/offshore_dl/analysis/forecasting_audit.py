@@ -168,10 +168,23 @@ class RawDenominatorComputer:
         from offshore_dl.evaluation.cv import (  # noqa: PLC0415 - lazy import.
             GroupedExpandingWindowCV,
             GroupedTemporalHoldoutSplitter,
+            resolve_cv_gap,
+        )
+
+        data_cfg = dataset.cfg.data
+        policy = data_cfg.get("cv_gap_policy", "causal_horizon")
+        explicit_gap = data_cfg.get("cv_gap", None)
+        cv_gap = resolve_cv_gap(
+            policy,
+            task="forecasting",
+            input_window=int(getattr(dataset, "input_window", 0)),
+            horizon=int(getattr(dataset, "horizon", data_cfg.forecasting.default_horizon)),
+            dataset_gap=int(getattr(dataset, "gap", data_cfg.forecasting.get("gap", 0))),
+            explicit_gap=explicit_gap,
         )
 
         groups = np.asarray([well_idx for well_idx, _ in dataset._samples], dtype=np.int32)
-        holdout = GroupedTemporalHoldoutSplitter(test_ratio=0.2, groups=groups)
+        holdout = GroupedTemporalHoldoutSplitter(test_ratio=0.2, groups=groups, gap=cv_gap)
         train_pool, _test_indices = holdout.split(len(dataset))
         if split_kind == "test":
             return np.asarray(train_pool, dtype=np.int64)
@@ -183,6 +196,7 @@ class RawDenominatorComputer:
             groups=groups[train_pool],
             n_splits=3,
             min_train_ratio=0.5,
+            gap=cv_gap,
         )
         splits = cv.get_splits(len(train_pool))
         if fold_idx >= len(splits):

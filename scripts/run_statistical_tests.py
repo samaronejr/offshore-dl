@@ -19,10 +19,12 @@ from scipy import stats
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
+from offshore_dl.utils.results import resolve_results_dir
+
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
-RESULTS_DIR = Path("results")
+RESULTS_DIR = resolve_results_dir(for_write=False)
 REPORT_PATH = Path("reports") / "statistical_tests_nested.json"
 
 # ── 3W classification models ──

@@ -13,6 +13,7 @@ from offshore_dl.evaluation.cv import (
     FoldNormalizer,
     GroupedExpandingWindowCV,
     GroupedTemporalHoldoutSplitter,
+    HoldoutSplitter,
     LeakageGuard,
     SlidingWindowCV,
     StratifiedGroupKFoldSKLearn,
@@ -257,6 +258,22 @@ class TestGroupedTemporalHoldoutSplitter:
             assert len(group_train) == 8
             assert len(group_test) == 2
             assert group_train.max() < group_test.min()
+
+    def test_gap_applies_inside_each_group(self) -> None:
+        groups = np.array(["well_a"] * 20 + ["well_b"] * 20)
+        splitter = GroupedTemporalHoldoutSplitter(test_ratio=0.2, groups=groups, gap=3)
+        train_idx, test_idx = splitter.split(len(groups))
+
+        for group in np.unique(groups):
+            group_train = train_idx[groups[train_idx] == group]
+            group_test = test_idx[groups[test_idx] == group]
+            assert len(group_train) == 13
+            assert len(group_test) == 4
+            assert group_test.min() - group_train.max() == 4
+
+    def test_negative_gap_raises(self) -> None:
+        with pytest.raises(ValueError, match="gap must be non-negative"):
+            GroupedTemporalHoldoutSplitter(test_ratio=0.2, groups=np.arange(10), gap=-1)
 
 
 class TestGroupedExpandingWindowCV:
@@ -505,6 +522,50 @@ class TestHoldoutSplitter:
         assert len(train) == 800
         assert len(test) == 200
         assert len(set(train) & set(test)) == 0
+
+    def test_temporal_gap_shortens_train_and_preserves_test_tail(self) -> None:
+        hs = HoldoutSplitter(test_ratio=0.2, mode="temporal", gap=47)
+        train, test = hs.split(1000)
+
+        assert len(test) == 200
+        assert test[0] == 800
+        assert train[-1] == 752
+        assert test[0] - train[-1] == 48
+
+    def test_temporal_gap_prevents_cdf_raw_row_overlap(self) -> None:
+        hs = HoldoutSplitter(test_ratio=0.2, mode="temporal", gap=47)
+        train, test = hs.split(200)
+
+        assert validate_raw_row_embargo(
+            train,
+            test,
+            task="anomaly",
+            window_size=48,
+        )["passed"]
+
+    def test_temporal_gap_prevents_forecasting_strict_raw_row_overlap(self) -> None:
+        hs = HoldoutSplitter(test_ratio=0.2, mode="temporal", gap=24)
+        train, test = hs.split(200)
+
+        assert validate_raw_row_embargo(
+            train,
+            test,
+            task="forecasting",
+            input_window=20,
+            horizon=5,
+        )["passed"]
+
+    def test_temporal_gap_prevents_forecasting_target_overlap(self) -> None:
+        hs = HoldoutSplitter(test_ratio=0.2, mode="temporal", gap=5)
+        train, test = hs.split(200)
+
+        train_target = target_interval(int(train[-1]), input_window=20, horizon=5)
+        test_target = target_interval(int(test[0]), input_window=20, horizon=5)
+        assert train_target[1] < test_target[0]
+
+    def test_negative_gap_raises(self) -> None:
+        with pytest.raises(ValueError, match="holdout gap must be non-negative"):
+            HoldoutSplitter(test_ratio=0.2, mode="temporal", gap=-1)
 
     def test_temporal_ordering_preserved(self) -> None:
         from offshore_dl.evaluation.cv import HoldoutSplitter
