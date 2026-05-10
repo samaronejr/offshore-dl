@@ -11,6 +11,8 @@ data:
 
   timestamp_column: "timestamp"
   well_column: "well_id"
+  cv_gap_policy: "strict_raw_row"  # auto cv_gap = preprocessing.window_size - 1
+  cv_gap: null
 
   # Sensor columns (drop "PH (CBM) 1st Stage Poly Eff Dev" — 100% missing)
   sensor_columns:

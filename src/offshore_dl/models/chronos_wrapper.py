@@ -37,6 +37,8 @@ class ChronosWrapper(BaseModel):
         lr: Unused (zero-shot), kept for BaseModel compatibility.
     """
 
+    is_zero_shot = True
+
     def __init__(
         self,
         task: str,
@@ -88,11 +90,12 @@ class ChronosWrapper(BaseModel):
             - anomaly: ``(batch, window, n_vars)`` — predicts each channel
         """
         self._load_pipeline()
-        batch_size = x.shape[0]
+        device = x.device
 
         if self.task == "forecasting":
-            # Extract target channel: (batch, window)
-            context = x[:, :, self.target_channel]
+            # Extract target channel on CPU because the Chronos pipeline is
+            # loaded with ``device_map="cpu"``.
+            context = x[:, :, self.target_channel].detach().cpu()
             pred_length = self.horizon
 
             # Chronos predict: returns (batch, n_samples, pred_length)
@@ -101,7 +104,7 @@ class ChronosWrapper(BaseModel):
 
             # Median of samples: (batch, pred_length)
             median = samples.median(dim=1).values
-            return median
+            return median.to(device=device)
 
         elif self.task == "anomaly":
             # NOTE: FMs forecast the NEXT window of values, not reconstruct the
@@ -112,14 +115,14 @@ class ChronosWrapper(BaseModel):
             # Per-channel prediction for reconstruction
             all_preds = []
             for ch in range(self.n_vars):
-                context = x[:, :, ch]  # (batch, window)
+                context = x[:, :, ch].detach().cpu()  # (batch, window)
                 with torch.no_grad():
                     samples = self._pipeline.predict(context, prediction_length=self.window_size)
                 median = samples.median(dim=1).values  # (batch, window)
                 all_preds.append(median)
 
             # Stack: (batch, window, n_vars)
-            return torch.stack(all_preds, dim=-1)
+            return torch.stack(all_preds, dim=-1).to(device=device)
 
         msg = f"Unsupported task: {self.task}"
         raise ValueError(msg)
@@ -127,7 +130,8 @@ class ChronosWrapper(BaseModel):
     def training_step(self, batch: tuple) -> torch.Tensor:
         """No-op — zero-shot model doesn't train. Returns dummy loss."""
         warnings.warn("Chronos is zero-shot — training_step is a no-op", stacklevel=2)
-        return torch.tensor(0.0, requires_grad=True)
+        device = batch[0].device if batch and isinstance(batch[0], torch.Tensor) else self._dummy.device
+        return torch.tensor(0.0, device=device, requires_grad=True)
 
     def predict(self, batch: tuple) -> torch.Tensor:
         """Generate zero-shot predictions."""

@@ -60,10 +60,12 @@ class FocalLoss(nn.Module):
         Returns:
             Scalar loss.
         """
-        # Per-sample CE (unreduced) — already incorporates class weights
+        # p_t is the true-class probability and must be computed from
+        # unweighted CE. Class weights scale the CE term only; folding them
+        # into p_t would make the focal modulation depend on class weighting.
+        unweighted_ce = F.cross_entropy(logits, targets, reduction="none")
         ce_loss = F.cross_entropy(logits, targets, weight=self.weight, reduction="none")
-        # p_t = probability assigned to the true class
-        p_t = torch.exp(-ce_loss)
+        p_t = torch.exp(-unweighted_ce)
         focal_weight = (1.0 - p_t).pow(self.gamma)
         loss = focal_weight * ce_loss
 

@@ -7,6 +7,7 @@ slices call. Wires model + dataset + CV + metrics + Trainer + MLflow.
 from __future__ import annotations
 
 import logging
+import numbers
 from typing import Any
 
 import numpy as np
@@ -264,12 +265,58 @@ class ExperimentRunner:
         cv_strategy: Any,
         cfg: DictConfig,
         model_kwargs: dict | None = None,
+        runtime_adjustments: dict | None = None,
     ) -> None:
         self.model_class = model_class
         self.dataset = dataset
         self.cv_strategy = cv_strategy
         self.cfg = cfg
         self.model_kwargs = model_kwargs or {}
+        self.runtime_adjustments = runtime_adjustments or {}
+
+    @staticmethod
+    def _is_mlflow_metric_value(value: Any) -> bool:
+        """MLflow metrics must be finite, real, non-bool scalars."""
+        if isinstance(value, (bool, np.bool_)):
+            return False
+        if not isinstance(value, numbers.Real):
+            return False
+        return bool(np.isfinite(value))
+
+    @staticmethod
+    def _log_mlflow_metric_or_param(mlflow: Any, key: str, value: Any) -> None:
+        """Log numeric metrics separately from string/bool provenance params."""
+        if ExperimentRunner._is_mlflow_metric_value(value):
+            try:
+                mlflow.log_metric(key[:250], float(value))
+            except Exception as exc:  # pragma: no cover - defensive tracking path
+                logger.debug("MLflow metric logging skipped for %s: %s", key, exc)
+            return
+
+        if isinstance(value, (str, bool, np.bool_)):
+            try:
+                mlflow.log_param(key[:250], str(value)[:250])
+            except Exception as exc:  # pragma: no cover - defensive tracking path
+                logger.debug("MLflow param logging skipped for %s: %s", key, exc)
+
+    @staticmethod
+    def _log_mlflow_values(mlflow: Any, prefix: str, values: dict) -> None:
+        """Log a metric/provenance dictionary to MLflow with an optional prefix."""
+        for key, value in values.items():
+            full_key = f"{prefix}_{key}" if prefix else key
+            ExperimentRunner._log_mlflow_metric_or_param(mlflow, full_key, value)
+
+    @staticmethod
+    def _zero_epoch_history() -> dict:
+        """History shape used when a zero-shot model intentionally skips fit."""
+        return {
+            "train_loss": [],
+            "val_loss": [],
+            "epochs_run": 0,
+            "best_epoch": None,
+            "stopped_early": False,
+            "cost": {},
+        }
 
     def run(
         self,
@@ -302,6 +349,7 @@ class ExperimentRunner:
                 "cost": {},
                 "experiment_name": experiment_name or "unknown",
                 "n_folds": 0,
+                "runtime_adjustments": self.runtime_adjustments,
             }
 
         task = self.model_kwargs.get("task", "classification")
@@ -356,11 +404,7 @@ class ExperimentRunner:
                 # Log aggregate metrics to parent
                 agg = self._aggregate_folds(fold_results)
                 if mlflow:
-                    for key, val in agg.items():
-                        try:
-                            mlflow.log_metric(key, val)
-                        except Exception:
-                            pass
+                    self._log_mlflow_values(mlflow, "", agg)
                 mlflow.end_run()
 
         aggregate = self._aggregate_folds(fold_results)
@@ -371,6 +415,7 @@ class ExperimentRunner:
             "cost": self._aggregate_costs(all_costs),
             "experiment_name": experiment_name,
             "n_folds": len(splits),
+            "runtime_adjustments": self.runtime_adjustments,
         }
 
     def run_nested(
@@ -556,14 +601,18 @@ class ExperimentRunner:
 
         device = getattr(self.cfg, "device", "cpu")
         trainer = Trainer(cfg=self.cfg, device=device)
-        retrain_history = trainer.fit(
-            model,
-            train_loader,
-            retrain_val_loader,
-            max_epochs=(
-                self.cfg.training.max_epochs if hasattr(self.cfg, "training") else 5
-            ),
-        )
+        model.to(trainer.device)
+        if getattr(model, "is_zero_shot", False):
+            retrain_history = self._zero_epoch_history()
+        else:
+            retrain_history = trainer.fit(
+                model,
+                train_loader,
+                retrain_val_loader,
+                max_epochs=(
+                    self.cfg.training.max_epochs if hasattr(self.cfg, "training") else 5
+                ),
+            )
 
         # Log retrain per-epoch curves to MLflow
         if mlflow is not None:
@@ -603,6 +652,8 @@ class ExperimentRunner:
         all_preds, all_targets = [], []
         all_scores = []
         all_instance_ids = []
+        all_groups = []
+        all_orders = []
         for batch in test_loader:
             batch = tuple(
                 t.to(trainer.device) if isinstance(t, torch.Tensor) else t
@@ -618,6 +669,13 @@ class ExperimentRunner:
                 instance_ids = self._extract_instance_ids(metadata)
                 if instance_ids is not None:
                     all_instance_ids.append(instance_ids)
+            if task == "forecasting":
+                group_ids = self._extract_group_ids(metadata)
+                if group_ids is not None:
+                    all_groups.append(group_ids)
+                order_ids = self._extract_order_ids(metadata)
+                if order_ids is not None:
+                    all_orders.append(order_ids)
             if isinstance(targets, torch.Tensor):
                 all_targets.append(targets.cpu())
             else:
@@ -630,6 +688,18 @@ class ExperimentRunner:
             np.concatenate(all_instance_ids)
             if all_instance_ids
             and sum(len(x) for x in all_instance_ids) == len(predictions)
+            else None
+        )
+        groups = (
+            np.concatenate(all_groups)
+            if all_groups
+            and sum(len(x) for x in all_groups) == len(predictions)
+            else None
+        )
+        orders = (
+            np.concatenate(all_orders)
+            if all_orders
+            and sum(len(x) for x in all_orders) == len(predictions)
             else None
         )
 
@@ -647,15 +717,31 @@ class ExperimentRunner:
 
         # Collect training targets for MASE denominator (subsample for efficiency)
         y_train_for_mase = None
+        y_train_groups_for_mase = None
+        y_train_order_for_mase = None
         if task == "forecasting":
             try:
                 rng = np.random.default_rng(42)
                 sample_idx = rng.choice(
                     len(train_pool), size=min(5000, len(train_pool)), replace=False
                 )
-                y_train_for_mase = np.array(
-                    [self.dataset[int(train_pool[int(i)])][1].numpy() for i in sample_idx]
-                ).ravel()
+                train_targets = []
+                train_groups = []
+                train_orders = []
+                for i in sample_idx:
+                    _, target, metadata = self.dataset[int(train_pool[int(i)])]
+                    train_targets.append(target.numpy() if hasattr(target, "numpy") else target)
+                    group_id = self._extract_single_group_id(metadata)
+                    if group_id is not None:
+                        train_groups.append(group_id)
+                    order_id = self._extract_single_order_id(metadata)
+                    if order_id is not None:
+                        train_orders.append(order_id)
+                y_train_for_mase = np.array(train_targets)
+                if len(train_groups) == len(train_targets):
+                    y_train_groups_for_mase = np.asarray(train_groups, dtype=object)
+                if len(train_orders) == len(train_targets):
+                    y_train_order_for_mase = np.asarray(train_orders, dtype=object)
                 if target_mean is not None and target_std is not None:
                     y_train_for_mase = NormalizedSubset.denormalize_targets(
                         y_train_for_mase,
@@ -674,6 +760,10 @@ class ExperimentRunner:
             prediction_scores=prediction_scores,
             instance_ids=instance_ids,
             y_train=y_train_for_mase,
+            groups=groups,
+            y_train_groups=y_train_groups_for_mase,
+            order=orders,
+            y_train_order=y_train_order_for_mase,
         )
 
         logger.info(
@@ -686,12 +776,8 @@ class ExperimentRunner:
 
         # ── Log final test metrics + close parent run ──
         if mlflow is not None:
-            for k, v in cv_aggregate.items():
-                if isinstance(v, (int, float)):
-                    mlflow.log_metric(f"cv_{k}", v)
-            for k, v in test_metrics.items():
-                if isinstance(v, (int, float)):
-                    mlflow.log_metric(f"test_{k}", v)
+            self._log_mlflow_values(mlflow, "cv", cv_aggregate)
+            self._log_mlflow_values(mlflow, "test", test_metrics)
             logger.info("MLflow run logged successfully")
             if parent_run_ctx is not None:
                 parent_run_ctx.__exit__(None, None, None)
@@ -725,6 +811,7 @@ class ExperimentRunner:
             "n_retrain_val": len(retrain_val_idx),
             "n_cv_folds": len(inner_splits),
             "experiment_name": experiment_name or "unknown",
+            "runtime_adjustments": self.runtime_adjustments,
         }
 
     def _run_fold(
@@ -848,14 +935,18 @@ class ExperimentRunner:
             # Train
             device = getattr(self.cfg, "device", "cpu")
             trainer = Trainer(cfg=self.cfg, device=device)
-            history = trainer.fit(
-                model,
-                train_loader,
-                val_loader,
-                max_epochs=self.cfg.training.max_epochs
-                if hasattr(self.cfg, "training")
-                else 5,
-            )
+            model.to(trainer.device)
+            if getattr(model, "is_zero_shot", False):
+                history = self._zero_epoch_history()
+            else:
+                history = trainer.fit(
+                    model,
+                    train_loader,
+                    val_loader,
+                    max_epochs=self.cfg.training.max_epochs
+                    if hasattr(self.cfg, "training")
+                    else 5,
+                )
 
             # Log per-epoch metrics to MLflow
             if mlflow and child_run:
@@ -875,6 +966,8 @@ class ExperimentRunner:
             all_targets = []
             all_scores = []
             all_instance_ids = []
+            all_groups = []
+            all_orders = []
             for batch in val_loader:
                 batch = tuple(
                     t.to(trainer.device) if isinstance(t, torch.Tensor) else t
@@ -890,6 +983,13 @@ class ExperimentRunner:
                     instance_ids = self._extract_instance_ids(metadata)
                     if instance_ids is not None:
                         all_instance_ids.append(instance_ids)
+                if task == "forecasting":
+                    group_ids = self._extract_group_ids(metadata)
+                    if group_ids is not None:
+                        all_groups.append(group_ids)
+                    order_ids = self._extract_order_ids(metadata)
+                    if order_ids is not None:
+                        all_orders.append(order_ids)
                 if isinstance(targets, torch.Tensor):
                     all_targets.append(targets.cpu())
                 else:
@@ -902,6 +1002,18 @@ class ExperimentRunner:
                 np.concatenate(all_instance_ids)
                 if all_instance_ids
                 and sum(len(x) for x in all_instance_ids) == len(predictions)
+                else None
+            )
+            groups = (
+                np.concatenate(all_groups)
+                if all_groups
+                and sum(len(x) for x in all_groups) == len(predictions)
+                else None
+            )
+            orders = (
+                np.concatenate(all_orders)
+                if all_orders
+                and sum(len(x) for x in all_orders) == len(predictions)
                 else None
             )
 
@@ -919,18 +1031,33 @@ class ExperimentRunner:
                 )
 
             y_train_for_mase = None
+            y_train_groups_for_mase = None
+            y_train_order_for_mase = None
             if task == "forecasting":
                 try:
                     rng = np.random.default_rng(42)
                     sample_idx = rng.choice(
                         len(train_idx), size=min(5000, len(train_idx)), replace=False
                     )
-                    y_train_for_mase = np.array(
-                        [
-                            self.dataset[int(train_idx[i])][1].numpy()
-                            for i in sample_idx
-                        ]
-                    ).ravel()
+                    train_targets = []
+                    train_groups = []
+                    train_orders = []
+                    for i in sample_idx:
+                        _, target, metadata = self.dataset[int(train_idx[i])]
+                        train_targets.append(
+                            target.numpy() if hasattr(target, "numpy") else target
+                        )
+                        group_id = self._extract_single_group_id(metadata)
+                        if group_id is not None:
+                            train_groups.append(group_id)
+                        order_id = self._extract_single_order_id(metadata)
+                        if order_id is not None:
+                            train_orders.append(order_id)
+                    y_train_for_mase = np.array(train_targets)
+                    if len(train_groups) == len(train_targets):
+                        y_train_groups_for_mase = np.asarray(train_groups, dtype=object)
+                    if len(train_orders) == len(train_targets):
+                        y_train_order_for_mase = np.asarray(train_orders, dtype=object)
                     if target_mean is not None and target_std is not None:
                         y_train_for_mase = NormalizedSubset.denormalize_targets(
                             y_train_for_mase,
@@ -950,15 +1077,15 @@ class ExperimentRunner:
                 prediction_scores=prediction_scores,
                 instance_ids=instance_ids,
                 y_train=y_train_for_mase,
+                groups=groups,
+                y_train_groups=y_train_groups_for_mase,
+                order=orders,
+                y_train_order=y_train_order_for_mase,
             )
 
             # Log fold metrics to MLflow
             if mlflow and child_run:
-                for k, v in metrics.items():
-                    try:
-                        mlflow.log_metric(f"val_{k}", v)
-                    except Exception:
-                        pass
+                self._log_mlflow_values(mlflow, "val", metrics)
 
             fold_result = {
                 "fold_idx": fold_idx,
@@ -1002,7 +1129,7 @@ class ExperimentRunner:
             values = []
             for fr in fold_results:
                 v = fr.get("metrics", {}).get(key)
-                if v is not None and isinstance(v, (int, float)) and np.isfinite(v):
+                if v is not None and ExperimentRunner._is_mlflow_metric_value(v):
                     values.append(v)
             if values:
                 agg[f"{key}_mean"] = float(np.mean(values))
@@ -1064,6 +1191,92 @@ class ExperimentRunner:
         if instance_ids.ndim == 0:
             instance_ids = instance_ids.reshape(1)
         return instance_ids
+
+    @staticmethod
+    def _extract_group_ids(metadata: Any) -> np.ndarray | None:
+        """Extract per-sample forecasting group IDs from collated metadata."""
+        if isinstance(metadata, dict):
+            for key in ("well_id", "well_idx", "well", "group", "instance_id"):
+                if key in metadata:
+                    values = metadata[key]
+                    break
+            else:
+                return None
+        elif isinstance(metadata, list) and metadata and isinstance(metadata[0], dict):
+            values = [
+                ExperimentRunner._extract_single_group_id(m)
+                for m in metadata
+            ]
+        else:
+            return None
+
+        if isinstance(values, torch.Tensor):
+            values = values.detach().cpu().numpy()
+        elif isinstance(values, tuple):
+            values = list(values)
+
+        values = np.asarray(values, dtype=object)
+        if values.ndim == 0:
+            values = values.reshape(1)
+        return values
+
+    @staticmethod
+    def _extract_single_group_id(metadata: Any) -> object | None:
+        """Extract one group ID from uncollated dataset metadata."""
+        if not isinstance(metadata, dict):
+            return None
+        for key in ("well_id", "well_idx", "well", "group", "instance_id"):
+            if key in metadata:
+                value = metadata[key]
+                if isinstance(value, torch.Tensor):
+                    if value.numel() == 1:
+                        return value.detach().cpu().item()
+                    return tuple(value.detach().cpu().numpy().tolist())
+                return value
+        return None
+
+    @staticmethod
+    def _extract_order_ids(metadata: Any) -> np.ndarray | None:
+        """Extract per-sample temporal order from collated forecasting metadata."""
+        if isinstance(metadata, dict):
+            for key in ("target_start", "start_idx", "timestamp"):
+                if key in metadata:
+                    values = metadata[key]
+                    break
+            else:
+                return None
+        elif isinstance(metadata, list) and metadata and isinstance(metadata[0], dict):
+            values = [
+                ExperimentRunner._extract_single_order_id(m)
+                for m in metadata
+            ]
+        else:
+            return None
+
+        if isinstance(values, torch.Tensor):
+            values = values.detach().cpu().numpy()
+        elif isinstance(values, tuple):
+            values = list(values)
+
+        values = np.asarray(values, dtype=object)
+        if values.ndim == 0:
+            values = values.reshape(1)
+        return values
+
+    @staticmethod
+    def _extract_single_order_id(metadata: Any) -> object | None:
+        """Extract one temporal order value from uncollated metadata."""
+        if not isinstance(metadata, dict):
+            return None
+        for key in ("target_start", "start_idx", "timestamp"):
+            if key in metadata:
+                value = metadata[key]
+                if isinstance(value, torch.Tensor):
+                    if value.numel() == 1:
+                        return value.detach().cpu().item()
+                    return tuple(value.detach().cpu().numpy().tolist())
+                return value
+        return None
 
     @staticmethod
     def _aggregate_costs(costs: list[dict]) -> dict:

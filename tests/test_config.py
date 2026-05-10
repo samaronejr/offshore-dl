@@ -92,3 +92,22 @@ class TestConfigToFlatDict:
         flat = config_to_flat_dict(cfg)
         for k, v in flat.items():
             assert isinstance(v, str), f"Key {k} has non-string value: {type(v)}"
+
+
+def test_hpo_scheduler_choices_are_supported(configs_dir: Path) -> None:
+    """Model HPO configs must not search schedulers unsupported by Trainer."""
+    supported = {"onecycle", "cosine", "reduce_on_plateau"}
+    offenders: dict[str, list[str]] = {}
+
+    for path in sorted((configs_dir / "models").glob("*.yaml")):
+        cfg = load_config(path)
+        search_space = cfg.get("model", {}).get("optuna_search_space", {})
+        scheduler_spec = search_space.get("scheduler")
+        if not scheduler_spec:
+            continue
+        choices = list(scheduler_spec.get("choices", []))
+        unsupported = [choice for choice in choices if choice not in supported]
+        if unsupported:
+            offenders[path.name] = unsupported
+
+    assert offenders == {}

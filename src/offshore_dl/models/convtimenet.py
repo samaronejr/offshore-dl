@@ -697,6 +697,7 @@ class ConvTimeNetModel(BaseModel):
         window_size: int = 720,
         loss_type: str = "ce",
         focal_gamma: float = 2.0,
+        label_smoothing: float = 0.0,
         class_weights: torch.Tensor | None = None,
         **kwargs,
     ) -> None:
@@ -713,6 +714,7 @@ class ConvTimeNetModel(BaseModel):
             n_vars=n_vars,
             loss_type=loss_type,
             focal_gamma=focal_gamma,
+            label_smoothing=label_smoothing,
             class_weights=class_weights,
         )
 

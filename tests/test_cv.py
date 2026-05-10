@@ -17,6 +17,10 @@ from offshore_dl.evaluation.cv import (
     SlidingWindowCV,
     StratifiedGroupKFoldSKLearn,
     TemporalSplitCV,
+    resolve_cv_gap,
+    resolve_cv_gap_from_config,
+    target_interval,
+    validate_raw_row_embargo,
 )
 
 
@@ -60,6 +64,14 @@ class TestExpandingWindowCV:
         for train_idx, val_idx in splits:
             assert val_idx.min() - train_idx.max() > 1, "Gap should separate train/val"
 
+    def test_gap_preserves_validation_block_size_when_space_remains(self) -> None:
+        cv = ExpandingWindowCV(n_splits=3, min_train_ratio=0.5, gap=10)
+        splits = cv.get_splits(300)
+
+        assert [len(val_idx) for _, val_idx in splits[:2]] == [50, 50]
+        for train_idx, val_idx in splits:
+            assert val_idx.min() - train_idx.max() == 11
+
     def test_small_dataset(self) -> None:
         cv = ExpandingWindowCV(n_splits=3, min_train_ratio=0.5)
         splits = cv.get_splits(10)
@@ -67,6 +79,124 @@ class TestExpandingWindowCV:
         for train_idx, val_idx in splits:
             assert len(train_idx) > 0
             assert len(val_idx) > 0
+
+
+class TestCVGapPolicy:
+    """Explicit embargo policy helpers."""
+
+    def test_cdf_strict_raw_row_gap_from_config(self) -> None:
+        cfg = {
+            "task": "anomaly",
+            "cv_gap_policy": "strict_raw_row",
+            "cv_gap": None,
+            "preprocessing": {"window_size": 48},
+        }
+        assert resolve_cv_gap_from_config(cfg) == 47
+
+    def test_forecasting_causal_horizon_gap_from_config(self) -> None:
+        cfg = {
+            "task": "forecasting",
+            "cv_gap_policy": "causal_horizon",
+            "cv_gap": None,
+            "forecasting": {"input_window": 90, "default_horizon": 30, "gap": 0},
+        }
+        assert resolve_cv_gap_from_config(cfg) == 30
+
+    def test_forecasting_strict_raw_row_gap(self) -> None:
+        assert resolve_cv_gap(
+            "strict_raw_row",
+            task="forecasting",
+            input_window=90,
+            dataset_gap=3,
+            horizon=30,
+        ) == 122
+
+    def test_explicit_negative_cv_gap_raises(self) -> None:
+        with pytest.raises(ValueError, match="cv_gap must be non-negative"):
+            resolve_cv_gap("causal_horizon", task="forecasting", horizon=7, explicit_gap=-1)
+
+        with pytest.raises(ValueError, match="cv_gap must be non-negative"):
+            resolve_cv_gap_from_config(
+                {
+                    "task": "anomaly",
+                    "cv_gap_policy": "strict_raw_row",
+                    "cv_gap": -1,
+                    "preprocessing": {"window_size": 48},
+                }
+            )
+
+    def test_auto_cv_gap_behaves_like_missing_gap(self) -> None:
+        auto_cfg = {
+            "task": "anomaly",
+            "cv_gap_policy": "strict_raw_row",
+            "cv_gap": "auto",
+            "preprocessing": {"window_size": 48},
+        }
+        missing_cfg = dict(auto_cfg)
+        missing_cfg["cv_gap"] = None
+
+        assert resolve_cv_gap_from_config(auto_cfg) == resolve_cv_gap_from_config(missing_cfg)
+
+    def test_forecasting_strict_raw_row_gap_from_config(self) -> None:
+        assert (
+            resolve_cv_gap_from_config(
+                {
+                    "task": "forecasting",
+                    "cv_gap_policy": "strict_raw_row",
+                    "cv_gap": None,
+                    "forecasting": {
+                        "input_window": 90,
+                        "default_horizon": 30,
+                        "gap": 3,
+                    },
+                }
+            )
+            == 122
+        )
+
+    def test_raw_row_embargo_detects_overlap_and_strict_gap_prevents_it(self) -> None:
+        train_idx = np.array([0, 1])
+        val_idx = np.array([2])
+        with pytest.raises(ValueError, match="Raw-row embargo violation"):
+            validate_raw_row_embargo(
+                train_idx,
+                val_idx,
+                task="anomaly",
+                window_size=4,
+            )
+
+        train_idx = np.array([0])
+        val_idx = np.array([4])
+        assert validate_raw_row_embargo(
+            train_idx,
+            val_idx,
+            task="anomaly",
+            window_size=4,
+        )["passed"]
+
+    def test_forecasting_causal_horizon_documents_target_embargo(self) -> None:
+        input_window = 5
+        horizon = 3
+        train_target = target_interval(0, input_window=input_window, horizon=horizon)
+        val_target = target_interval(3 + horizon, input_window=input_window, horizon=horizon)
+        assert train_target[1] < val_target[0]
+
+    def test_forecasting_strict_raw_row_embargo(self) -> None:
+        with pytest.raises(ValueError):
+            validate_raw_row_embargo(
+                [0],
+                [3],
+                task="forecasting",
+                input_window=5,
+                horizon=2,
+            )
+        assert validate_raw_row_embargo(
+            [0],
+            [7],
+            task="forecasting",
+            input_window=5,
+            horizon=2,
+        )["passed"]
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -146,6 +276,24 @@ class TestGroupedExpandingWindowCV:
                 assert len(group_train) > 0
                 assert len(group_val) > 0
                 assert group_train.max() < group_val.min()
+
+    def test_grouped_gap_preserves_per_group_validation_block_size(self) -> None:
+        groups = np.array(["well_a"] * 300 + ["well_b"] * 300)
+        cv = GroupedExpandingWindowCV(
+            groups=groups,
+            n_splits=3,
+            min_train_ratio=0.5,
+            gap=10,
+        )
+        splits = cv.get_splits(len(groups))
+
+        assert len(splits) == 3
+        for train_idx, val_idx in splits[:2]:
+            for group in np.unique(groups):
+                group_train = train_idx[groups[train_idx] == group]
+                group_val = val_idx[groups[val_idx] == group]
+                assert len(group_val) == 50
+                assert group_val.min() - group_train.max() == 11
 
 
 # ═══════════════════════════════════════════════════════════════════

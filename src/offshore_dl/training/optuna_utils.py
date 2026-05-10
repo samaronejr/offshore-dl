@@ -131,8 +131,11 @@ class OptunaObjective:
         self.primary_metric = primary_metric
         self.search_space = search_space or {}
 
-    # Training-level hyperparams that belong in cfg, not model kwargs
-    TRAINING_PARAMS = {"lr", "batch_size", "max_epochs", "scheduler"}
+    # Optimizer params must reach both the model constructor kwargs and cfg
+    # because model defaults are stored on the instance while AdamW reads cfg.
+    OPTIMIZER_PARAMS = {"lr", "weight_decay"}
+    # Trainer-level params belong only in cfg.training.
+    TRAINING_PARAMS = {"batch_size", "max_epochs", "scheduler"}
 
     def __call__(self, trial) -> float:
         """Run one trial of HPO."""
@@ -142,8 +145,14 @@ class OptunaObjective:
 
         for param_name, spec in self.search_space.items():
             value = self._suggest(trial, param_name, spec)
-            if param_name in self.TRAINING_PARAMS:
-                OmegaConf.update(cfg, f"training.{param_name}", value)
+            if param_name in self.OPTIMIZER_PARAMS:
+                kwargs[param_name] = value
+                OmegaConf.update(cfg, f"training.{param_name}", value, merge=True)
+                OmegaConf.update(cfg, f"model.training.{param_name}", value, merge=True)
+            elif param_name in self.TRAINING_PARAMS:
+                OmegaConf.update(cfg, f"training.{param_name}", value, merge=True)
+                if param_name == "scheduler":
+                    OmegaConf.update(cfg, "model.training.scheduler", value, merge=True)
             else:
                 kwargs[param_name] = value
 

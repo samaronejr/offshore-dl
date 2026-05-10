@@ -217,7 +217,7 @@ Hierarchical YAML via OmegaConf: `base.yaml` ← `data/*.yaml` ← `models/*.yam
 
 ### Reproducibility
 
-`set_global_seed(42)` locks Python `random`, NumPy, PyTorch CPU, CUDA, cuDNN, and CUBLAS (7 RNG sources). All results are stored as JSON with full fold-level detail via `utils/serialization.py`.
+`set_global_seed(42)` applies deterministic seeding for Python `random`, NumPy, PyTorch CPU/CUDA, cuDNN, and CUBLAS workspace configuration. CUBLAS determinism depends on setting `CUBLAS_WORKSPACE_CONFIG` before CUDA initialization; use `set_global_seed(42, strict=True)` at process entrypoints to fail fast when that guarantee cannot be met. All results are stored as JSON with full fold-level detail via `utils/serialization.py`.
 
 ---
 
@@ -252,8 +252,12 @@ Hierarchical YAML via OmegaConf: `base.yaml` ← `data/*.yaml` ← `models/*.yam
 | `mamba-ssm` | MambaSL state-space model | `[mamba]` |
 | `aeon` | InceptionTime, HydraRocket | `[aeon]` |
 | `momentfm` | MOMENT LoRA fine-tuning | `[fm]` |
+| `statsmodels` | Statistical comparison reports | `[stats]` |
 
-Install all extras: `pip install -e ".[dev,fm,mamba,aeon]"`
+Install common development extras: `pip install -e ".[dev]"`
+Install foundation-model extras: `pip install -e ".[fm]"`
+Install optional model/report extras: `pip install -e ".[mamba,aeon,stats]"`
+Install all documented extras: `pip install -e ".[dev,fm,mamba,aeon,stats]"`
 
 ---
 

@@ -44,6 +44,7 @@ class LSTMModel(BaseModel):
         n_vars: int,
         loss_type: str = "ce",
         focal_gamma: float = 2.0,
+        label_smoothing: float = 0.0,
         class_weights: torch.Tensor | None = None,
         hidden_size: int = 256,
         num_layers: int = 2,
@@ -61,6 +62,7 @@ class LSTMModel(BaseModel):
             n_vars=n_vars,
             loss_type=loss_type,
             focal_gamma=focal_gamma,
+            label_smoothing=label_smoothing,
             class_weights=class_weights,
         )
         self.hidden_size = hidden_size

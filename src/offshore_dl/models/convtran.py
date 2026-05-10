@@ -140,6 +140,7 @@ class ConvTranModel(BaseModel):
         n_vars: int = 27,
         loss_type: str = "ce",
         focal_gamma: float = 2.0,
+        label_smoothing: float = 0.0,
         d_model: int = 64,
         n_heads: int = 8,
         n_layers: int = 3,
@@ -156,6 +157,7 @@ class ConvTranModel(BaseModel):
             n_vars=n_vars,
             loss_type=loss_type,
             focal_gamma=focal_gamma,
+            label_smoothing=label_smoothing,
         )
         if task != "classification":
             msg = "ConvTranModel currently supports classification only."

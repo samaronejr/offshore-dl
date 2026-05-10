@@ -28,6 +28,210 @@ from offshore_dl.data.transforms import apply_zscore, compute_zscore_stats
 logger = logging.getLogger(__name__)
 
 
+CV_GAP_POLICY_NONE = "none"
+CV_GAP_POLICY_CAUSAL_HORIZON = "causal_horizon"
+CV_GAP_POLICY_STRICT_RAW_ROW = "strict_raw_row"
+SUPPORTED_CV_GAP_POLICIES = {
+    CV_GAP_POLICY_NONE,
+    CV_GAP_POLICY_CAUSAL_HORIZON,
+    CV_GAP_POLICY_STRICT_RAW_ROW,
+}
+
+
+def resolve_cv_gap(
+    policy: str,
+    *,
+    task: str,
+    input_window: int | None = None,
+    horizon: int | None = None,
+    dataset_gap: int = 0,
+    window_size: int | None = None,
+    explicit_gap: int | str | None = None,
+) -> int:
+    """Resolve a temporal CV embargo gap from an explicit policy.
+
+    ``causal_horizon`` prevents forecasting targets from touching training
+    windows while allowing historical input context overlap. ``strict_raw_row``
+    prevents any raw timestep used by a validation sample from appearing in a
+    training sample.
+    """
+    explicit_gap = normalize_cv_gap(explicit_gap)
+    if explicit_gap is not None:
+        return explicit_gap
+
+    if policy not in SUPPORTED_CV_GAP_POLICIES:
+        msg = (
+            f"Unsupported cv_gap_policy {policy!r}; expected one of "
+            f"{sorted(SUPPORTED_CV_GAP_POLICIES)}"
+        )
+        raise ValueError(msg)
+
+    if policy == CV_GAP_POLICY_NONE:
+        return 0
+
+    if task == "anomaly":
+        if policy != CV_GAP_POLICY_STRICT_RAW_ROW:
+            msg = "anomaly CV currently supports only strict_raw_row or explicit cv_gap"
+            raise ValueError(msg)
+        if window_size is None:
+            raise ValueError("strict_raw_row anomaly CV requires window_size")
+        return max(0, int(window_size) - 1)
+
+    if task == "forecasting":
+        if horizon is None:
+            raise ValueError("forecasting CV gap policy requires horizon")
+        if policy == CV_GAP_POLICY_CAUSAL_HORIZON:
+            return int(horizon)
+        if policy == CV_GAP_POLICY_STRICT_RAW_ROW:
+            if input_window is None:
+                raise ValueError("strict_raw_row forecasting CV requires input_window")
+            return max(0, int(input_window) + int(dataset_gap) + int(horizon) - 1)
+
+    msg = f"Unsupported task/policy combination: task={task!r}, policy={policy!r}"
+    raise ValueError(msg)
+
+
+def normalize_cv_gap(explicit_gap: int | str | None) -> int | None:
+    """Normalize explicit ``cv_gap`` config values.
+
+    ``None`` and ``"auto"`` mean "defer to policy".  Numeric strings are
+    accepted for CLI/dotlist compatibility.  Negative values are invalid in
+    every caller.
+    """
+    if explicit_gap is None or explicit_gap == "auto":
+        return None
+    gap = int(explicit_gap)
+    if gap < 0:
+        raise ValueError("cv_gap must be non-negative")
+    return gap
+
+
+def resolve_cv_gap_from_config(data_cfg) -> int:
+    """Resolve ``data.cv_gap``/``data.cv_gap_policy`` semantics from config.
+
+    Intended factory wiring:
+    ``gap=resolve_cv_gap_from_config(cfg.data)`` when constructing temporal
+    forecasting/CDF CV strategies.
+    """
+    def _get(name: str, default=None):
+        if isinstance(data_cfg, dict):
+            return data_cfg.get(name, default)
+        return getattr(data_cfg, name, default)
+
+    task = _get("task")
+    explicit_gap = _get("cv_gap", None)
+
+    forecasting = _get("forecasting", {}) or {}
+    preprocessing = _get("preprocessing", {}) or {}
+
+    def _nested(container, name: str, default=None):
+        if isinstance(container, dict):
+            return container.get(name, default)
+        return getattr(container, name, default)
+
+    horizon = _nested(forecasting, "default_horizon", None)
+    input_window = _nested(forecasting, "input_window", None)
+    dataset_gap = _nested(forecasting, "gap", 0) or 0
+    window_size = _nested(preprocessing, "window_size", None)
+
+    policy = _get(
+        "cv_gap_policy",
+        CV_GAP_POLICY_STRICT_RAW_ROW if task == "anomaly" else CV_GAP_POLICY_CAUSAL_HORIZON,
+    )
+    return resolve_cv_gap(
+        policy,
+        task=task,
+        input_window=input_window,
+        horizon=horizon,
+        dataset_gap=dataset_gap,
+        window_size=window_size,
+        explicit_gap=explicit_gap,
+    )
+
+
+def raw_row_interval(
+    sample_index: int,
+    *,
+    task: str,
+    input_window: int | None = None,
+    horizon: int | None = None,
+    dataset_gap: int = 0,
+    window_size: int | None = None,
+) -> tuple[int, int]:
+    """Return inclusive raw-row interval consumed by a sample."""
+    start = int(sample_index)
+    if task == "anomaly":
+        if window_size is None:
+            raise ValueError("anomaly raw-row interval requires window_size")
+        return start, start + int(window_size) - 1
+    if task == "forecasting":
+        if input_window is None or horizon is None:
+            raise ValueError("forecasting raw-row interval requires input_window and horizon")
+        return start, start + int(input_window) + int(dataset_gap) + int(horizon) - 1
+    raise ValueError(f"Unsupported task: {task!r}")
+
+
+def target_interval(
+    sample_index: int,
+    *,
+    input_window: int,
+    horizon: int,
+    dataset_gap: int = 0,
+) -> tuple[int, int]:
+    """Return inclusive forecasting target interval for a sample."""
+    start = int(sample_index) + int(input_window) + int(dataset_gap)
+    return start, start + int(horizon) - 1
+
+
+def intervals_overlap(a: tuple[int, int], b: tuple[int, int]) -> bool:
+    """Return True when inclusive integer intervals overlap."""
+    return max(a[0], b[0]) <= min(a[1], b[1])
+
+
+def validate_raw_row_embargo(
+    train_idx: np.ndarray | list[int],
+    val_idx: np.ndarray | list[int],
+    *,
+    task: str,
+    input_window: int | None = None,
+    horizon: int | None = None,
+    dataset_gap: int = 0,
+    window_size: int | None = None,
+) -> dict:
+    """Validate that train/validation samples share no raw timesteps."""
+    train_intervals = [
+        raw_row_interval(
+            int(i),
+            task=task,
+            input_window=input_window,
+            horizon=horizon,
+            dataset_gap=dataset_gap,
+            window_size=window_size,
+        )
+        for i in train_idx
+    ]
+    val_intervals = [
+        raw_row_interval(
+            int(i),
+            task=task,
+            input_window=input_window,
+            horizon=horizon,
+            dataset_gap=dataset_gap,
+            window_size=window_size,
+        )
+        for i in val_idx
+    ]
+    violations = sum(
+        1
+        for train_interval in train_intervals
+        for val_interval in val_intervals
+        if intervals_overlap(train_interval, val_interval)
+    )
+    if violations:
+        raise ValueError(f"Raw-row embargo violation: {violations} overlapping intervals")
+    return {"passed": True, "violations": 0}
+
+
 class BaseCVStrategy(ABC):
     """Abstract base for cross-validation strategies.
 
@@ -247,7 +451,7 @@ class ExpandingWindowCV(BaseCVStrategy):
         for i in range(self.n_splits):
             train_end = min_train + i * block_size
             val_start = train_end + self.gap
-            val_end = min(train_end + block_size, n_samples)
+            val_end = min(val_start + block_size, n_samples)
 
             if val_start >= n_samples or val_start >= val_end:
                 break

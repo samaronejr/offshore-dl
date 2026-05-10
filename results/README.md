@@ -1,73 +1,25 @@
 # results/
 
-All experiment outputs are stored as JSON files, one subdirectory per model.
+Experiment outputs are organized by validity epoch after the May 2026 benchmark-validity repair.
 
 ## Structure
 
-```
+```text
 results/
-├── baselines/              # Naive baselines (majority, seasonal naive, mean reconstruction)
-├── lstm/                   # LSTM results
-├── deeponet/               # DeepONet results
-├── patchtst/               # PatchTST results
-├── tcn/                    # TCN results
-├── convtimenet/            # ConvTimeNet results
-├── convtimenet_raw/        # ConvTimeNet raw window results
-├── convtran/               # ConvTran results
-├── convtran_raw/           # ConvTran raw window results
-├── inception_time/         # InceptionTime results
-├── inception_time_raw/     # InceptionTime raw window results
-├── mambasl/                # MambaSL results
-├── mambasl_raw/            # MambaSL raw window results
-├── fkmad/                  # FKMAD results
-├── fkmad_raw/              # FKMAD raw window results
-├── random_forest/          # Random Forest results
-├── multiscale_deeponet/    # DeepONet with multi-scale 3W features
-├── multiscale_rf/          # Random Forest with multi-scale 3W features
-├── chronos/                # Chronos-2 zero-shot results
-├── timesfm/                # TimesFM 2.5 zero-shot results
-├── tirex/                  # TiRex zero-shot results
-├── hpo/                    # Optuna HPO outputs
-├── tirex_3w_nested.json                 # TiRex 3W classification (standalone)
-├── summary_production_3w_features.json  # 3W feature sweep summary
-└── summary_production_cdf.json          # CDF sweep summary
+├── pre_fix/      # Historical results produced before the MASE/CV/PatchTST/MLflow repair
+├── post_fix/     # New reruns produced after the repair
+├── .omx/         # Local OMX/runtime logs and state, not benchmark outputs
+└── README.md
 ```
 
-## JSON Schema
+## Validity guidance
 
-Each result file contains:
+- `pre_fix/` results are preserved for audit/history.
+- Treat old forecasting `mase` / grouped MASE values as non-authoritative unless rerun with repaired chronological MASE plumbing.
+- Treat old CDF production CV results as non-authoritative because those runs used zero CV gap before the strict raw-row gap repair.
+- Classification metrics are not directly invalidated by the MASE/CDF fixes, but remain under `pre_fix/` until rerun.
+- Write all new post-repair experiment outputs to `results/post_fix/`.
 
-```json
-{
-  "test_metrics": { "mae": ..., "rmse": ..., "r2_prod": ... },
-  "test_predictions": [ ... ],
-  "test_probabilities": [ ... ],
-  "cv_aggregate": { "mae_mean": ..., "mae_std": ... },
-  "cv_fold_results": [ { "fold_idx": 0, "metrics": { ... } }, ... ],
-  "n_train": ...,
-  "n_test": ...,
-  "n_cv_folds": ...
-}
-```
+## Previous layout
 
-Classification files use `accuracy`, `f1_macro`, `f1_weighted`, `auc_pr` instead of forecasting metrics. CDF files use `error_mean`, `error_std`, `error_p50`, `error_p95`, `error_p99`. `test_predictions` and `test_probabilities` store model outputs for post-hoc analysis.
-
-## Naming Conventions
-
-**Ganymede:**
-- `ganymede_h{7,14,30,90}_multi_well.json` — all 7 wells combined
-- `ganymede_h{7,14,30,90}_per_well_{well_id}.json` — single well
-- `ganymede.json` — legacy copy of h7 multi_well (backward compat)
-- `summary_production_ganymede.json` — full sweep status + timings
-
-**SPE Berg:**
-- `spe_berg.json` — full dataset classification results
-- `spe_berg_fold_{n}.json` — per-fold results
-
-**Volve:**
-- `volve_h{7,14,30,90}.json` — forecasting results per horizon
-- `volve_per_well_{well_id}.json` — single well results
-
-**Inner Mongolia:**
-- `inner_mongolia.json` — fault detection results
-- `inner_mongolia_fold_{n}.json` — per-fold results
+The historical layout was one subdirectory per model plus summary files. That full tree now lives under `results/pre_fix/` unchanged.
