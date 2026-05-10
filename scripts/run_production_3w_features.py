@@ -45,6 +45,7 @@ from offshore_dl.models.patchtst import PatchTSTModel
 from offshore_dl.training.experiment import ExperimentRunner
 from offshore_dl.utils.config import load_merged_config
 from offshore_dl.utils.reproducibility import set_global_seed
+from offshore_dl.utils.results import resolve_results_dir
 
 try:
     from offshore_dl.models.fkmad import FKMADModel
@@ -279,11 +280,10 @@ ALL_MODELS = list(
     )
 )
 
-RESULTS_DIR = Path("results")
+RESULTS_DIR = resolve_results_dir(for_write=True)
 
 
 from offshore_dl.utils.serialization import make_serializable as _make_serializable
-
 
 def _compute_class_weights(y_train: np.ndarray, n_classes: int) -> torch.Tensor:
     counts = np.bincount(y_train.astype(np.int64), minlength=n_classes)
@@ -642,6 +642,7 @@ def _run_hydra_rocket_model(
 
 
 def main() -> None:
+    global RESULTS_DIR
     # Do NOT add set_global_seed() here: each model function resets it independently
     # so that model weight initialisation is unaffected by prior dataset loading.
     parser = argparse.ArgumentParser(
@@ -662,8 +663,14 @@ def main() -> None:
         default=None,
         help="Models to run (default: all). Choices: " + ", ".join(ALL_MODELS),
     )
+    parser.add_argument(
+        "--results-dir",
+        default=str(RESULTS_DIR),
+        help="Output root for repaired result JSONs (default: results/post_fix)",
+    )
 
     args = parser.parse_args()
+    RESULTS_DIR = resolve_results_dir(args.results_dir, for_write=True)
 
     # Validate --models filter
     valid_all = set(ALL_MODELS)

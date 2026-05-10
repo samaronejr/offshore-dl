@@ -23,13 +23,14 @@ import torch
 from omegaconf import OmegaConf
 
 from offshore_dl.data.datasets import CDFDataset
-from offshore_dl.evaluation.cv import SlidingWindowCV, resolve_cv_gap_from_config
+from offshore_dl.evaluation.cv import HoldoutSplitter, SlidingWindowCV, resolve_cv_gap_from_config
 from offshore_dl.models.deeponet import DeepONetModel
 from offshore_dl.models.lstm import LSTMModel
 from offshore_dl.models.patchtst import PatchTSTModel
 from offshore_dl.training.experiment import ExperimentRunner, NormalizedSubset
 from offshore_dl.utils.config import load_merged_config
 from offshore_dl.utils.reproducibility import set_global_seed
+from offshore_dl.utils.results import resolve_results_dir
 
 logging.basicConfig(
     level=logging.INFO,
@@ -37,7 +38,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-RESULTS_DIR = Path("results")
+RESULTS_DIR = resolve_results_dir(for_write=True)
 
 # ── Trained model configs ──
 
@@ -92,13 +93,33 @@ TRAINED_MODELS: dict[str, dict] = {
 from offshore_dl.utils.serialization import make_serializable as _make_serializable
 
 
+def _cdf_gap(data_cfg) -> int:
+    """Resolve the CDF raw-row embargo gap from central config."""
+    return int(resolve_cv_gap_from_config(data_cfg))
+
+
 def _cdf_sliding_window_cv(data_cfg, train_ratio: float = 0.7) -> SlidingWindowCV:
     """Construct CDF inner CV with central strict raw-row gap semantics."""
     return SlidingWindowCV(
         n_splits=3,
         train_ratio=train_ratio,
-        gap=resolve_cv_gap_from_config(data_cfg),
+        gap=_cdf_gap(data_cfg),
     )
+
+
+def _cdf_split_metadata(data_cfg, *, n_train: int, n_test: int, n_cv_folds: int) -> dict:
+    gap = _cdf_gap(data_cfg)
+    return {
+        "n_train": int(n_train),
+        "n_test": int(n_test),
+        "n_cv_folds": int(n_cv_folds),
+        "cv_gap_policy": str(data_cfg.get("cv_gap_policy", "strict_raw_row")),
+        "cv_gap": int(gap),
+        "outer_gap": int(gap),
+        "inner_gap": int(gap),
+        "raw_row_embargo_mode": "input_target_raw_rows",
+        "window_size": int(data_cfg.preprocessing.window_size),
+    }
 
 
 def run_trained_model(
@@ -123,10 +144,8 @@ def run_trained_model(
 
     cv = _cdf_sliding_window_cv(cfg.data)
 
-    # Temporal holdout: last 20% as test
-    from offshore_dl.evaluation.cv import HoldoutSplitter
-
-    holdout = HoldoutSplitter(test_ratio=0.2, mode="temporal")
+    # Temporal holdout: last 20% as test after strict raw-row embargo.
+    holdout = HoldoutSplitter(test_ratio=0.2, mode="temporal", gap=_cdf_gap(cfg.data))
     train_pool, test_indices = holdout.split(len(dataset))
     logger.info(
         "  CDF holdout: train_pool=%d, test=%d", len(train_pool), len(test_indices)
@@ -139,11 +158,18 @@ def run_trained_model(
         cfg=cfg,
         model_kwargs=entry["kwargs"],
     )
-    return runner.run_nested(
+    result = runner.run_nested(
         train_pool=train_pool,
         test_indices=test_indices,
         use_mlflow=True,
     )
+    result["split_metadata"] = _cdf_split_metadata(
+        cfg.data,
+        n_train=len(train_pool),
+        n_test=len(test_indices),
+        n_cv_folds=result.get("n_cv_folds", 0),
+    )
+    return result
 
 
 def run_fm_cdf(model_name: str, dataset: CDFDataset, device: str) -> dict:
@@ -155,9 +181,7 @@ def run_fm_cdf(model_name: str, dataset: CDFDataset, device: str) -> dict:
     fm_cfg.data.preprocessing.prediction_horizon = dataset.window_size
     fm_dataset = CDFDataset(fm_cfg)
 
-    from offshore_dl.evaluation.cv import HoldoutSplitter
-
-    holdout = HoldoutSplitter(test_ratio=0.2, mode="temporal")
+    holdout = HoldoutSplitter(test_ratio=0.2, mode="temporal", gap=_cdf_gap(fm_cfg.data))
     train_pool, test_indices = holdout.split(len(fm_dataset))
     logger.info(
         "  CDF FM holdout: train_pool=%d, test=%d", len(train_pool), len(test_indices)
@@ -277,10 +301,17 @@ def run_fm_cdf(model_name: str, dataset: CDFDataset, device: str) -> dict:
         "n_train": len(train_pool),
         "n_test": len(test_indices),
         "n_cv_folds": len(inner_splits),
+        "split_metadata": _cdf_split_metadata(
+            fm_cfg.data,
+            n_train=len(train_pool),
+            n_test=len(test_indices),
+            n_cv_folds=len(inner_splits),
+        ),
     }
 
 
 def main():
+    global RESULTS_DIR
     set_global_seed(42)
 
     parser = argparse.ArgumentParser(
@@ -294,7 +325,13 @@ def main():
         default=None,
         help="Models to run (default: all). Options: lstm deeponet patchtst chronos timesfm tirex",
     )
+    parser.add_argument(
+        "--results-dir",
+        default=str(RESULTS_DIR),
+        help="Output root for repaired result JSONs (default: results/post_fix)",
+    )
     args = parser.parse_args()
+    RESULTS_DIR = resolve_results_dir(args.results_dir, for_write=True)
 
     all_models = ["lstm", "deeponet", "patchtst", "chronos", "timesfm", "tirex"]
     models = args.models or all_models

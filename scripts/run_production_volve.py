@@ -39,12 +39,15 @@ import numpy as np
 
 from offshore_dl.data.datasets import VolveDataset
 from offshore_dl.utils.reproducibility import set_global_seed
+from offshore_dl.utils.results import resolve_results_dir
 from sweep_utils import (
     safe_well as _safe_well,
     make_holdout as _make_holdout,
     make_inner_cv as _make_inner_cv,
+    split_metadata as _split_metadata,
     aggregate as _aggregate,
     zero_shot_evaluate as _zero_shot_evaluate,
+    _unwrap_eval_result,
     load_fm_class as _load_fm_class,
     parse_horizons as _parse_horizons,
     parse_modes as _parse_modes,
@@ -78,7 +81,7 @@ WELLS = [
     "NO_15_9-F-15_D",
 ]
 
-RESULTS_DIR = Path(os.environ.get("OFFSHORE_DL_RESULTS_DIR", "results/post_fix"))
+RESULTS_DIR = resolve_results_dir(for_write=True)
 
 
 from offshore_dl.utils.serialization import make_serializable as _make_serializable
@@ -131,6 +134,12 @@ def _run_trained_model(
         train_pool=train_pool,
         test_indices=test_indices,
         use_mlflow=use_mlflow,
+    )
+    results["split_metadata"] = _split_metadata(
+        runner.dataset,
+        n_train=len(train_pool),
+        n_test=len(test_indices),
+        n_cv_folds=results.get("n_cv_folds", 0),
     )
 
     # Save results
@@ -206,8 +215,8 @@ def _run_fm_multi_well(
     train_pool, test_indices = holdout.split(n)
 
     # ── Evaluate on held-out test set (primary metric) ──
-    test_metrics = _zero_shot_evaluate(
-        model, dataset, test_indices, max_samples=max_samples
+    test_result = _zero_shot_evaluate(
+        model, dataset, test_indices, max_samples=max_samples, train_idx=train_pool
     )
 
     # ── Inner CV on train pool (for variance estimates) ──
@@ -223,20 +232,33 @@ def _run_fm_multi_well(
             fold_idx + 1,
             len(inner_splits),
         )
-        metrics = _zero_shot_evaluate(
-            model, dataset, global_val, max_samples=max_samples
+        fold_result = _zero_shot_evaluate(
+            model,
+            dataset,
+            global_val,
+            max_samples=max_samples,
+            train_idx=train_pool[local_train],
         )
-        cv_fold_results.append({"fold_idx": fold_idx, "metrics": metrics})
+        cv_fold_results.append(_unwrap_eval_result(fold_result, fold_idx))
 
     cv_agg = _aggregate(cv_fold_results)
 
     result = {
-        "test_metrics": test_metrics,
+        "test_metrics": test_result["metrics"],
+        "test_indices": test_result["sample_indices"],
+        "test_predictions": test_result["predictions"],
+        "test_targets": test_result["targets"],
         "cv_aggregate": cv_agg,
         "cv_fold_results": cv_fold_results,
         "n_train": len(train_pool),
         "n_test": len(test_indices),
         "n_cv_folds": len(inner_splits),
+        "split_metadata": _split_metadata(
+            dataset,
+            n_train=len(train_pool),
+            n_test=len(test_indices),
+            n_cv_folds=len(inner_splits),
+        ),
     }
 
     # Save
@@ -305,8 +327,8 @@ def _run_fm_per_well(
         train_pool, test_idx = holdout.split(n)
 
         # Evaluate on held-out test
-        test_metrics = _zero_shot_evaluate(
-            model, dataset, test_idx, max_samples=max_samples
+        test_result = _zero_shot_evaluate(
+            model, dataset, test_idx, max_samples=max_samples, train_idx=train_pool
         )
 
         # Inner CV for variance
@@ -323,19 +345,32 @@ def _run_fm_per_well(
                 fold_idx + 1,
                 len(inner_splits),
             )
-            metrics = _zero_shot_evaluate(
-                model, dataset, global_val, max_samples=max_samples
+            fold_result = _zero_shot_evaluate(
+                model,
+                dataset,
+                global_val,
+                max_samples=max_samples,
+                train_idx=train_pool[local_train],
             )
-            cv_fold_results.append({"fold_idx": fold_idx, "metrics": metrics})
+            cv_fold_results.append(_unwrap_eval_result(fold_result, fold_idx))
 
         cv_agg = _aggregate(cv_fold_results)
         result = {
-            "test_metrics": test_metrics,
+            "test_metrics": test_result["metrics"],
+            "test_indices": test_result["sample_indices"],
+            "test_predictions": test_result["predictions"],
+            "test_targets": test_result["targets"],
             "cv_aggregate": cv_agg,
             "cv_fold_results": cv_fold_results,
             "n_train": len(train_pool),
             "n_test": len(test_idx),
             "n_cv_folds": len(inner_splits),
+            "split_metadata": _split_metadata(
+                dataset,
+                n_train=len(train_pool),
+                n_test=len(test_idx),
+                n_cv_folds=len(inner_splits),
+            ),
             "well": well,
         }
 
@@ -348,7 +383,7 @@ def _run_fm_per_well(
             {
                 "well": well,
                 "status": "ok",
-                "test_metrics": test_metrics,
+                "test_metrics": test_result["metrics"],
                 "cv_aggregate": cv_agg,
             }
         )
@@ -511,7 +546,7 @@ def main() -> None:
     )
 
     args = parser.parse_args()
-    RESULTS_DIR = Path(args.results_dir)
+    RESULTS_DIR = resolve_results_dir(args.results_dir, for_write=True)
 
     horizons_filt = _parse_horizons(args.horizons, HORIZONS)
     modes_filt = _parse_modes(args.modes, MODES)
@@ -636,8 +671,12 @@ def main() -> None:
                     pw_train_pool, pw_test_idx = holdout.split(n_ds)
 
                     # Evaluate on held-out test
-                    test_metrics = _zero_shot_evaluate(
-                        fm_model, dataset, pw_test_idx, max_samples=args.max_samples
+                    test_result = _zero_shot_evaluate(
+                        fm_model,
+                        dataset,
+                        pw_test_idx,
+                        max_samples=args.max_samples,
+                        train_idx=pw_train_pool,
                     )
 
                     # Inner CV for variance
@@ -646,19 +685,32 @@ def main() -> None:
                     fold_results = []
                     for fold_idx, (local_train, local_val) in enumerate(inner_splits):
                         global_val = pw_train_pool[local_val]
-                        metrics = _zero_shot_evaluate(
-                            fm_model, dataset, global_val, max_samples=args.max_samples
+                        fold_result = _zero_shot_evaluate(
+                            fm_model,
+                            dataset,
+                            global_val,
+                            max_samples=args.max_samples,
+                            train_idx=pw_train_pool[local_train],
                         )
-                        fold_results.append({"fold_idx": fold_idx, "metrics": metrics})
+                        fold_results.append(_unwrap_eval_result(fold_result, fold_idx))
 
                     cv_agg = _aggregate(fold_results)
                     result = {
-                        "test_metrics": test_metrics,
+                        "test_metrics": test_result["metrics"],
+                        "test_indices": test_result["sample_indices"],
+                        "test_predictions": test_result["predictions"],
+                        "test_targets": test_result["targets"],
                         "cv_aggregate": cv_agg,
                         "cv_fold_results": fold_results,
                         "n_train": len(pw_train_pool),
                         "n_test": len(pw_test_idx),
                         "n_cv_folds": len(inner_splits),
+                        "split_metadata": _split_metadata(
+                            dataset,
+                            n_train=len(pw_train_pool),
+                            n_test=len(pw_test_idx),
+                            n_cv_folds=len(inner_splits),
+                        ),
                         "well": well,
                     }
 
@@ -671,7 +723,7 @@ def main() -> None:
                     )
                     logger.info("  Saved %s", out_path)
             elif is_tree:
-                # Tree model — sklearn-style fit/predict (placeholder for future models)
+                # Tree model — sklearn-style fit/predict path
                 raise NotImplementedError(f"No tree-model runner for {model}")
             else:
                 # Trained model — uses nested CV

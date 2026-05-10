@@ -29,10 +29,12 @@ from sklearn.ensemble import HistGradientBoostingRegressor
 from offshore_dl.evaluation.cv import (
     GroupedExpandingWindowCV,
     GroupedTemporalHoldoutSplitter,
+    resolve_cv_gap,
 )
 from offshore_dl.evaluation.metrics import MetricRegistry
 from offshore_dl.utils.config import load_merged_config
 from offshore_dl.utils.reproducibility import set_global_seed
+from offshore_dl.utils.results import resolve_results_dir
 
 logging.basicConfig(
     level=logging.INFO,
@@ -40,7 +42,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-RESULTS_DIR = Path("results/lightgbm")
+RESULTS_DIR = resolve_results_dir(for_write=True) / "lightgbm"
 DEFAULT_PARAMS = {
     "objective": "regression",
     "metric": "rmse",
@@ -273,11 +275,19 @@ def run_horizon(
     if len(dataset.X) < 2:
         raise ValueError("Not enough samples to run LightGBM baseline")
 
-    holdout = GroupedTemporalHoldoutSplitter(test_ratio=0.2, groups=dataset.groups)
+    cv_gap = resolve_cv_gap(
+        cfg.data.get("cv_gap_policy", "causal_horizon"),
+        task="forecasting",
+        input_window=int(cfg.data.forecasting.input_window),
+        horizon=int(horizon),
+        dataset_gap=int(cfg.data.forecasting.get("gap", 0)),
+        explicit_gap=cfg.data.get("cv_gap", None),
+    )
+    holdout = GroupedTemporalHoldoutSplitter(test_ratio=0.2, groups=dataset.groups, gap=cv_gap)
     train_pool, test_idx = holdout.split(len(dataset.X))
 
     cv = GroupedExpandingWindowCV(
-        groups=dataset.groups[train_pool], n_splits=3, min_train_ratio=0.5
+        groups=dataset.groups[train_pool], n_splits=3, min_train_ratio=0.5, gap=cv_gap
     )
     inner_splits = cv.get_splits(len(train_pool))
 
@@ -383,19 +393,25 @@ def parse_args() -> argparse.Namespace:
         default="configs/data/ganymede.yaml",
         help="Dataset config path.",
     )
+    parser.add_argument(
+        "--results-dir",
+        default=str(RESULTS_DIR),
+        help="Output root for repaired LightGBM artifacts.",
+    )
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
     set_global_seed(42)
+    output_dir = resolve_results_dir(args.results_dir, for_write=True)
     logger.info("Running Ganymede LightGBM baseline on device=%s", args.device)
     for horizon in args.horizons:
         run_horizon(
             cfg_path=args.config,
             horizon=horizon,
             max_samples=args.max_samples,
-            output_dir=RESULTS_DIR,
+            output_dir=output_dir,
         )
 
 

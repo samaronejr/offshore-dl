@@ -721,42 +721,25 @@ class ExperimentRunner:
                 target_std,
             )
 
-        # Collect training targets for MASE denominator (subsample for efficiency)
+        # Collect training targets for MASE denominator deterministically.
         y_train_for_mase = None
         y_train_groups_for_mase = None
         y_train_order_for_mase = None
         if task == "forecasting":
             try:
-                rng = np.random.default_rng(42)
-                sample_idx = rng.choice(
-                    len(train_pool), size=min(5000, len(train_pool)), replace=False
+                (
+                    y_train_for_mase,
+                    y_train_groups_for_mase,
+                    y_train_order_for_mase,
+                ) = self._collect_forecasting_mase_context(
+                    train_pool,
+                    target_mean=target_mean,
+                    target_std=target_std,
                 )
-                train_targets = []
-                train_groups = []
-                train_orders = []
-                for i in sample_idx:
-                    _, target, metadata = self.dataset[int(train_pool[int(i)])]
-                    train_targets.append(target.numpy() if hasattr(target, "numpy") else target)
-                    group_id = self._extract_single_group_id(metadata)
-                    if group_id is not None:
-                        train_groups.append(group_id)
-                    order_id = self._extract_single_order_id(metadata)
-                    if order_id is not None:
-                        train_orders.append(order_id)
-                y_train_for_mase = np.array(train_targets)
-                if len(train_groups) == len(train_targets):
-                    y_train_groups_for_mase = np.asarray(train_groups, dtype=object)
-                if len(train_orders) == len(train_targets):
-                    y_train_order_for_mase = np.asarray(train_orders, dtype=object)
-                if target_mean is not None and target_std is not None:
-                    y_train_for_mase = NormalizedSubset.denormalize_targets(
-                        y_train_for_mase,
-                        target_mean,
-                        target_std,
-                    )
             except (IndexError, TypeError, AttributeError) as exc:
                 logger.warning(
-                    "Could not collect y_train for MASE denominator: %s; MASE values will be approximate.", exc
+                    "Could not collect deterministic y_train for MASE denominator: %s; MASE will be marked unavailable if metadata is insufficient.",
+                    exc,
                 )
 
         test_metrics = MetricRegistry.compute(
@@ -1041,38 +1024,19 @@ class ExperimentRunner:
             y_train_order_for_mase = None
             if task == "forecasting":
                 try:
-                    rng = np.random.default_rng(42)
-                    sample_idx = rng.choice(
-                        len(train_idx), size=min(5000, len(train_idx)), replace=False
+                    (
+                        y_train_for_mase,
+                        y_train_groups_for_mase,
+                        y_train_order_for_mase,
+                    ) = self._collect_forecasting_mase_context(
+                        train_idx,
+                        target_mean=target_mean,
+                        target_std=target_std,
                     )
-                    train_targets = []
-                    train_groups = []
-                    train_orders = []
-                    for i in sample_idx:
-                        _, target, metadata = self.dataset[int(train_idx[i])]
-                        train_targets.append(
-                            target.numpy() if hasattr(target, "numpy") else target
-                        )
-                        group_id = self._extract_single_group_id(metadata)
-                        if group_id is not None:
-                            train_groups.append(group_id)
-                        order_id = self._extract_single_order_id(metadata)
-                        if order_id is not None:
-                            train_orders.append(order_id)
-                    y_train_for_mase = np.array(train_targets)
-                    if len(train_groups) == len(train_targets):
-                        y_train_groups_for_mase = np.asarray(train_groups, dtype=object)
-                    if len(train_orders) == len(train_targets):
-                        y_train_order_for_mase = np.asarray(train_orders, dtype=object)
-                    if target_mean is not None and target_std is not None:
-                        y_train_for_mase = NormalizedSubset.denormalize_targets(
-                            y_train_for_mase,
-                            target_mean,
-                            target_std,
-                        )
                 except (IndexError, TypeError, AttributeError) as exc:
                     logger.warning(
-                        "Could not collect y_train for MASE: %s; MASE values will be approximate.", exc
+                        "Could not collect deterministic y_train for MASE: %s; MASE will be marked unavailable if metadata is insufficient.",
+                        exc,
                     )
 
             # Compute metrics
@@ -1133,13 +1097,22 @@ class ExperimentRunner:
         agg = {}
         for key in sorted(all_keys):
             values = []
+            invalid_count = 0
             for fr in fold_results:
-                v = fr.get("metrics", {}).get(key)
-                if v is not None and ExperimentRunner._is_mlflow_metric_value(v):
+                metrics = fr.get("metrics", {})
+                if key not in metrics:
+                    continue
+                v = metrics.get(key)
+                if ExperimentRunner._is_mlflow_metric_value(v):
                     values.append(v)
+                elif isinstance(v, numbers.Real) and not isinstance(v, (bool, np.bool_)):
+                    invalid_count += 1
             if values:
                 agg[f"{key}_mean"] = float(np.mean(values))
                 agg[f"{key}_std"] = float(np.std(values))
+            if values or invalid_count:
+                agg[f"{key}_valid_count"] = int(len(values))
+                agg[f"{key}_invalid_count"] = int(invalid_count)
 
         return agg
 
@@ -1175,6 +1148,58 @@ class ExperimentRunner:
             retrain_val_idx = shuffled[-1:]
 
         return retrain_train_idx, retrain_val_idx
+
+    def _collect_forecasting_mase_context(
+        self,
+        indices: np.ndarray | list[int],
+        *,
+        target_mean: float | None = None,
+        target_std: float | None = None,
+    ) -> tuple[np.ndarray | None, np.ndarray | None, np.ndarray | None]:
+        """Collect deterministic ordered training targets for MASE.
+
+        Previous code used a random subsample.  Benchmark artifacts now derive
+        the denominator from the exact split's training indices in dataset order
+        so repeated runs produce the same MASE provenance.
+        """
+        train_targets = []
+        train_groups = []
+        train_orders = []
+        for idx in np.asarray(indices, dtype=np.int64):
+            _features, target, metadata = self.dataset[int(idx)]
+            if isinstance(target, torch.Tensor):
+                train_targets.append(target.detach().cpu().numpy())
+            else:
+                train_targets.append(np.asarray(target))
+            group_id = self._extract_single_group_id(metadata)
+            if group_id is not None:
+                train_groups.append(group_id)
+            order_id = self._extract_single_order_id(metadata)
+            if order_id is not None:
+                train_orders.append(order_id)
+
+        if not train_targets:
+            return None, None, None
+
+        y_train = np.asarray(train_targets)
+        if target_mean is not None and target_std is not None:
+            y_train = NormalizedSubset.denormalize_targets(
+                y_train,
+                target_mean,
+                target_std,
+            )
+
+        y_train_groups = (
+            np.asarray(train_groups, dtype=object)
+            if len(train_groups) == len(train_targets)
+            else None
+        )
+        y_train_order = (
+            np.asarray(train_orders, dtype=object)
+            if len(train_orders) == len(train_targets)
+            else None
+        )
+        return y_train, y_train_groups, y_train_order
 
     @staticmethod
     def _extract_instance_ids(metadata: Any) -> np.ndarray | None:

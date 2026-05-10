@@ -1,0 +1,7 @@
+model:
+  name: "tirex"
+  architecture:
+    context_length: 512
+  training:
+    lr: 0.001
+  optuna_search_space: {}

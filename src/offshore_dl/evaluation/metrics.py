@@ -303,6 +303,19 @@ class MetricRegistry:
                 results["mase"] = float("nan")
                 results["mase_aggregation"] = "unavailable"
 
+        mase_value = results.get("mase", float("nan"))
+        results["mase_valid"] = bool(np.isfinite(mase_value))
+        results["mase_denominator_sample_size"] = (
+            int(np.asarray(y_train).shape[0]) if y_train is not None else 0
+        )
+        source = str(results.get("mase_denominator_source", "unknown"))
+        if not results["mase_valid"]:
+            results["mase_warning"] = "mase_nonfinite_or_unavailable"
+        elif source.endswith("eval") or source == "eval_flat":
+            results["mase_warning"] = "using_evaluation_denominator"
+        else:
+            results["mase_warning"] = ""
+
         return results
 
     @staticmethod

@@ -672,6 +672,7 @@ class HoldoutSplitter:
         labels: Per-sample class labels (required for stratified_group).
         groups: Per-sample group IDs (required for stratified_group).
         seed: Random seed for reproducibility.
+        gap: Number of samples to embargo between temporal train and test.
     """
 
     def __init__(
@@ -681,12 +682,16 @@ class HoldoutSplitter:
         labels: np.ndarray | None = None,
         groups: np.ndarray | None = None,
         seed: int = 42,
+        gap: int = 0,
     ) -> None:
+        if gap < 0:
+            raise ValueError("holdout gap must be non-negative")
         self.test_ratio = test_ratio
         self.mode = mode
         self.labels = labels
         self.groups = groups
         self.seed = seed
+        self.gap = int(gap)
 
     def split(self, n_samples: int) -> tuple[np.ndarray, np.ndarray]:
         """Return (train_pool_indices, test_indices).
@@ -744,17 +749,27 @@ class HoldoutSplitter:
         return train_idx, test_idx
 
     def _split_temporal(self, n_samples: int) -> tuple[np.ndarray, np.ndarray]:
-        """Temporal split: last test_ratio fraction as test set."""
+        """Temporal split: last test_ratio fraction as test set after an embargo gap."""
         split_point = int(n_samples * (1.0 - self.test_ratio))
         split_point = max(1, min(split_point, n_samples - 1))
+        n_test = n_samples - split_point
+        test_start = n_samples - n_test
+        train_end = test_start - self.gap
+        if train_end <= 0:
+            msg = (
+                f"Temporal holdout gap={self.gap} leaves no training samples "
+                f"before test_start={test_start}"
+            )
+            raise ValueError(msg)
 
-        train_idx = np.arange(0, split_point)
-        test_idx = np.arange(split_point, n_samples)
+        train_idx = np.arange(0, train_end)
+        test_idx = np.arange(test_start, n_samples)
 
         logger.info(
             "HoldoutSplitter (temporal): train_pool=%d (%.1f%%), "
-            "test=%d (%.1f%%)",
+            "gap=%d, test=%d (%.1f%%)",
             len(train_idx), 100 * len(train_idx) / n_samples,
+            self.gap,
             len(test_idx), 100 * len(test_idx) / n_samples,
         )
         return train_idx, test_idx
@@ -771,15 +786,20 @@ class GroupedTemporalHoldoutSplitter:
     Args:
         test_ratio: Fraction of each group assigned to the held-out test tail.
         groups: Group identifier for each sample.
+        gap: Number of samples to embargo inside each group between train and test.
     """
 
     def __init__(
         self,
         test_ratio: float = 0.2,
         groups: np.ndarray | list | None = None,
+        gap: int = 0,
     ) -> None:
+        if gap < 0:
+            raise ValueError("grouped temporal holdout gap must be non-negative")
         self.test_ratio = test_ratio
         self.groups = None if groups is None else np.asarray(groups)
+        self.gap = int(gap)
 
     def split(self, n_samples: int) -> tuple[np.ndarray, np.ndarray]:
         """Return grouped temporal (train_pool, test_set) indices."""
@@ -805,9 +825,20 @@ class GroupedTemporalHoldoutSplitter:
 
             split_point = int(len(group_idx) * (1.0 - self.test_ratio))
             split_point = max(1, min(split_point, len(group_idx) - 1))
+            n_test = len(group_idx) - split_point
+            test_start = len(group_idx) - n_test
+            train_end = test_start - self.gap
+            if train_end <= 0:
+                logger.warning(
+                    "GroupedTemporalHoldoutSplitter: skipping group %r because "
+                    "gap=%d leaves no training samples",
+                    group,
+                    self.gap,
+                )
+                continue
 
-            train_parts.append(group_idx[:split_point])
-            test_parts.append(group_idx[split_point:])
+            train_parts.append(group_idx[:train_end])
+            test_parts.append(group_idx[test_start:])
 
         if not train_parts or not test_parts:
             return np.array([], dtype=np.int64), np.array([], dtype=np.int64)
@@ -818,8 +849,10 @@ class GroupedTemporalHoldoutSplitter:
         test_idx.sort()
 
         logger.info(
-            "GroupedTemporalHoldoutSplitter: train_pool=%d (%.1f%%), test=%d (%.1f%%), groups=%d",
+            "GroupedTemporalHoldoutSplitter: train_pool=%d (%.1f%%), gap=%d, "
+            "test=%d (%.1f%%), groups=%d",
             len(train_idx), 100 * len(train_idx) / n_samples,
+            self.gap,
             len(test_idx), 100 * len(test_idx) / n_samples,
             len(pd.unique(self.groups)),
         )

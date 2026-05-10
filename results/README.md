@@ -19,6 +19,7 @@ results/
 - Treat old CDF production CV results as non-authoritative because those runs used zero CV gap before the strict raw-row gap repair.
 - Classification metrics are not directly invalidated by the MASE/CDF fixes, but remain under `pre_fix/` until rerun.
 - Write all new post-repair experiment outputs to `results/post_fix/`.
+- Production CLIs now default writers to `results/post_fix/`; override with `--results-dir` or `OFFSHORE_DL_RESULTS_DIR` only for deliberate runs. HPO campaign artifacts remain under `results/hpo/` unless `--output-dir` is provided, and are not final benchmark outputs unless final evaluation is present.
 
 ## Previous layout
 

@@ -26,6 +26,45 @@ from offshore_dl.utils.config import load_merged_config
 logger = logging.getLogger(__name__)
 
 
+def _cfg_get(node, key: str, default=None):
+    if node is None:
+        return default
+    if isinstance(node, dict):
+        return node.get(key, default)
+    try:
+        if key in node:
+            return node[key]
+    except (TypeError, KeyError, AttributeError):
+        pass
+    return getattr(node, key, default)
+
+
+def _strict_target_column_enabled(cfg) -> bool:
+    data_cfg = _cfg_get(cfg, "data")
+    return bool(_cfg_get(data_cfg, "strict_target_column", True))
+
+
+def _resolve_target_col_idx(
+    *,
+    dataset_name: str,
+    target_col: str,
+    common_columns: list[str],
+    strict: bool,
+) -> int:
+    """Resolve a forecasting target column without silently changing target."""
+    if target_col in common_columns:
+        return common_columns.index(target_col)
+
+    msg = (
+        f"{dataset_name}: target column {target_col!r} not found in aligned "
+        f"columns; available columns={common_columns!r}"
+    )
+    if strict:
+        raise ValueError(msg)
+    logger.warning("%s; using col 0 because strict_target_column=false", msg)
+    return 0
+
+
 class ThreeWDataset(BaseDataset):
     """3W v2.0.0 anomaly detection/classification dataset.
 
@@ -710,6 +749,7 @@ class GanymedeDataset(BaseDataset):
         self.input_window = input_window or self.cfg.data.forecasting.input_window
         self.gap = self.cfg.data.forecasting.get("gap", 0)
         self.target_col = self.cfg.data.target_column
+        self.strict_target_column = _strict_target_column_enabled(self.cfg)
         self.filter_shutdowns = filter_shutdowns
 
         self._load_data()
@@ -756,15 +796,13 @@ class GanymedeDataset(BaseDataset):
         else:
             self._common_columns = []
 
-        # Compute target column index in the ALIGNED column order
-        if self.target_col in self._common_columns:
-            self._target_col_idx = self._common_columns.index(self.target_col)
-        else:
-            self._target_col_idx = 0
-            logger.warning(
-                "Target column '%s' not found in aligned columns, using col 0",
-                self.target_col,
-            )
+        # Compute target column index in the ALIGNED column order.
+        self._target_col_idx = _resolve_target_col_idx(
+            dataset_name=self.__class__.__name__,
+            target_col=self.target_col,
+            common_columns=self._common_columns,
+            strict=self.strict_target_column,
+        )
 
         # Precompute numpy arrays with aligned columns
         self._arrays: list[np.ndarray] = []
@@ -904,6 +942,7 @@ class SPEBergDataset(BaseDataset):
         self.input_window = input_window or self.cfg.data.forecasting.input_window
         self.gap = self.cfg.data.forecasting.get("gap", 0)
         self.target_col = self.cfg.data.target_column
+        self.strict_target_column = _strict_target_column_enabled(self.cfg)
         self.filter_shutdowns = filter_shutdowns
 
         self._load_data()
@@ -954,15 +993,13 @@ class SPEBergDataset(BaseDataset):
         else:
             self._common_columns = []
 
-        # Compute target column index in the ALIGNED (sorted) column order
-        if self.target_col in self._common_columns:
-            self._target_col_idx = self._common_columns.index(self.target_col)
-        else:
-            self._target_col_idx = 0
-            logger.warning(
-                "Target column '%s' not found in aligned columns, using col 0",
-                self.target_col,
-            )
+        # Compute target column index in the ALIGNED column order.
+        self._target_col_idx = _resolve_target_col_idx(
+            dataset_name=self.__class__.__name__,
+            target_col=self.target_col,
+            common_columns=self._common_columns,
+            strict=self.strict_target_column,
+        )
 
         # Precompute numpy arrays with aligned columns (avoids per-getitem reindex)
         self._arrays: list[np.ndarray] = []
@@ -1111,6 +1148,7 @@ class VolveDataset(BaseDataset):
         self.input_window = input_window or self.cfg.data.forecasting.input_window
         self.gap = self.cfg.data.forecasting.get("gap", 0)
         self.target_col = self.cfg.data.target_column
+        self.strict_target_column = _strict_target_column_enabled(self.cfg)
         self.filter_shutdowns = filter_shutdowns
 
         self._load_data()
@@ -1162,15 +1200,13 @@ class VolveDataset(BaseDataset):
         else:
             self._common_columns = []
 
-        # Compute target column index in the ALIGNED (sorted) column order
-        if self.target_col in self._common_columns:
-            self._target_col_idx = self._common_columns.index(self.target_col)
-        else:
-            self._target_col_idx = 0
-            logger.warning(
-                "VolveDataset: target column '%s' not found in aligned columns, using col 0",
-                self.target_col,
-            )
+        # Compute target column index in the ALIGNED (sorted) column order.
+        self._target_col_idx = _resolve_target_col_idx(
+            dataset_name=self.__class__.__name__,
+            target_col=self.target_col,
+            common_columns=self._common_columns,
+            strict=self.strict_target_column,
+        )
 
         # Precompute numpy arrays with aligned columns (avoids per-getitem reindex)
         self._arrays: list[np.ndarray] = []
@@ -1319,6 +1355,7 @@ class InnerMongoliaDataset(BaseDataset):
         self.input_window = input_window or self.cfg.data.forecasting.input_window
         self.gap = self.cfg.data.forecasting.get("gap", 0)
         self.target_col = self.cfg.data.target_column
+        self.strict_target_column = _strict_target_column_enabled(self.cfg)
         self.filter_shutdowns = filter_shutdowns
 
         self._load_data()
@@ -1371,15 +1408,13 @@ class InnerMongoliaDataset(BaseDataset):
         else:
             self._common_columns = []
 
-        # Compute target column index in the ALIGNED (sorted) column order
-        if self.target_col in self._common_columns:
-            self._target_col_idx = self._common_columns.index(self.target_col)
-        else:
-            self._target_col_idx = 0
-            logger.warning(
-                "InnerMongoliaDataset: target '%s' not in aligned columns, using col 0",
-                self.target_col,
-            )
+        # Compute target column index in the ALIGNED (sorted) column order.
+        self._target_col_idx = _resolve_target_col_idx(
+            dataset_name=self.__class__.__name__,
+            target_col=self.target_col,
+            common_columns=self._common_columns,
+            strict=self.strict_target_column,
+        )
 
         # Precompute numpy arrays with aligned columns
         self._arrays: list[np.ndarray] = []

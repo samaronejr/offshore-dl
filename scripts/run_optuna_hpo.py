@@ -41,9 +41,11 @@ from offshore_dl.evaluation.cv import (
     GroupedTemporalHoldoutSplitter,
     HoldoutSplitter,
     StratifiedGroupKFoldSKLearn,
+    resolve_cv_gap,
 )
 from offshore_dl.evaluation.metrics import MetricRegistry
 from offshore_dl.utils.reproducibility import set_global_seed
+from offshore_dl.utils.results import resolve_results_dir
 
 logging.basicConfig(
     level=logging.INFO,
@@ -220,6 +222,81 @@ def _split_metadata(
     }
     if n_trial_folds is not None:
         meta["n_trial_folds"] = int(n_trial_folds)
+    return meta
+
+
+def _cfg_get(node, key: str, default=None):
+    """Read a key from an OmegaConf/dict/object without assuming shape."""
+    if node is None:
+        return default
+    if isinstance(node, dict):
+        return node.get(key, default)
+    try:
+        if key in node:
+            return node[key]
+    except (TypeError, KeyError, AttributeError):
+        pass
+    return getattr(node, key, default)
+
+
+def _forecast_cv_gap(cfg, dataset) -> int:
+    """Resolve forecasting HPO embargo from the active dataset horizon."""
+    data_cfg = _cfg_get(cfg, "data")
+    forecasting_cfg = _cfg_get(data_cfg, "forecasting")
+    policy = _cfg_get(data_cfg, "cv_gap_policy", "causal_horizon")
+    explicit_gap = _cfg_get(data_cfg, "cv_gap", None)
+    return int(
+        resolve_cv_gap(
+            policy,
+            task="forecasting",
+            input_window=int(getattr(dataset, "input_window", dataset[0][0].shape[0])),
+            horizon=int(getattr(dataset, "horizon", _cfg_get(forecasting_cfg, "default_horizon", 1))),
+            dataset_gap=int(getattr(dataset, "gap", _cfg_get(forecasting_cfg, "gap", 0))),
+            explicit_gap=explicit_gap,
+        )
+    )
+
+
+def _forecast_model_kwargs(entry: dict, dataset, horizon_days: int) -> dict:
+    """Derive shape-sensitive forecasting model kwargs from the dataset."""
+    kwargs = dict(entry["kwargs"])
+    sample_x, _sample_y, _meta = dataset[0]
+    kwargs.update(
+        {
+            "task": "forecasting",
+            "n_vars": int(sample_x.shape[-1]),
+            "window_size": int(sample_x.shape[0]),
+            "horizon": int(horizon_days),
+        }
+    )
+    if hasattr(dataset, "_target_col_idx"):
+        kwargs["target_channel"] = int(dataset._target_col_idx)
+    return kwargs
+
+
+def _forecast_split_metadata(cfg, dataset, *, n_train: int, n_test: int, n_cv_folds: int, n_trial_folds: int | None = None) -> dict:
+    """Build forecasting split metadata with active horizon/gap policy."""
+    data_cfg = _cfg_get(cfg, "data")
+    policy = _cfg_get(data_cfg, "cv_gap_policy", "causal_horizon")
+    gap = _forecast_cv_gap(cfg, dataset)
+    meta = _split_metadata(
+        n_train=n_train,
+        n_test=n_test,
+        n_cv_folds=n_cv_folds,
+        n_trial_folds=n_trial_folds,
+    )
+    meta.update(
+        {
+            "cv_gap_policy": str(policy),
+            "cv_gap": int(gap),
+            "outer_gap": int(gap),
+            "inner_gap": int(gap),
+            "raw_row_embargo_mode": "target_rows_only" if str(policy) == "causal_horizon" else str(policy),
+            "input_window": int(getattr(dataset, "input_window", dataset[0][0].shape[0])),
+            "horizon": int(getattr(dataset, "horizon", 0) or 0),
+            "dataset_gap": int(getattr(dataset, "gap", 0) or 0),
+        }
+    )
     return meta
 
 
@@ -1046,13 +1123,15 @@ def run_ganymede_hpo(
     dataset = GanymedeDataset("configs/data/ganymede.yaml", horizon=horizon_days, filter_shutdowns=False)
     logger.info("  Ganymede %s loaded: %d samples", horizon, len(dataset))
     groups = np.array([well_idx for well_idx, _ in dataset._samples], dtype=np.int32)
+    cv_gap = _forecast_cv_gap(cfg, dataset)
+    model_kwargs = _forecast_model_kwargs(entry, dataset, horizon_days)
 
     # Temporal holdout
-    holdout = GroupedTemporalHoldoutSplitter(test_ratio=0.2, groups=groups)
+    holdout = GroupedTemporalHoldoutSplitter(test_ratio=0.2, groups=groups, gap=cv_gap)
     train_pool, test_indices = holdout.split(len(dataset))
 
     # Inner CV for HPO
-    cv = GroupedExpandingWindowCV(groups=groups[train_pool], n_splits=3)
+    cv = GroupedExpandingWindowCV(groups=groups[train_pool], n_splits=3, gap=cv_gap)
 
     from torch.utils.data import Subset
     train_dataset = Subset(dataset, train_pool.tolist())
@@ -1062,7 +1141,7 @@ def run_ganymede_hpo(
         dataset=train_dataset,
         cv_strategy=cv,
         cfg=cfg,
-        model_kwargs={**entry["kwargs"], "horizon": horizon_days},
+        model_kwargs=model_kwargs,
         primary_metric="mae",
         search_space=search_space,
         n_trials=n_trials,
@@ -1072,7 +1151,7 @@ def run_ganymede_hpo(
     logger.info("  Best params: %s (value=%.4f)", hpo_result["best_params"], hpo_result["best_value"])
 
     # Final evaluation with best params
-    best_kwargs = {**entry["kwargs"], "horizon": horizon_days}
+    best_kwargs = dict(model_kwargs)
     best_cfg = load_merged_config("configs/base.yaml", "configs/data/ganymede.yaml", entry["config"])
     best_cfg.training.max_epochs = 50  # same as HPO trials — lr schedule must match
     best_cfg.training.batch_size = 32
@@ -1085,7 +1164,7 @@ def run_ganymede_hpo(
         cfg=best_cfg,
     )
 
-    final_cv = GroupedExpandingWindowCV(groups=groups, n_splits=3)
+    final_cv = GroupedExpandingWindowCV(groups=groups, n_splits=3, gap=cv_gap)
     runner = ExperimentRunner(
         model_class=entry["class"],
         dataset=dataset,
@@ -1105,9 +1184,19 @@ def run_ganymede_hpo(
             "best_value": hpo_result["best_value"],
             "n_trials": hpo_result["n_trials_completed"],
         },
+        "selection_metric": "mae",
+        "checkpoint_metric": str(_cfg_get(best_cfg.training, "checkpoint_metric", "val_loss")),
         "test_metrics": nested_result["test_metrics"],
         "cv_aggregate": nested_result["cv_aggregate"],
-        "baseline_kwargs": entry["kwargs"],
+        "split_metadata": _forecast_split_metadata(
+            cfg,
+            dataset,
+            n_train=len(train_pool),
+            n_test=len(test_indices),
+            n_cv_folds=nested_result.get("n_cv_folds", 0),
+            n_trial_folds=3,
+        ),
+        "baseline_kwargs": model_kwargs,
         "best_kwargs": best_kwargs,
     }
 
@@ -1143,13 +1232,15 @@ def run_spe_berg_hpo(
     dataset = SPEBergDataset("configs/data/spe_berg.yaml", horizon=horizon_days, filter_shutdowns=False)
     logger.info("  SPE BERG %s loaded: %d samples", horizon, len(dataset))
     groups = np.array([well_idx for well_idx, _ in dataset._samples], dtype=np.int32)
+    cv_gap = _forecast_cv_gap(cfg, dataset)
+    model_kwargs = _forecast_model_kwargs(entry, dataset, horizon_days)
 
     # Temporal holdout
-    holdout = GroupedTemporalHoldoutSplitter(test_ratio=0.2, groups=groups)
+    holdout = GroupedTemporalHoldoutSplitter(test_ratio=0.2, groups=groups, gap=cv_gap)
     train_pool, test_indices = holdout.split(len(dataset))
 
     # Inner CV for HPO
-    cv = GroupedExpandingWindowCV(groups=groups[train_pool], n_splits=3)
+    cv = GroupedExpandingWindowCV(groups=groups[train_pool], n_splits=3, gap=cv_gap)
 
     from torch.utils.data import Subset
     train_dataset = Subset(dataset, train_pool.tolist())
@@ -1159,7 +1250,7 @@ def run_spe_berg_hpo(
         dataset=train_dataset,
         cv_strategy=cv,
         cfg=cfg,
-        model_kwargs={**entry["kwargs"], "horizon": horizon_days},
+        model_kwargs=model_kwargs,
         primary_metric="mae",
         search_space=search_space,
         n_trials=n_trials,
@@ -1169,7 +1260,7 @@ def run_spe_berg_hpo(
     logger.info("  Best params: %s (value=%.4f)", hpo_result["best_params"], hpo_result["best_value"])
 
     # Final evaluation with best params
-    best_kwargs = {**entry["kwargs"], "horizon": horizon_days}
+    best_kwargs = dict(model_kwargs)
     best_cfg = load_merged_config("configs/base.yaml", "configs/data/spe_berg.yaml", entry["config"])
     best_cfg.training.max_epochs = 50  # same as HPO trials — lr schedule must match
     best_cfg.training.batch_size = 32
@@ -1182,7 +1273,7 @@ def run_spe_berg_hpo(
         cfg=best_cfg,
     )
 
-    final_cv = GroupedExpandingWindowCV(groups=groups, n_splits=3)
+    final_cv = GroupedExpandingWindowCV(groups=groups, n_splits=3, gap=cv_gap)
     runner = ExperimentRunner(
         model_class=entry["class"],
         dataset=dataset,
@@ -1202,9 +1293,19 @@ def run_spe_berg_hpo(
             "best_value": hpo_result["best_value"],
             "n_trials": hpo_result["n_trials_completed"],
         },
+        "selection_metric": "mae",
+        "checkpoint_metric": str(_cfg_get(best_cfg.training, "checkpoint_metric", "val_loss")),
         "test_metrics": nested_result["test_metrics"],
         "cv_aggregate": nested_result["cv_aggregate"],
-        "baseline_kwargs": entry["kwargs"],
+        "split_metadata": _forecast_split_metadata(
+            cfg,
+            dataset,
+            n_train=len(train_pool),
+            n_test=len(test_indices),
+            n_cv_folds=nested_result.get("n_cv_folds", 0),
+            n_trial_folds=3,
+        ),
+        "baseline_kwargs": model_kwargs,
         "best_kwargs": best_kwargs,
     }
 
@@ -1240,13 +1341,15 @@ def run_volve_hpo(
     dataset = VolveDataset("configs/data/volve.yaml", horizon=horizon_days, filter_shutdowns=False)
     logger.info("  Volve %s loaded: %d samples", horizon, len(dataset))
     groups = np.array([well_idx for well_idx, _ in dataset._samples], dtype=np.int32)
+    cv_gap = _forecast_cv_gap(cfg, dataset)
+    model_kwargs = _forecast_model_kwargs(entry, dataset, horizon_days)
 
     # Temporal holdout
-    holdout = GroupedTemporalHoldoutSplitter(test_ratio=0.2, groups=groups)
+    holdout = GroupedTemporalHoldoutSplitter(test_ratio=0.2, groups=groups, gap=cv_gap)
     train_pool, test_indices = holdout.split(len(dataset))
 
     # Inner CV for HPO
-    cv = GroupedExpandingWindowCV(groups=groups[train_pool], n_splits=3)
+    cv = GroupedExpandingWindowCV(groups=groups[train_pool], n_splits=3, gap=cv_gap)
 
     from torch.utils.data import Subset
     train_dataset = Subset(dataset, train_pool.tolist())
@@ -1256,7 +1359,7 @@ def run_volve_hpo(
         dataset=train_dataset,
         cv_strategy=cv,
         cfg=cfg,
-        model_kwargs={**entry["kwargs"], "horizon": horizon_days},
+        model_kwargs=model_kwargs,
         primary_metric="mae",
         search_space=search_space,
         n_trials=n_trials,
@@ -1266,7 +1369,7 @@ def run_volve_hpo(
     logger.info("  Best params: %s (value=%.4f)", hpo_result["best_params"], hpo_result["best_value"])
 
     # Final evaluation with best params
-    best_kwargs = {**entry["kwargs"], "horizon": horizon_days}
+    best_kwargs = dict(model_kwargs)
     best_cfg = load_merged_config("configs/base.yaml", "configs/data/volve.yaml", entry["config"])
     best_cfg.training.max_epochs = 50  # same as HPO trials — lr schedule must match
     best_cfg.training.batch_size = 32
@@ -1279,7 +1382,7 @@ def run_volve_hpo(
         cfg=best_cfg,
     )
 
-    final_cv = GroupedExpandingWindowCV(groups=groups, n_splits=3)
+    final_cv = GroupedExpandingWindowCV(groups=groups, n_splits=3, gap=cv_gap)
     runner = ExperimentRunner(
         model_class=entry["class"],
         dataset=dataset,
@@ -1299,9 +1402,19 @@ def run_volve_hpo(
             "best_value": hpo_result["best_value"],
             "n_trials": hpo_result["n_trials_completed"],
         },
+        "selection_metric": "mae",
+        "checkpoint_metric": str(_cfg_get(best_cfg.training, "checkpoint_metric", "val_loss")),
         "test_metrics": nested_result["test_metrics"],
         "cv_aggregate": nested_result["cv_aggregate"],
-        "baseline_kwargs": entry["kwargs"],
+        "split_metadata": _forecast_split_metadata(
+            cfg,
+            dataset,
+            n_train=len(train_pool),
+            n_test=len(test_indices),
+            n_cv_folds=nested_result.get("n_cv_folds", 0),
+            n_trial_folds=3,
+        ),
+        "baseline_kwargs": model_kwargs,
         "best_kwargs": best_kwargs,
     }
 
@@ -1374,7 +1487,7 @@ def main():
     parser.add_argument(
         "--output-dir",
         default=str(DEFAULT_HPO_OUTPUT_DIR),
-        help="HPO output root (default: results/hpo)",
+        help="HPO output root (default: results/hpo; not final benchmark output unless final eval is present)",
     )
     parser.add_argument(
         "--storage-dir",

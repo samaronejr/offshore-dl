@@ -16,8 +16,13 @@ from __future__ import annotations
 import json
 import logging
 import re
+import sys
 from collections import defaultdict
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
+
+from offshore_dl.utils.results import resolve_results_dir
 
 import numpy as np
 import pandas as pd
@@ -25,7 +30,7 @@ import pandas as pd
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(name)s] %(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
-RESULTS_DIR = Path("results")
+RESULTS_DIR = resolve_results_dir(for_write=False)
 REPORT_DIR = Path("reports")
 
 DATASETS = ["ganymede", "spe_berg", "inner_mongolia", "volve"]
