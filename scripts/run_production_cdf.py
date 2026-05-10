@@ -23,7 +23,7 @@ import torch
 from omegaconf import OmegaConf
 
 from offshore_dl.data.datasets import CDFDataset
-from offshore_dl.evaluation.cv import SlidingWindowCV
+from offshore_dl.evaluation.cv import SlidingWindowCV, resolve_cv_gap_from_config
 from offshore_dl.models.deeponet import DeepONetModel
 from offshore_dl.models.lstm import LSTMModel
 from offshore_dl.models.patchtst import PatchTSTModel
@@ -92,6 +92,15 @@ TRAINED_MODELS: dict[str, dict] = {
 from offshore_dl.utils.serialization import make_serializable as _make_serializable
 
 
+def _cdf_sliding_window_cv(data_cfg, train_ratio: float = 0.7) -> SlidingWindowCV:
+    """Construct CDF inner CV with central strict raw-row gap semantics."""
+    return SlidingWindowCV(
+        n_splits=3,
+        train_ratio=train_ratio,
+        gap=resolve_cv_gap_from_config(data_cfg),
+    )
+
+
 def run_trained_model(
     model_name: str,
     dataset: CDFDataset,
@@ -112,7 +121,7 @@ def run_trained_model(
     cfg.device = device
     cfg.training.scheduler = "cosine"
 
-    cv = SlidingWindowCV(n_splits=3, train_ratio=0.7)
+    cv = _cdf_sliding_window_cv(cfg.data)
 
     # Temporal holdout: last 20% as test
     from offshore_dl.evaluation.cv import HoldoutSplitter
@@ -154,7 +163,7 @@ def run_fm_cdf(model_name: str, dataset: CDFDataset, device: str) -> dict:
         "  CDF FM holdout: train_pool=%d, test=%d", len(train_pool), len(test_indices)
     )
 
-    cv = SlidingWindowCV(n_splits=3, train_ratio=0.7)
+    cv = _cdf_sliding_window_cv(fm_cfg.data)
 
     from offshore_dl.evaluation.metrics import MetricRegistry
 

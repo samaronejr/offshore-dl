@@ -111,6 +111,49 @@ class TestCVGapPolicy:
             horizon=30,
         ) == 122
 
+    def test_explicit_negative_cv_gap_raises(self) -> None:
+        with pytest.raises(ValueError, match="cv_gap must be non-negative"):
+            resolve_cv_gap("causal_horizon", task="forecasting", horizon=7, explicit_gap=-1)
+
+        with pytest.raises(ValueError, match="cv_gap must be non-negative"):
+            resolve_cv_gap_from_config(
+                {
+                    "task": "anomaly",
+                    "cv_gap_policy": "strict_raw_row",
+                    "cv_gap": -1,
+                    "preprocessing": {"window_size": 48},
+                }
+            )
+
+    def test_auto_cv_gap_behaves_like_missing_gap(self) -> None:
+        auto_cfg = {
+            "task": "anomaly",
+            "cv_gap_policy": "strict_raw_row",
+            "cv_gap": "auto",
+            "preprocessing": {"window_size": 48},
+        }
+        missing_cfg = dict(auto_cfg)
+        missing_cfg["cv_gap"] = None
+
+        assert resolve_cv_gap_from_config(auto_cfg) == resolve_cv_gap_from_config(missing_cfg)
+
+    def test_forecasting_strict_raw_row_gap_from_config(self) -> None:
+        assert (
+            resolve_cv_gap_from_config(
+                {
+                    "task": "forecasting",
+                    "cv_gap_policy": "strict_raw_row",
+                    "cv_gap": None,
+                    "forecasting": {
+                        "input_window": 90,
+                        "default_horizon": 30,
+                        "gap": 3,
+                    },
+                }
+            )
+            == 122
+        )
+
     def test_raw_row_embargo_detects_overlap_and_strict_gap_prevents_it(self) -> None:
         train_idx = np.array([0, 1])
         val_idx = np.array([2])

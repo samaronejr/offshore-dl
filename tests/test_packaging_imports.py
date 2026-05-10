@@ -111,6 +111,7 @@ def test_build_experiment_forwards_label_smoothing(monkeypatch: pytest.MonkeyPat
 
 def test_cv_gap_policy_helpers() -> None:
     from offshore_dl.run_experiment import _cdf_cv_gap, _forecast_cv_gap
+    from offshore_dl.evaluation.cv import resolve_cv_gap_from_config
 
     class ForecastDataset:
         horizon = 7
@@ -138,10 +139,44 @@ def test_cv_gap_policy_helpers() -> None:
     )
     assert _cdf_cv_gap(OmegaConf.create({"data": {"preprocessing": {"window_size": 12}}})) == 11
     assert _cdf_cv_gap(OmegaConf.create({"data": {"cv_gap": 3, "preprocessing": {"window_size": 12}}})) == 3
+    assert _cdf_cv_gap(
+        OmegaConf.create(
+            {"data": {"cv_gap": "auto", "preprocessing": {"window_size": 48}}}
+        )
+    ) == 47
+    assert _forecast_cv_gap(
+        OmegaConf.create(
+            {
+                "data": {
+                    "task": "forecasting",
+                    "cv_gap": "auto",
+                    "cv_gap_policy": "strict_raw_row",
+                    "forecasting": {
+                        "input_window": 30,
+                        "default_horizon": 7,
+                        "gap": 2,
+                    },
+                }
+            }
+        ),
+        ForecastDataset(),
+    ) == resolve_cv_gap_from_config(
+        {
+            "task": "forecasting",
+            "cv_gap": "auto",
+            "cv_gap_policy": "strict_raw_row",
+            "forecasting": {"input_window": 30, "default_horizon": 7, "gap": 2},
+        }
+    )
+    with pytest.raises(ValueError, match="cv_gap must be non-negative"):
+        _cdf_cv_gap(OmegaConf.create({"data": {"cv_gap": -1}}))
+    with pytest.raises(ValueError, match="cv_gap must be non-negative"):
+        _forecast_cv_gap(OmegaConf.create({"data": {"cv_gap": -1}}), ForecastDataset())
 
 
 def test_patchtst_build_experiment_sanitizes_short_window_kwargs(
     monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     import offshore_dl.run_experiment as run_experiment
 
@@ -194,10 +229,18 @@ def test_patchtst_build_experiment_sanitizes_short_window_kwargs(
         },
     )
 
-    runner, _ = run_experiment.build_experiment("patchtst", "dummy_short_window")
+    with caplog.at_level("WARNING"):
+        runner, _ = run_experiment.build_experiment("patchtst", "dummy_short_window")
 
     assert runner.model_kwargs["patch_len"] == 14
     assert runner.model_kwargs["stride"] == 14
+    assert runner.runtime_adjustments == {
+        "patchtst_short_window": {
+            "patch_len": {"from": 16, "to": 14},
+            "stride": {"from": 32, "to": 14},
+        }
+    }
+    assert "Adjusted PatchTST short-window kwargs" in caplog.text
     assert runner.model_kwargs["d_model"] == 16
     assert runner.model_kwargs["lr"] == 0.01
     assert runner.model_kwargs["weight_decay"] == 0.02
@@ -207,6 +250,21 @@ def test_patchtst_short_window_sanitizer_preserves_valid_kwargs() -> None:
     import offshore_dl.run_experiment as run_experiment
 
     kwargs = {"window_size": 32, "patch_len": 16, "stride": 8}
-    run_experiment._sanitize_patchtst_short_window(kwargs)
+    adjustments = run_experiment._sanitize_patchtst_short_window(kwargs)
 
+    assert adjustments == {}
     assert kwargs == {"window_size": 32, "patch_len": 16, "stride": 8}
+
+
+def test_patchtst_short_window_sanitizer_reports_adjustments() -> None:
+    import offshore_dl.run_experiment as run_experiment
+
+    kwargs = {"window_size": 14, "patch_len": 16, "stride": 32}
+
+    adjustments = run_experiment._sanitize_patchtst_short_window(kwargs)
+
+    assert kwargs == {"window_size": 14, "patch_len": 14, "stride": 14}
+    assert adjustments == {
+        "patch_len": {"from": 16, "to": 14},
+        "stride": {"from": 32, "to": 14},
+    }

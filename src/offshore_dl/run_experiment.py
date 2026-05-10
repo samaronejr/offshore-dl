@@ -106,12 +106,12 @@ def _forecast_cv_gap(cfg, ds) -> int:
     data_cfg = _cfg_get(cfg, "data")
     legacy_cv_cfg = _cfg_get(data_cfg, "cv")
     explicit_gap = _cv_setting(data_cfg, legacy_cv_cfg, "cv_gap", "gap")
-    if explicit_gap is not None:
-        return int(explicit_gap)
-
     policy = _cv_setting(
         data_cfg, legacy_cv_cfg, "cv_gap_policy", "gap_policy", "causal_horizon"
     )
+    if explicit_gap is not None and explicit_gap != "auto":
+        return resolve_cv_gap(policy, task="forecasting", explicit_gap=explicit_gap)
+
     horizon = int(getattr(ds, "horizon", _cfg_get(data_cfg, "horizon", 0)))
     input_window = int(
         getattr(ds, "input_window", getattr(ds, "window_size", ds[0][0].shape[0]))
@@ -125,6 +125,7 @@ def _forecast_cv_gap(cfg, ds) -> int:
         input_window=input_window,
         horizon=horizon,
         dataset_gap=dataset_gap,
+        explicit_gap=explicit_gap,
     )
 
 
@@ -133,14 +134,19 @@ def _cdf_cv_gap(cfg) -> int:
     data_cfg = _cfg_get(cfg, "data")
     legacy_cv_cfg = _cfg_get(data_cfg, "cv")
     explicit_gap = _cv_setting(data_cfg, legacy_cv_cfg, "cv_gap", "gap")
-    if explicit_gap is not None:
-        return int(explicit_gap)
-
     policy = _cv_setting(
         data_cfg, legacy_cv_cfg, "cv_gap_policy", "gap_policy", "strict_raw_row"
     )
+    if explicit_gap is not None and explicit_gap != "auto":
+        return resolve_cv_gap(policy, task="anomaly", explicit_gap=explicit_gap)
+
     window_size = int(_cfg_get(_cfg_get(data_cfg, "preprocessing"), "window_size", 1))
-    return resolve_cv_gap(policy, task="anomaly", window_size=window_size)
+    return resolve_cv_gap(
+        policy,
+        task="anomaly",
+        window_size=window_size,
+        explicit_gap=explicit_gap,
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -332,26 +338,40 @@ DATASET_REGISTRY: dict[str, dict] = {
 }
 
 
-def _sanitize_patchtst_short_window(model_kwargs: dict) -> None:
+def _sanitize_patchtst_short_window(model_kwargs: dict) -> dict:
     """Clamp generic PatchTST kwargs that are invalid only for short windows.
 
     Direct ``PatchTSTModel`` construction remains fail-fast; this helper is
     applied only by ``build_experiment()`` after dataset/config kwargs are
     merged so short-window datasets do not inherit unsafe default patch config.
+    Returns explicit runtime adjustment metadata when it mutates kwargs.
     """
+    adjustments: dict[str, dict[str, int]] = {}
     window_size = model_kwargs.get("window_size")
     patch_len = model_kwargs.get("patch_len")
     stride = model_kwargs.get("stride")
 
     if window_size is None or patch_len is None:
-        return
+        return adjustments
 
     if patch_len > window_size and window_size > 0:
+        original = patch_len
         patch_len = max(1, window_size)
         model_kwargs["patch_len"] = patch_len
+        adjustments["patch_len"] = {"from": int(original), "to": int(patch_len)}
 
     if stride is not None and stride > patch_len and patch_len > 0:
+        original = stride
         model_kwargs["stride"] = patch_len
+        adjustments["stride"] = {"from": int(original), "to": int(patch_len)}
+
+    if adjustments:
+        logger.warning(
+            "Adjusted PatchTST short-window kwargs: %s",
+            adjustments,
+        )
+
+    return adjustments
 
 
 def build_experiment(
@@ -436,8 +456,11 @@ def build_experiment(
         if hasattr(cfg.model.training, "weight_decay"):
             model_kwargs["weight_decay"] = cfg.model.training.weight_decay
 
+    runtime_adjustments = {}
     if model_name == "patchtst":
-        _sanitize_patchtst_short_window(model_kwargs)
+        patchtst_adjustments = _sanitize_patchtst_short_window(model_kwargs)
+        if patchtst_adjustments:
+            runtime_adjustments["patchtst_short_window"] = patchtst_adjustments
 
     runner = ExperimentRunner(
         model_class=model_class,
@@ -445,6 +468,7 @@ def build_experiment(
         cv_strategy=cv_strategy,
         cfg=cfg,
         model_kwargs=model_kwargs,
+        runtime_adjustments=runtime_adjustments,
     )
 
     return runner, cfg

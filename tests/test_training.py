@@ -378,16 +378,21 @@ class _ZeroShotForecastModel(BaseModel):
 class _GroupedForecastDataset(torch.utils.data.Dataset):
     """Forecasting dataset with group metadata for MASE plumbing tests."""
 
-    def __init__(self) -> None:
+    def __init__(self, include_order: bool = True, order_key: str = "target_start") -> None:
         self.X = torch.randn(12, 4, 2)
         self.y = torch.arange(12, dtype=torch.float32).view(12, 1)
         self.groups = np.array(["a"] * 6 + ["b"] * 6)
+        self.include_order = include_order
+        self.order_key = order_key
 
     def __len__(self) -> int:
         return len(self.X)
 
     def __getitem__(self, i: int):
-        return self.X[i], self.y[i], {"well_id": self.groups[i]}
+        metadata = {"well_id": self.groups[i]}
+        if self.include_order:
+            metadata[self.order_key] = i
+        return self.X[i], self.y[i], metadata
 
 
 class TestExperimentRunner:
@@ -441,6 +446,29 @@ class TestExperimentRunner:
         assert "metrics" in results["fold_results"][0]
         assert "f1_macro" in results["fold_results"][0]["metrics"]
 
+    def test_runtime_adjustments_are_in_experiment_results(self) -> None:
+        ds = _make_tiny_dataset("classification", n_classes=3)
+
+        class EmptyCV:
+            def get_splits(self, _n_samples):
+                return []
+
+        runner = ExperimentRunner(
+            model_class=DummyModel,
+            dataset=ds,
+            cv_strategy=EmptyCV(),
+            cfg=OmegaConf.create({"training": {"batch_size": 8, "max_epochs": 1}}),
+            model_kwargs={"task": "classification", "n_vars": 10, "n_classes": 3},
+            runtime_adjustments={"patchtst_short_window": {"patch_len": {"from": 16, "to": 14}}},
+        )
+
+        results = runner.run(use_mlflow=False)
+
+        assert results["runtime_adjustments"]["patchtst_short_window"]["patch_len"] == {
+            "from": 16,
+            "to": 14,
+        }
+
     def test_forecasting_experiment(self) -> None:
         ds = _make_tiny_dataset("forecasting", horizon=5)
         cv = TemporalSplitCV(train_ratio=0.7)
@@ -491,7 +519,51 @@ class TestExperimentRunner:
         assert "mase_flat" in metrics
         assert "mase_group_macro" in metrics
         assert "mase_group_weighted" in metrics
-        assert metrics["mase_aggregation"] in {"group_weighted", "flat_fallback"}
+        assert metrics["mase_aggregation"] == "group_weighted"
+        assert metrics["mase_denominator_source"] == "grouped_train"
+
+    def test_forecasting_experiment_marks_mase_unavailable_when_order_missing(self) -> None:
+        ds = _GroupedForecastDataset(include_order=False)
+        cv = TemporalSplitCV(train_ratio=0.7)
+        cfg = OmegaConf.create(
+            {
+                "training": {
+                    "batch_size": 4,
+                    "max_epochs": 1,
+                    "early_stopping_patience": 5,
+                    "gradient_clip_val": 1.0,
+                },
+            }
+        )
+        runner = ExperimentRunner(
+            model_class=DummyModel,
+            dataset=ds,
+            cv_strategy=cv,
+            cfg=cfg,
+            model_kwargs={"task": "forecasting", "n_vars": 2, "horizon": 1},
+        )
+
+        results = runner.run(use_mlflow=False)
+        metrics = results["fold_results"][0]["metrics"]
+
+        assert "mae" in metrics
+        assert "rmse" in metrics
+        assert np.isnan(metrics["mase"])
+        assert metrics["mase_aggregation"] == "unavailable"
+
+    def test_extract_temporal_order_prefers_target_start_over_start_idx(self) -> None:
+        metadata = {"target_start": torch.tensor([10, 11]), "start_idx": torch.tensor([1, 2])}
+
+        order = ExperimentRunner._extract_order_ids(metadata)
+
+        np.testing.assert_array_equal(order, np.array([10, 11], dtype=object))
+
+    def test_extract_temporal_order_accepts_start_idx_fallback(self) -> None:
+        metadata = {"start_idx": torch.tensor([1, 2, 3])}
+
+        order = ExperimentRunner._extract_order_ids(metadata)
+
+        np.testing.assert_array_equal(order, np.array([1, 2, 3], dtype=object))
 
     def test_anomaly_experiment(self) -> None:
         ds = _make_tiny_dataset("anomaly")
@@ -603,6 +675,77 @@ class TestExperimentRunner:
         # Check MLflow directory was created
         mlruns_dir = tmp_path / "mlruns"
         assert mlruns_dir.exists()
+
+    def test_mlflow_metric_value_accepts_only_finite_real_numbers(self) -> None:
+        assert ExperimentRunner._is_mlflow_metric_value(1)
+        assert ExperimentRunner._is_mlflow_metric_value(1.5)
+        assert ExperimentRunner._is_mlflow_metric_value(np.float64(2.0))
+
+        for value in (True, False, np.nan, np.inf, "x", [1], {"a": 1}):
+            assert not ExperimentRunner._is_mlflow_metric_value(value)
+
+    def test_mlflow_metric_logging_sends_provenance_to_params(self) -> None:
+        class FakeMLflow:
+            def __init__(self) -> None:
+                self.metrics = []
+                self.params = []
+
+            def log_metric(self, key, value):
+                self.metrics.append((key, value))
+
+            def log_param(self, key, value):
+                self.params.append((key, value))
+
+        fake = FakeMLflow()
+        ExperimentRunner._log_mlflow_values(
+            fake,
+            "val",
+            {
+                "mae": 1.25,
+                "mase": np.nan,
+                "mase_aggregation": "unavailable",
+                "mase_denominator_source": "missing_order",
+                "stopped_early": True,
+                "confusion_matrix": [[1, 0], [0, 1]],
+            },
+        )
+
+        assert fake.metrics == [("val_mae", 1.25)]
+        assert ("val_mase_aggregation", "unavailable") in fake.params
+        assert ("val_mase_denominator_source", "missing_order") in fake.params
+        assert ("val_stopped_early", "True") in fake.params
+        assert not any(key == "val_mase" for key, _ in fake.metrics)
+        assert not any(key == "val_confusion_matrix" for key, _ in fake.metrics)
+
+    def test_mlflow_parent_and_nested_logging_helpers_skip_non_numeric(self) -> None:
+        class FakeMLflow:
+            def __init__(self) -> None:
+                self.metrics = []
+                self.params = []
+
+            def log_metric(self, key, value):
+                self.metrics.append((key, value))
+
+            def log_param(self, key, value):
+                self.params.append((key, value))
+
+        fake = FakeMLflow()
+        ExperimentRunner._log_mlflow_values(
+            fake,
+            "",
+            {"mae_mean": 1.0, "mase_mean": np.nan, "mase_aggregation": "unavailable"},
+        )
+        ExperimentRunner._log_mlflow_values(
+            fake,
+            "test",
+            {"rmse": np.float64(2.0), "mase_denominator_source": "missing_order"},
+        )
+
+        assert ("mae_mean", 1.0) in fake.metrics
+        assert ("test_rmse", 2.0) in fake.metrics
+        assert ("mase_aggregation", "unavailable") in fake.params
+        assert ("test_mase_denominator_source", "missing_order") in fake.params
+        assert not any(key == "mase_mean" for key, _ in fake.metrics)
 
     def test_nested_classification(self) -> None:
         """run_nested: inner CV + retrain + held-out test for classification."""

@@ -51,6 +51,8 @@ class MetricRegistry:
         y_train: np.ndarray | None = None,
         groups: np.ndarray | None = None,
         y_train_groups: np.ndarray | None = None,
+        order: np.ndarray | None = None,
+        y_train_order: np.ndarray | None = None,
         mase_aggregation: str = "group_weighted",
         prediction_scores: np.ndarray | None = None,
     ) -> dict:
@@ -66,6 +68,8 @@ class MetricRegistry:
             y_train: Training targets for MASE denominator (forecasting).
             groups: Per-sample forecasting group IDs aligned to predictions/targets.
             y_train_groups: Training group IDs aligned to y_train samples.
+            order: Per-sample temporal order aligned to predictions/targets.
+            y_train_order: Temporal order aligned to y_train samples.
             mase_aggregation: Primary MASE aggregation when group data is available:
                 ``"group_weighted"``, ``"group_macro"``, or ``"flat"``.
             prediction_scores: Probability scores for AUC-PR (classification).
@@ -87,6 +91,8 @@ class MetricRegistry:
                 y_train=y_train,
                 groups=groups,
                 y_train_groups=y_train_groups,
+                order=order,
+                y_train_order=y_train_order,
                 mase_aggregation=mase_aggregation,
             )
         elif task == "anomaly":
@@ -214,6 +220,8 @@ class MetricRegistry:
         y_train: np.ndarray | None = None,
         groups: np.ndarray | None = None,
         y_train_groups: np.ndarray | None = None,
+        order: np.ndarray | None = None,
+        y_train_order: np.ndarray | None = None,
         mase_aggregation: str = "group_weighted",
     ) -> dict:
         """Compute forecasting metrics.
@@ -250,6 +258,10 @@ class MetricRegistry:
             targets,
             seasonal_period=seasonal_period,
             y_train=y_train,
+            groups=groups,
+            y_train_groups=y_train_groups,
+            order=order,
+            y_train_order=y_train_order,
         )
         results["mase_flat"] = mase_flat
         results["mase_group_macro"] = float("nan")
@@ -262,11 +274,15 @@ class MetricRegistry:
             groups=groups,
             y_train=y_train,
             y_train_groups=y_train_groups,
+            order=order,
+            y_train_order=y_train_order,
             seasonal_period=seasonal_period,
         )
         if group_metrics is not None:
+            grouped_source = group_metrics.pop("mase_denominator_source", None)
             results.update(group_metrics)
-            results["mase_denominator_source"] = "grouped_train" if y_train is not None else "grouped_eval"
+            if grouped_source is not None:
+                results["mase_denominator_source"] = grouped_source
             if mase_aggregation == "group_macro":
                 results["mase"] = results["mase_group_macro"]
                 results["mase_aggregation"] = "group_macro"
@@ -280,8 +296,12 @@ class MetricRegistry:
                 msg = "mase_aggregation must be 'group_weighted', 'group_macro', or 'flat'"
                 raise ValueError(msg)
         else:
-            results["mase"] = results["mase_flat"]
-            results["mase_aggregation"] = "flat_fallback"
+            if np.isfinite(results["mase_flat"]) or np.isinf(results["mase_flat"]):
+                results["mase"] = results["mase_flat"]
+                results["mase_aggregation"] = "flat_fallback"
+            else:
+                results["mase"] = float("nan")
+                results["mase_aggregation"] = "unavailable"
 
         return results
 
@@ -292,11 +312,33 @@ class MetricRegistry:
         *,
         seasonal_period: int,
         y_train: np.ndarray | None,
+        groups: np.ndarray | None,
+        y_train_groups: np.ndarray | None,
+        order: np.ndarray | None,
+        y_train_order: np.ndarray | None,
     ) -> tuple[float, str]:
-        """Compute flat MASE and denominator provenance."""
+        """Compute flat MASE and denominator provenance.
+
+        Flat MASE is valid only for a single chronological series.  It must not
+        concatenate shuffled multi-well rows or ravel overlapping horizon
+        windows into an artificial denominator.
+        """
         scale_data = y_train if y_train is not None else targets
         source = "train_flat" if y_train is not None else "eval_flat"
-        scale_data = np.asarray(scale_data, dtype=np.float64).ravel()
+        scale_order = y_train_order if y_train is not None else order
+
+        for candidate_groups in (groups, y_train_groups):
+            if candidate_groups is not None and MetricRegistry._has_missing_values(candidate_groups):
+                return float("nan"), "missing_group"
+            if MetricRegistry._has_multiple_groups(candidate_groups):
+                return float("nan"), "multi_group_flat_unavailable"
+
+        if scale_order is None:
+            return float("nan"), "missing_order"
+
+        scale_data = MetricRegistry._ordered_denominator_series(scale_data, scale_order)
+        if scale_data is None:
+            return float("nan"), "missing_order"
         if len(scale_data) <= seasonal_period:
             return float("inf"), source
         naive_errors = np.abs(scale_data[seasonal_period:] - scale_data[:-seasonal_period])
@@ -314,12 +356,15 @@ class MetricRegistry:
         groups: np.ndarray | None,
         y_train: np.ndarray | None,
         y_train_groups: np.ndarray | None,
+        order: np.ndarray | None,
+        y_train_order: np.ndarray | None,
         seasonal_period: int,
     ) -> dict[str, float] | None:
         """Compute macro/weighted group MASE when group metadata is aligned.
 
-        Grouped denominators use available per-group training or evaluation target
-        window samples, not reconstructed contiguous raw per-well time series.
+        Grouped denominators are sorted inside the metric layer using explicit
+        per-sample temporal order.  Missing order makes MASE unavailable rather
+        than falling back to arbitrary append order.
         """
         if groups is None:
             return None
@@ -329,29 +374,70 @@ class MetricRegistry:
         if len(groups) != n_samples:
             logger.warning("Ignoring grouped MASE: groups length does not match samples")
             return None
+        if MetricRegistry._has_missing_values(groups):
+            logger.warning("Ignoring grouped MASE: groups contain missing values")
+            return None
 
         pred_2d = np.asarray(predictions, dtype=np.float64).reshape(n_samples, -1)
         target_2d = np.asarray(targets, dtype=np.float64).reshape(n_samples, -1)
+        order_arr = MetricRegistry._coerce_order(order, n_samples)
 
         train_by_group: dict[object, np.ndarray] = {}
+        train_source_available = False
         if y_train is not None and y_train_groups is not None:
             y_train_arr = np.asarray(y_train, dtype=np.float64)
             y_train_groups_arr = np.asarray(y_train_groups)
             n_train_samples = y_train_arr.shape[0] if y_train_arr.ndim > 0 else len(y_train_groups_arr)
-            if len(y_train_groups_arr) == n_train_samples:
-                y_train_2d = y_train_arr.reshape(n_train_samples, -1)
-                for group in pd_unique(y_train_groups_arr):
-                    train_by_group[group] = y_train_2d[y_train_groups_arr == group].ravel()
+            y_train_order_arr = MetricRegistry._coerce_order(y_train_order, n_train_samples)
+            if len(y_train_groups_arr) != n_train_samples:
+                logger.warning("Ignoring grouped MASE: y_train_groups length mismatch")
+                return None
+            if MetricRegistry._has_missing_values(y_train_groups_arr):
+                logger.warning("Ignoring grouped MASE: y_train_groups contain missing values")
+                return None
+            if y_train_order_arr is None:
+                logger.warning("Ignoring grouped MASE: missing y_train_order")
+                return None
+            train_source_available = True
+            for group in pd_unique(y_train_groups_arr):
+                mask = y_train_groups_arr == group
+                series = MetricRegistry._ordered_denominator_series(
+                    y_train_arr[mask],
+                    y_train_order_arr[mask],
+                )
+                if series is None:
+                    logger.warning(
+                        "Ignoring grouped MASE: cannot form ordered training denominator"
+                    )
+                    return None
+                train_by_group[group] = series
+
+        if not train_source_available and order_arr is None:
+            logger.warning("Ignoring grouped MASE: missing evaluation order")
+            return None
 
         group_mases = []
         group_weights = []
+        denominator_source = "grouped_train" if train_source_available else "grouped_eval"
         for group in pd_unique(groups):
             mask = groups == group
             group_errors = np.abs(pred_2d[mask] - target_2d[mask]).ravel()
             group_mae = float(np.mean(group_errors))
             scale_data = train_by_group.get(group)
             if scale_data is None:
-                scale_data = target_2d[mask].ravel()
+                if order_arr is None:
+                    logger.warning(
+                        "Ignoring grouped MASE: no ordered denominator for group %r", group
+                    )
+                    return None
+                scale_data = MetricRegistry._ordered_denominator_series(
+                    target_2d[mask],
+                    order_arr[mask],
+                )
+                denominator_source = "grouped_eval"
+            if scale_data is None:
+                logger.warning("Ignoring grouped MASE: invalid ordered denominator")
+                return None
             if len(scale_data) <= seasonal_period:
                 group_mase = float("inf")
             else:
@@ -372,7 +458,83 @@ class MetricRegistry:
         return {
             "mase_group_macro": float(np.mean(mases)),
             "mase_group_weighted": float(np.average(mases, weights=weights)),
+            "mase_denominator_source": denominator_source,
         }
+
+    @staticmethod
+    def _has_multiple_groups(groups: np.ndarray | None) -> bool:
+        if groups is None:
+            return False
+        values = np.asarray(groups, dtype=object)
+        if values.size == 0:
+            return False
+        values = values.reshape(-1)
+        values = np.asarray(
+            [v for v in values if not MetricRegistry._is_missing_value(v)],
+            dtype=object,
+        )
+        return len(pd_unique(values)) > 1
+
+    @staticmethod
+    def _has_missing_values(values: np.ndarray) -> bool:
+        return any(MetricRegistry._is_missing_value(v) for v in np.asarray(values, dtype=object).reshape(-1))
+
+    @staticmethod
+    def _is_missing_value(value: object) -> bool:
+        if value is None:
+            return True
+        try:
+            return bool(np.isnan(value))  # type: ignore[arg-type]
+        except (TypeError, ValueError):
+            return False
+
+    @staticmethod
+    def _coerce_order(order: np.ndarray | None, n_samples: int) -> np.ndarray | None:
+        if order is None:
+            return None
+        order_arr = np.asarray(order, dtype=object)
+        if order_arr.ndim == 0:
+            order_arr = order_arr.reshape(1)
+        order_arr = order_arr.reshape(-1)
+        if len(order_arr) != n_samples:
+            logger.warning(
+                "Ignoring MASE order: expected %d values, got %d",
+                n_samples,
+                len(order_arr),
+            )
+            return None
+        if any(MetricRegistry._is_missing_value(v) for v in order_arr):
+            logger.warning("Ignoring MASE order: contains missing values")
+            return None
+        return order_arr
+
+    @staticmethod
+    def _ordered_denominator_series(
+        values: np.ndarray,
+        order: np.ndarray | None,
+    ) -> np.ndarray | None:
+        """Return one defensible chronological target series for MASE scale.
+
+        For multi-horizon windows, this intentionally uses the first horizon
+        value after sorting by sample order instead of raveling all horizons
+        into artificial adjacent observations.
+        """
+        arr = np.asarray(values, dtype=np.float64)
+        if arr.ndim == 0:
+            arr = arr.reshape(1)
+        n_samples = arr.shape[0]
+        arr_2d = arr.reshape(n_samples, -1)
+
+        order_arr = MetricRegistry._coerce_order(order, n_samples)
+        if order is not None and order_arr is None:
+            return None
+        if order_arr is not None:
+            sort_idx = np.argsort(order_arr, kind="mergesort")
+            arr_2d = arr_2d[sort_idx]
+        elif arr_2d.shape[1] > 1:
+            return None
+
+        return arr_2d[:, 0].astype(np.float64, copy=False)
 
     @staticmethod
     def _anomaly_metrics(
