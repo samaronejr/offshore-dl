@@ -246,6 +246,128 @@ class TestEmptySplitsGuard:
         assert result["aggregate"] == {}
 
 
+class TestCDFProductionCVGap:
+    """CDF production scripts must use central strict raw-row CV gaps."""
+
+    def test_cdf_sliding_window_cv_uses_central_resolver(self, monkeypatch):
+        from omegaconf import OmegaConf
+        import scripts.run_production_cdf as rpc
+
+        captured = {}
+
+        def fake_resolver(data_cfg):
+            captured["data_cfg"] = data_cfg
+            return 123
+
+        def fake_cv(*args, **kwargs):
+            captured["args"] = args
+            captured["kwargs"] = kwargs
+            return object()
+
+        monkeypatch.setattr(rpc, "resolve_cv_gap_from_config", fake_resolver)
+        monkeypatch.setattr(rpc, "SlidingWindowCV", fake_cv)
+
+        data_cfg = OmegaConf.create(
+            {
+                "task": "anomaly",
+                "cv_gap_policy": "strict_raw_row",
+                "preprocessing": {"window_size": 48},
+            }
+        )
+
+        rpc._cdf_sliding_window_cv(data_cfg)
+
+        assert captured["data_cfg"] is data_cfg
+        assert captured["kwargs"] == {"n_splits": 3, "train_ratio": 0.7, "gap": 123}
+
+    def test_run_trained_model_constructs_sliding_window_cv_with_gap(self, monkeypatch):
+        from omegaconf import OmegaConf
+        import scripts.run_production_cdf as rpc
+        from offshore_dl.evaluation.cv import resolve_cv_gap
+
+        captured = {}
+
+        def fake_cv(*args, **kwargs):
+            captured["cv_kwargs"] = kwargs
+            return object()
+
+        monkeypatch.setattr(rpc, "SlidingWindowCV", fake_cv)
+        monkeypatch.setattr(
+            rpc,
+            "load_merged_config",
+            lambda *_args, **_kwargs: OmegaConf.create(
+                {
+                    "training": {"max_epochs": 1, "batch_size": 32},
+                    "device": "cpu",
+                    "data": {
+                        "task": "anomaly",
+                        "cv_gap_policy": "strict_raw_row",
+                        "preprocessing": {"window_size": 48, "train_ratio": 0.8},
+                    },
+                }
+            ),
+        )
+
+        class FakeHoldout:
+            def __init__(self, *_, **__):
+                pass
+
+            def split(self, _n_samples):
+                return np.arange(80), np.arange(80, 100)
+
+        monkeypatch.setattr("offshore_dl.evaluation.cv.HoldoutSplitter", FakeHoldout)
+
+        class DummyRunner:
+            def __init__(self, *args, **kwargs):
+                captured["runner_kwargs"] = kwargs
+
+            def run_nested(self, *args, **kwargs):
+                captured["run_nested_kwargs"] = kwargs
+                return {"test_metrics": {}, "cv_fold_results": [], "cv_aggregate": {}}
+
+        monkeypatch.setattr(rpc, "ExperimentRunner", DummyRunner)
+
+        class FakeCDF:
+            n_vars = 11
+
+            def __len__(self):
+                return 100
+
+        rpc.run_trained_model("lstm", FakeCDF(), max_epochs=1, device="cpu")
+
+        assert captured["cv_kwargs"]["gap"] == resolve_cv_gap(
+            "strict_raw_row", task="anomaly", window_size=48
+        )
+        assert captured["cv_kwargs"]["gap"] == 47
+
+    def test_fm_cdf_gap_uses_mutated_dataset_config(self, monkeypatch):
+        from omegaconf import OmegaConf
+        import scripts.run_production_cdf as rpc
+
+        captured = {}
+
+        def fake_cv(*args, **kwargs):
+            captured["kwargs"] = kwargs
+            return object()
+
+        monkeypatch.setattr(rpc, "SlidingWindowCV", fake_cv)
+        fm_cfg = OmegaConf.create(
+            {
+                "data": {
+                    "task": "anomaly",
+                    "cv_gap_policy": "strict_raw_row",
+                    "preprocessing": {"window_size": 48, "mode": "window"},
+                }
+            }
+        )
+        fm_cfg.data.preprocessing.mode = "prediction"
+        fm_cfg.data.preprocessing.prediction_horizon = 48
+
+        rpc._cdf_sliding_window_cv(fm_cfg.data)
+
+        assert captured["kwargs"]["gap"] == 47
+
+
 # ────────────────────────────────────────────────────────────────
 # Per-well dataset (integration — requires data on disk)
 # ────────────────────────────────────────────────────────────────

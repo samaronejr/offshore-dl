@@ -46,7 +46,7 @@ def resolve_cv_gap(
     horizon: int | None = None,
     dataset_gap: int = 0,
     window_size: int | None = None,
-    explicit_gap: int | None = None,
+    explicit_gap: int | str | None = None,
 ) -> int:
     """Resolve a temporal CV embargo gap from an explicit policy.
 
@@ -55,10 +55,9 @@ def resolve_cv_gap(
     prevents any raw timestep used by a validation sample from appearing in a
     training sample.
     """
+    explicit_gap = normalize_cv_gap(explicit_gap)
     if explicit_gap is not None:
-        if explicit_gap < 0:
-            raise ValueError("cv_gap must be non-negative")
-        return int(explicit_gap)
+        return explicit_gap
 
     if policy not in SUPPORTED_CV_GAP_POLICIES:
         msg = (
@@ -92,6 +91,21 @@ def resolve_cv_gap(
     raise ValueError(msg)
 
 
+def normalize_cv_gap(explicit_gap: int | str | None) -> int | None:
+    """Normalize explicit ``cv_gap`` config values.
+
+    ``None`` and ``"auto"`` mean "defer to policy".  Numeric strings are
+    accepted for CLI/dotlist compatibility.  Negative values are invalid in
+    every caller.
+    """
+    if explicit_gap is None or explicit_gap == "auto":
+        return None
+    gap = int(explicit_gap)
+    if gap < 0:
+        raise ValueError("cv_gap must be non-negative")
+    return gap
+
+
 def resolve_cv_gap_from_config(data_cfg) -> int:
     """Resolve ``data.cv_gap``/``data.cv_gap_policy`` semantics from config.
 
@@ -106,8 +120,6 @@ def resolve_cv_gap_from_config(data_cfg) -> int:
 
     task = _get("task")
     explicit_gap = _get("cv_gap", None)
-    if explicit_gap == "auto":
-        explicit_gap = None
 
     forecasting = _get("forecasting", {}) or {}
     preprocessing = _get("preprocessing", {}) or {}
