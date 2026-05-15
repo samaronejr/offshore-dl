@@ -9,31 +9,24 @@ MSc dissertation — UFRJ/COPPE PEE
 
 ## Overview
 
-This repository contains the code and experimental results for my MSc dissertation. It compares 16 architectures across three offshore production monitoring tasks: gas production forecasting, fault classification, and anomaly detection.
+This repository contains the code and benchmark artifacts for an MSc dissertation on offshore production monitoring. It evaluates deep learning, neural operators, state-space models, tree ensembles, and zero-shot time-series foundation models across forecasting, classification, and anomaly-detection tasks.
 
-The models span seven paradigms, from recurrent networks and neural operators to state-space models and zero-shot foundation models:
+The post-fix documentation separates **current validated results** from historical artifacts. Historical outputs remain under `results/pre_fix/`; new fixed-code runs use `results/post_fix/`, `results/hpo/`, or campaign-specific directories.
 
-| Paradigm | Model | Training | Tasks |
-|----------|-------|----------|-------|
+| Paradigm | Model family | Training | Main tasks |
+|----------|--------------|----------|------------|
 | Recurrent | **LSTM** | From scratch | Forecasting · Classification · Anomaly |
-| Neural operator | **DeepONet** | From scratch | Forecasting · Anomaly |
-| Branch network | **DeepONet-Branch + MLP head** | From scratch | Classification |
+| Neural operator | **DeepONet** | From scratch | Forecasting · Classification variants · Anomaly |
 | Transformer | **PatchTST** | From scratch* | Forecasting · Classification · Anomaly |
 | Temporal convolution | **TCN** | From scratch | Forecasting |
-| Convolution | **ConvTimeNet** | From scratch | Classification |
-| Convolution | **ConvTran** | From scratch | Classification |
-| Inception | **InceptionTime** | From scratch | Classification |
+| Convolution/attention | **ConvTimeNet**, **ConvTran**, **InceptionTime** | From scratch | Classification |
 | State-space | **MambaSL** | From scratch | Classification |
-| Anomaly detection | **FKMAD** | From scratch | Classification |
-| Convolution | **HydraRocket** | sklearn-style | Classification |
-| Tree ensemble | **Random Forest** | sklearn-style | Classification |
-| Zero-shot FM | **Chronos-2** | Pretrained | Forecasting · Anomaly |
-| Zero-shot FM | **TimesFM 2.5** | Pretrained | Forecasting · Anomaly |
-| Zero-shot FM | **TiRex** | Pretrained (xLSTM) | Forecasting · Classification · Anomaly |
-| Fine-tuned FM | **MOMENT** | LoRA fine-tuning | Classification (optional) |
-| Fine-tuned FM | **Mantis** | Frozen encoder + RF | Classification (optional) |
+| Frequency/anomaly | **FKMAD** | From scratch | Classification · Anomaly |
+| Kernel / tree | **HydraRocket**, **Random Forest** | sklearn-style | Classification |
+| Zero-shot FM | **Chronos-2**, **TimesFM 2.5**, **TiRex** | Pretrained | Forecasting · Anomaly |
+| Optional FM classifiers | **MOMENT**, **MANTIS**, **TiRex embeddings + RF** | Fine-tuned or frozen encoder | Classification |
 
-<sub>*PatchTST uses the HuggingFace architecture but trains from scratch — pretrained weights are incompatible with the input dimensions of these datasets.</sub>
+<sub>*PatchTST uses the HuggingFace architecture but trains from scratch because available pretrained weights are incompatible with these dataset dimensions.</sub>
 
 ---
 
@@ -52,100 +45,84 @@ The models span seven paradigms, from recurrent networks and neural operators to
 
 ## Results at a Glance
 
-### 3W — Fault Classification (held-out test, n=41,515)
+### 3W — Stage 1 validated HPO, standard 720-window classification
 
-| Model | Accuracy | F1-macro | F1-weighted |
-|-------|:--------:|:--------:|:-----------:|
-| **FKMAD** | **96.70%** | 0.961 | **0.967** |
-| **ConvTimeNet** | 96.61% | 0.962 | 0.966 |
-| **Random Forest** | 96.58% | **0.964** | 0.966 |
-| **MambaSL** | 96.56% | 0.961 | 0.966 |
-| **PatchTST (HPO)** | 96.47% | 0.962 | 0.965 |
-| PatchTST | 95.72% | 0.952 | 0.957 |
-| DeepONet-Branch + MLP head | 94.14% | 0.931 | 0.942 |
-| LSTM | 92.21% | 0.911 | 0.921 |
-| TiRex (embeddings + RF) | 91.16% | 0.895 | 0.911 |
-| InceptionTime† | — | 0.012 | — |
+Held-out test size: 41,515 windows. Primary metric: **macro-F1**. The campaign was validated from `results/hpo/3w/3w-hpo-latest-20260510T180941Z/summary.json` after 30 Optuna trials per model.
 
-†InceptionTime collapsed to single-class prediction due to a kernel size mismatch with the feature-matrix input format. Result retained for reference.
+| Rank | Model | Macro-F1 | Accuracy | Trials | Best CV objective |
+|---:|---|---:|---:|---:|---:|
+| 1 | **Random Forest** | **0.968972** | **0.970228** | 30 | 0.966316 |
+| 2 | DeepONet | 0.962579 | 0.968734 | 30 | 0.960540 |
+| 3 | MambaSL | 0.962185 | 0.967313 | 30 | 0.958081 |
+| 4 | LSTM | 0.960046 | 0.965314 | 30 | 0.953991 |
+| 5 | FKMAD | 0.956388 | 0.964061 | 30 | 0.951980 |
+| 6 | ConvTimeNet | 0.954953 | 0.959894 | 30 | 0.953499 |
+| 7 | PatchTST | 0.953556 | 0.958738 | 30 | 0.957745 |
 
-PatchTST improved from 95.7% to 96.5% after 30-trial Optuna HPO. Manual tuning of Random Forest, ConvTimeNet, FKMAD, and MambaSL proved near-optimal. The discriminative information in the 3W task resides in the spatial arrangement of the (14×27) feature matrix, which benefits convolution and tree-based approaches.
+Random Forest is the strongest standard 720-window classifier by macro-F1. Deep models remain competitive, especially DeepONet and MambaSL, but do not beat the tuned Random Forest on this validated split.
 
-### Ganymede — Gas Production Forecasting (held-out test, multi-well, h=7, MMSCF)
+### 3W — Stage 2 follow-up variants
 
-| Model | MAE h=7 | R²\_prod h=7 |
-|-------|:-------:|:------------:|
-| **TiRex** | **0.658** | **0.822** |
-| **TimesFM** | 0.740 | 0.826 |
-| **Chronos-2** | 0.739 | 0.722 |
-| LSTM | 0.873 | −0.078 |
-| PatchTST | 1.005 | −0.501 |
-| DeepONet | 1.224 | 0.197 |
-| TCN | 3.982 | −4.293 |
+Stage 2 explores feature and window-length variants. These runs answer different experimental questions and should **not** be merged into the Stage 1 apples-to-apples leaderboard.
 
-Foundation models outperform trained models at all horizons. TiRex achieves the lowest MAE and TimesFM the highest R²_prod; both substantially outperform all trained architectures. The production sweep uses a **per-well grouped 80/20 temporal holdout plus grouped 3-fold ExpandingWindowCV**.
+| Variant | Macro-F1 | Accuracy | Interpretation |
+|---|---:|---:|---|
+| `window360_rf` | **0.987797** | **0.991537** | Best follow-up result; different window length, so report separately. |
+| `window1440_rf` | 0.977011 | 0.989084 | Strong long-window RF variant; separate comparison. |
+| `wavelet_rf` | 0.964309 | 0.966301 | Feature variant, below tuned Stage 1 RF. |
+| `multiscale_rf` | 0.964184 | 0.966205 | Feature variant, below tuned Stage 1 RF. |
+| `physics_rf` | 0.964070 | 0.966060 | Feature variant, below tuned Stage 1 RF. |
+| `wavelet_deeponet` | 0.961252 | 0.967867 | Competitive DeepONet variant. |
+| `convtran` | 0.955762 | 0.964398 | Completed baseline. |
+| `multiscale_deeponet` | 0.954235 | 0.964880 | Completed variant. |
+| `physics_deeponet` | 0.952286 | 0.961652 | Completed variant. |
 
-### CDF — Anomaly Detection (held-out test, reconstruction error ↓)
+Invalid/failed Stage 2 outputs are retained for audit only: `hydra_rocket` failed from impractical RAM allocation, and the raw deep variants (`convtimenet_raw`, `convtran_raw`, `fkmad_raw`, `mambasl_raw`) collapsed to macro-F1 0.027287 / accuracy 0.157991.
 
-| Model | Error Mean |
-|-------|:----------:|
-| **LSTM** | **0.005** |
-| PatchTST | 0.068 |
-| DeepONet | 0.209 |
-| Chronos-2 | 0.217 |
-| TiRex | 0.235 |
-| TimesFM | 0.263 |
+### Ganymede — Post-fix gas production forecasting
 
-Trained models dominate this task. LSTM reconstruction error is orders of magnitude lower than zero-shot FMs, which were not designed for this type of encoder-decoder reconstruction.
+Multi-well aggregate across horizons (`h7`, `h14`, `h30`, `h90`) from `results/post_fix/<model>/ganymede_h*_multi_well.json`. Values are on the denormalized target scale. Lower is better for MAE/RMSE/MASE; higher is better for R² diagnostics.
+
+| Model | MAE | RMSE | MASE | R² | R²_prod |
+|---|---:|---:|---:|---:|---:|
+| **TiRex** | **0.3617** | **1.2476** | 0.2071 | **0.3541** | -0.1490 |
+| TimesFM | 0.3965 | 1.2634 | 0.2295 | 0.3362 | **-0.1283** |
+| Chronos-2 | 0.5357 | 1.4412 | 0.3205 | 0.1111 | -0.3431 |
+| LSTM | 0.5457 | 1.3517 | **0.0228** | 0.2455 | -0.6481 |
+| TCN | 0.5677 | 1.3136 | 0.0234 | 0.2864 | -0.4099 |
+| DeepONet | 0.6795 | 1.3746 | 0.0301 | 0.2221 | -0.4021 |
+| PatchTST | 1.0771 | 2.1164 | 0.0474 | -0.8640 | -1.1972 |
+
+Metric interpretation matters: zero-shot foundation models lead by absolute MAE/RMSE, while trained LSTM/TCN are strongest by grouped MASE. R²-style metrics remain unstable across wells and are diagnostics, not the headline score.
+
+### CDF — Anomaly detection status
+
+Current CDF values in this repository are historical `pre_fix/` artifacts. They are preserved for audit, but they are **not** a current headline leaderboard until rerun after the strict raw-row CV-gap repair. Use `scripts/run_production_cdf.py` to regenerate post-fix CDF outputs before reporting final anomaly-detection claims.
 
 ---
 
 ## Project Structure
 
-```
+```text
 offshore-dl/
 ├── src/offshore_dl/           # Main package
-│   ├── models/                # All 16 architectures
-│   │   ├── base.py            #   BaseModel ABC — common interface
-│   │   ├── lstm.py            #   Bidirectional LSTM + attention
-│   │   ├── deeponet.py        #   Time-Dependent DeepONet (branch-trunk)
-│   │   ├── patchtst.py        #   PatchTST via HuggingFace Transformers
-│   │   ├── tcn.py             #   Temporal Convolutional Network
-│   │   ├── convtimenet.py     #   ConvTimeNet (multi-scale convolution)
-│   │   ├── convtran.py        #   ConvTran (convolution + transformer)
-│   │   ├── inception_time.py  #   InceptionTime
-│   │   ├── mambasl.py         #   MambaSL (state-space model)
-│   │   ├── fkmad.py           #   FKMAD anomaly detector
-│   │   ├── hydra_rocket.py    #   HydraRocket (sklearn-style)
-│   │   ├── chronos_wrapper.py #   Chronos-2 zero-shot wrapper
-│   │   ├── timesfm_wrapper.py #   TimesFM 2.5 zero-shot wrapper
-│   │   ├── tirex_wrapper.py   #   TiRex zero-shot wrapper
-│   │   ├── tirex_classifier.py #  TiRex embedding + RF classifier
-│   │   ├── moment_wrapper.py  #   MOMENT LoRA fine-tuning (optional)
-│   │   └── mantis_wrapper.py  #   Mantis frozen encoder + RF (optional)
+│   ├── models/                # Trained, sklearn-style, and FM wrapper models
 │   ├── data/                  # Data loading and preprocessing
 │   ├── training/              # Trainer, ExperimentRunner, Optuna HPO
-│   │   └── ...                #   SupCon pre-training, label smoothing
-│   ├── evaluation/            # MetricRegistry, CV strategies, baselines
+│   ├── evaluation/            # Metrics, CV strategies, baselines
 │   ├── analysis/              # LaTeX generation, statistical tests
 │   └── utils/                 # Config, reproducibility, serialization
-│       ├── config.py          #   OmegaConf helpers
-│       ├── reproducibility.py #   seed locking (7 RNG sources)
-│       └── serialization.py   #   JSON result I/O
-│
-├── configs/                   # Hierarchical YAML (OmegaConf)
-│   ├── base.yaml              #   Global defaults
-│   ├── data/                  #   3w, ganymede, cdf, spe_berg, volve,
-│   │                          #   inner_mongolia
-│   └── models/                #   Per-model configs + Optuna search spaces
-│
-├── docker/                    # Dockerfile (CUDA 12.4), docker-compose
-├── tests/                     # 534 tests
-├── results/                   # JSON outputs per model per dataset
-├── reports/                   # LaTeX tables, PDFs, statistical tests
+├── configs/                   # Hierarchical YAML configs
+├── scripts/                   # Production, HPO, Slurm, and analysis scripts
+├── docker/                    # CUDA container and docker-compose files
+├── tests/                     # 673 collected pytest tests
+├── results/                   # Generated result artifacts by validity epoch/campaign
+├── reports/                   # LaTeX/PDF/statistical reports
 ├── dvc.yaml                   # DVC pipeline definition
 └── pyproject.toml             # Package metadata and dependencies
 ```
+
+Data are not committed. Provide datasets externally under `data/raw/` or run the preprocessing entry points before training.
 
 ---
 
@@ -160,12 +137,17 @@ pip install -e ".[dev]"
 # Run all tests
 pytest tests/ -v
 
-# Run a single experiment
-python -m offshore_dl.run_experiment --model lstm --dataset ganymede --max-epochs 5
+# Run a single experiment without MLflow
+python -m offshore_dl.run_experiment --model lstm --dataset ganymede --max-epochs 5 --no-mlflow
 
-# Full production sweep (GPU recommended)
+# Production sweeps
 python scripts/run_production_ganymede.py --device cuda
 python scripts/run_production_3w_features.py --device cuda
+python scripts/run_production_cdf.py --device cuda
+
+# 3W HPO campaign summary/validation
+python scripts/run_optuna_hpo.py --dataset 3w --models lstm patchtst --n-trials 30 --device cuda
+python scripts/validate_hpo_3w_results.py --campaign-id <campaign-id> --write-summary
 
 # Statistical tests
 python scripts/run_statistical_tests.py
@@ -181,9 +163,12 @@ scripts/docker_run.sh python scripts/run_production_ganymede.py --device cuda
 ### HPC (Singularity + Slurm)
 
 ```bash
-sbatch scripts/hpc_job.slurm        # Ganymede sweep
-sbatch scripts/hpc_job_3w.slurm     # 3W full training
+sbatch scripts/hpc_job.slurm             # Ganymede sweep
+sbatch scripts/hpc_job_3w.slurm          # 3W production training
+sbatch scripts/slurm_hpo_3w_array.sh     # 3W HPO array campaign
 ```
+
+HPC runs should write to explicit campaign directories and be validated before their values are promoted into reports or README tables.
 
 ---
 
@@ -191,42 +176,42 @@ sbatch scripts/hpc_job_3w.slurm     # 3W full training
 
 ### Architecture
 
-Every trained model inherits from `BaseModel` and implements `training_step`, `predict`, and `configure_optimizers`. Zero-shot FMs return `loss = 0.0` from `training_step`. HydraRocket and Random Forest use a sklearn-style dispatch path and do not use the PyTorch training loop.
+Every trained model inherits from `BaseModel` and implements `training_step`, `predict`, and `configure_optimizers`. Zero-shot FMs return `loss = 0.0` from `training_step`. HydraRocket and Random Forest use sklearn-style dispatch paths and do not use the PyTorch training loop.
 
 ### Cross-Validation
 
 | Dataset / sweep | Strategy | Rationale |
 |-----------------|----------|-----------|
-| Forecasting (`ganymede`, `spe_berg`, `volve`, `inner_mongolia`) | Grouped 80/20 temporal holdout + `GroupedExpandingWindowCV` (3-fold) | Preserve temporal order within each well rather than across the flattened multi-well sample index |
-| 3W feature-based | Stratified-group holdout + `StratifiedGroupKFoldSKLearn` (5-fold) | No instance leakage across event groups |
-| 3W raw windows | `TemporalSplitCV` | Legacy raw-window baseline path |
-| CDF | Temporal holdout + `SlidingWindowCV` (3-fold) | Multiple temporal folds for the single-compressor series |
+| Forecasting (`ganymede`, `spe_berg`, `volve`, `inner_mongolia`) | Grouped 80/20 temporal holdout + `GroupedExpandingWindowCV` | Preserve temporal order within wells. |
+| 3W feature-based | Stratified-group holdout + `StratifiedGroupKFoldSKLearn` | Avoid leakage across event groups. |
+| 3W raw windows | `TemporalSplitCV` | Legacy raw-window baseline path. |
+| CDF | Temporal holdout + `SlidingWindowCV` with strict raw-row gap | Avoid adjacent-window leakage for the single-compressor series. |
 
-Normalization is computed from the training partition only and applied to validation and test partitions without re-fitting.
+Normalization is fitted on the training partition only and then applied to validation/test partitions without refitting.
 
 ### Training Features
 
-- **SupCon pre-training**: supervised contrastive pre-training stage available for classification models
-- **Label smoothing**: configurable `label_smoothing` parameter in training config
-- **Optuna HPO**: 30-trial Bayesian search over architecture and optimizer hyperparameters
-- **MLflow**: all experiments tracked with full fold-level detail in JSON outputs
+- **SupCon pre-training** for classification models.
+- **Label smoothing / focal-loss variants** through model configs.
+- **Optuna HPO** with resumable campaign directories and final evaluation gating.
+- **MLflow** experiment tracking, plus JSON result outputs with fold-level detail.
 
 ### Configuration
 
-Hierarchical YAML via OmegaConf: `base.yaml` ← `data/*.yaml` ← `models/*.yaml` ← CLI overrides. All hyperparameters are set through config files.
+Hierarchical YAML via OmegaConf: `base.yaml` ← `data/*.yaml` ← `models/*.yaml` ← CLI overrides. All hyperparameters are set through config files or CLI dotlist overrides.
 
 ### Reproducibility
 
-`set_global_seed(42)` applies deterministic seeding for Python `random`, NumPy, PyTorch CPU/CUDA, cuDNN, and CUBLAS workspace configuration. CUBLAS determinism depends on setting `CUBLAS_WORKSPACE_CONFIG` before CUDA initialization; use `set_global_seed(42, strict=True)` at process entrypoints to fail fast when that guarantee cannot be met. All results are stored as JSON with full fold-level detail via `utils/serialization.py`.
+`set_global_seed(42)` seeds Python `random`, NumPy, PyTorch CPU/CUDA, cuDNN, and CUBLAS workspace configuration. CUBLAS determinism depends on setting `CUBLAS_WORKSPACE_CONFIG` before CUDA initialization; use `set_global_seed(42, strict=True)` at process entry points to fail fast when that guarantee cannot be met. Results are stored as JSON with full fold-level detail via `utils/serialization.py`.
 
 ---
 
 ## Adding a New Model
 
-1. Create `src/offshore_dl/models/my_model.py` — inherit `BaseModel` or use sklearn-style for non-differentiable models
-2. Add `configs/models/my_model.yaml` with architecture params and an Optuna search space block
-3. Register in `src/offshore_dl/models/__init__.py` and the relevant production script
-4. Run: the full evaluation pipeline (CV, metrics, MLflow, LaTeX tables) applies automatically
+1. Create `src/offshore_dl/models/my_model.py` — inherit `BaseModel` or use sklearn-style handling for non-differentiable models.
+2. Add `configs/models/my_model.yaml` with architecture parameters and an Optuna search-space block.
+3. Register in `src/offshore_dl/models/__init__.py` and in the relevant experiment/production dispatch path.
+4. Add tests and a dry-run/smoke path before launching production sweeps.
 
 ---
 
@@ -254,10 +239,10 @@ Hierarchical YAML via OmegaConf: `base.yaml` ← `data/*.yaml` ← `models/*.yam
 | `momentfm` | MOMENT LoRA fine-tuning | `[fm]` |
 | `statsmodels` | Statistical comparison reports | `[stats]` |
 
-Install common development extras: `pip install -e ".[dev]"`
-Install foundation-model extras: `pip install -e ".[fm]"`
-Install optional model/report extras: `pip install -e ".[mamba,aeon,stats]"`
-Install all documented extras: `pip install -e ".[dev,fm,mamba,aeon,stats]"`
+- Install common development extras: `pip install -e ".[dev]"`
+- Install foundation-model extras: `pip install -e ".[fm]"`
+- Install optional model/report extras: `pip install -e ".[mamba,aeon,stats]"`
+- Install all documented extras: `pip install -e ".[dev,fm,mamba,aeon,stats]"`
 
 ---
 
