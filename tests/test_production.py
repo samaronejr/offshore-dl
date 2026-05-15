@@ -333,12 +333,19 @@ class TestCDFProductionCVGap:
             def __len__(self):
                 return 100
 
-        rpc.run_trained_model("lstm", FakeCDF(), max_epochs=1, device="cpu")
+        rpc.run_trained_model(
+            "lstm",
+            FakeCDF(),
+            max_epochs=1,
+            device="cpu",
+            use_mlflow=False,
+        )
 
         assert captured["cv_kwargs"]["gap"] == resolve_cv_gap(
             "strict_raw_row", task="anomaly", window_size=48
         )
         assert captured["cv_kwargs"]["gap"] == 47
+        assert captured["run_nested_kwargs"]["use_mlflow"] is False
 
     def test_fm_cdf_gap_uses_mutated_dataset_config(self, monkeypatch):
         from omegaconf import OmegaConf
@@ -366,6 +373,78 @@ class TestCDFProductionCVGap:
         rpc._cdf_sliding_window_cv(fm_cfg.data)
 
         assert captured["kwargs"]["gap"] == 47
+
+    def test_fm_cdf_metrics_use_forecast_error_namespace(self):
+        import scripts.run_production_cdf as rpc
+
+        renamed = rpc._rename_fm_metrics(
+            {
+                "error_mean": 1.0,
+                "error_p50": 2.0,
+                "error_p95": 3.0,
+                "timestep_error_mean": 4.0,
+            }
+        )
+
+        assert "error_mean" not in renamed
+        assert "error_p50" not in renamed
+        assert "error_p95" not in renamed
+        assert renamed["forecast_error_mean"] == 1.0
+        assert renamed["forecast_error_p50"] == 2.0
+        assert renamed["forecast_error_p95"] == 3.0
+        assert renamed["timestep_error_mean"] == 4.0
+
+
+class TestCDFStatisticalMetricSemantics:
+    """CDF statistical tests must not pool reconstruction and forecast errors."""
+
+    def test_cdf_stats_separate_trained_and_foundation_metrics(
+        self, tmp_path, monkeypatch
+    ):
+        import json
+        import scripts.run_statistical_tests as rst
+
+        def write_cdf(model, metric_names, base):
+            model_dir = tmp_path / model
+            model_dir.mkdir()
+            folds = [
+                {"fold_idx": i, "metrics": {name: base + i * 0.01 for name in metric_names}}
+                for i in range(3)
+            ]
+            (model_dir / "cdf.json").write_text(
+                json.dumps({"cv_fold_results": folds})
+            )
+
+        for idx, model in enumerate(["lstm", "deeponet", "patchtst"]):
+            write_cdf(model, ["error_mean", "error_p50"], base=0.1 + idx)
+        for idx, model in enumerate(["chronos", "timesfm", "tirex"]):
+            write_cdf(
+                model,
+                ["forecast_error_mean", "forecast_error_p50"],
+                base=10.0 + idx,
+            )
+
+        monkeypatch.setattr(rst, "RESULTS_DIR", tmp_path)
+
+        report = rst._run_cdf_tests()
+
+        assert report["status"] == "metric_semantics_separated"
+        assert report["pooled_status"] == "not_run_metric_semantics_differ"
+        assert report["trained"]["group"] == "trained_reconstruction"
+        assert report["foundation"]["group"] == "foundation_forecast"
+        assert set(report["metrics"]["error_mean"]["models"]) == {
+            "lstm",
+            "deeponet",
+            "patchtst",
+        }
+        assert set(
+            report["foundation"]["metrics"]["forecast_error_mean"]["models"]
+        ) == {"chronos", "timesfm", "tirex"}
+
+    def test_holm_correction_without_statsmodels(self):
+        import scripts.run_statistical_tests as rst
+
+        assert rst._holm_correct([0.01, 0.04, 0.20]) == [0.03, 0.08, 0.20]
 
 
 # ────────────────────────────────────────────────────────────────

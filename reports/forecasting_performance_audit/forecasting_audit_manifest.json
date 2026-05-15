@@ -1,0 +1,23 @@
+{
+  "artifacts": {
+    "comparability_ledger": "reports/forecasting_performance_audit/forecasting_comparability_ledger.md",
+    "coverage_csv": "reports/forecasting_performance_audit/forecasting_coverage_audit.csv",
+    "coverage_report": "reports/forecasting_performance_audit/forecasting_coverage_report.md",
+    "mase_denominator_csv": "reports/forecasting_performance_audit/forecasting_mase_denominator_audit.csv",
+    "pivot_recommendation": "reports/forecasting_performance_audit/forecasting_pivot_recommendation.md",
+    "raw_rows_csv": "reports/forecasting_performance_audit/forecasting_result_rows_with_effective_mase.csv",
+    "scenario_effective_csv": "reports/forecasting_performance_audit/forecasting_mase_scenario_values_effective.csv",
+    "table_proposal": "reports/forecasting_performance_audit/forecasting_mase_first_table_proposal.md",
+    "weighted_effective_csv": "reports/forecasting_performance_audit/forecasting_mase_weighted_summary_effective.csv",
+    "weighted_original_csv": "reports/forecasting_performance_audit/forecasting_mase_weighted_summary_original.csv",
+    "wide_effective_csv": "reports/forecasting_performance_audit/forecasting_mase_first_raw_wide_effective.csv",
+    "wide_original_csv": "reports/forecasting_performance_audit/forecasting_mase_first_raw_wide_original.csv"
+  },
+  "branch": "",
+  "coverage_rows": 2772,
+  "mase_audit_rows": 226,
+  "output_dir": "reports/forecasting_performance_audit",
+  "raw_recompute_errors": 0,
+  "result_rows": 224,
+  "results_dir": "/app/results"
+}

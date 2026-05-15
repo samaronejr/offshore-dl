@@ -1,0 +1,56 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{array}
+\begin{document}
+\title{Offshore DL Dissertation Results Snapshot -- May 2026}
+\author{Generated from CDF-gated readiness artifacts}
+\date{2026-05-15}
+\maketitle
+\section*{Scope}
+This snapshot summarizes current dissertation-facing benchmark evidence at source revision \texttt{62780b2dd5aa}.
+Stage 1 3W, Stage 2 3W, Ganymede, and CDF results are reported with family-specific caveats. CDF trained reconstruction and foundation forecast metrics are not pooled.
+\section*{3W Stage 1: standard 720-window HPO}
+\begin{tabular}{lrr}\toprule Model & Macro-F1 & Accuracy \\ \midrule
+Random Forest & 0.968972 & 0.970228 \\
+DeepONet & 0.962579 & 0.968734 \\
+MambaSL & 0.962185 & 0.967313 \\
+LSTM & 0.960046 & 0.965314 \\
+FKMAD & 0.956388 & 0.964061 \\
+ConvTimeNet & 0.954953 & 0.959894 \\
+PatchTST & 0.953556 & 0.958738 \\
+\bottomrule\end{tabular}
+\section*{3W Stage 2: separate follow-ups}
+\begin{tabular}{lrr}\toprule Variant & Macro-F1 & Accuracy \\ \midrule
+window360\_rf & 0.987797 & 0.991537 \\
+window1440\_rf & 0.977011 & 0.989084 \\
+wavelet\_rf & 0.964309 & 0.966301 \\
+physics\_rf & 0.964070 & 0.966060 \\
+\bottomrule\end{tabular}
+\par\smallskip Window variants use different window lengths/sample counts and are not Stage 1 replacements.
+\section*{Ganymede post-fix forecasting}
+\begin{tabular}{lrrr}\toprule Model & MAE & RMSE & MASE \\ \midrule
+TiRex & 0.3617 & 1.2476 & 0.2071 \\
+TimesFM & 0.3965 & 1.2634 & 0.2295 \\
+Chronos-2 & 0.5357 & 1.4412 & 0.3205 \\
+LSTM & 0.5457 & 1.3517 & 0.0228 \\
+TCN & 0.5677 & 1.3136 & 0.0234 \\
+DeepONet & 0.6795 & 1.3746 & 0.0301 \\
+PatchTST & 1.0771 & 2.1164 & 0.0474 \\
+\bottomrule\end{tabular}
+\par\smallskip Foundation models lead by MAE/RMSE; trained LSTM/TCN lead by grouped MASE.
+\section*{CDF post-fix anomaly detection}
+\subsection*{Trained reconstruction metrics}
+\begin{tabular}{lrr}\toprule Model & error\_mean & error\_p50 \\ \midrule
+lstm & 0.005878 & 0.005289 \\
+patchtst & 0.081621 & 0.071603 \\
+deeponet & 0.230735 & 0.223694 \\
+\bottomrule\end{tabular}
+\subsection*{Foundation forecast metrics}
+\begin{tabular}{lrr}\toprule Model & forecast\_error\_mean & forecast\_error\_p50 \\ \midrule
+chronos & 0.243968 & 0.226866 \\
+tirex & 0.268548 & 0.246441 \\
+timesfm & 0.295999 & 0.283747 \\
+\bottomrule\end{tabular}
+\par\smallskip These CDF groups use different anomaly semantics and must not be pooled into one ranking.
+\end{document}

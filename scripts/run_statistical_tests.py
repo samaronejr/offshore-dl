@@ -45,8 +45,11 @@ CLS_MODELS = [
 CLS_METRICS = ["accuracy", "f1_macro", "auc_pr"]
 
 # ── CDF anomaly models ──
-CDF_MODELS = ["lstm", "deeponet", "patchtst", "chronos", "timesfm", "tirex"]
+CDF_TRAINED = ["lstm", "deeponet", "patchtst"]
+CDF_FMS = ["chronos", "timesfm", "tirex"]
+CDF_MODELS = CDF_TRAINED + CDF_FMS
 CDF_METRICS = ["error_mean", "error_p50"]
+CDF_FM_METRICS = ["forecast_error_mean", "forecast_error_p50"]
 
 # ── Ganymede forecasting models (trained only for now) ──
 FC_TRAINED = ["lstm", "deeponet", "patchtst", "tcn"]
@@ -168,6 +171,21 @@ def _compute_ranks(scores: dict[str, list[float]], higher_is_better: bool = True
     return {models[i]: float(avg_ranks[i]) for i in range(n_models)}
 
 
+def _holm_correct(p_values: list[float]) -> list[float]:
+    """Return Holm-corrected p-values without requiring statsmodels."""
+    m = len(p_values)
+    if m == 0:
+        return []
+    order = np.argsort(p_values)
+    corrected = [1.0] * m
+    running_max = 0.0
+    for rank, idx in enumerate(order):
+        adjusted = (m - rank) * float(p_values[idx])
+        running_max = max(running_max, adjusted)
+        corrected[int(idx)] = min(running_max, 1.0)
+    return corrected
+
+
 def _wilcoxon_pairwise(scores: dict[str, list[float]]) -> list[dict]:
     """Pairwise Wilcoxon signed-rank tests with Holm correction."""
     models = sorted(scores.keys())
@@ -205,14 +223,18 @@ def _wilcoxon_pairwise(scores: dict[str, list[float]]) -> list[dict]:
     # p-values. Placeholder 1.0s appended for identical-score and ValueError
     # pairs must NOT inflate n (family size) in the step-down formula.
     if raw_pvals:
-        from statsmodels.stats.multitest import multipletests
         valid_idx = [
             i for i, r in enumerate(results)
             if "error" not in r and "note" not in r
         ]
         if valid_idx:
             valid_p = [raw_pvals[i] for i in valid_idx]
-            _, corrected, _, _ = multipletests(valid_p, method="holm")
+            try:
+                from statsmodels.stats.multitest import multipletests
+
+                _, corrected, _, _ = multipletests(valid_p, method="holm")
+            except ModuleNotFoundError:
+                corrected = _holm_correct(valid_p)
             for k, i in enumerate(valid_idx):
                 results[i]["p_value"] = float(corrected[k])
                 results[i]["significant"] = bool(corrected[k] < 0.05)
@@ -603,8 +625,11 @@ def _run_inner_mongolia_tests() -> dict:
     return results
 
 
-def _load_cdf_folds(model: str) -> dict[str, list[float]] | None:
+def _load_cdf_folds(
+    model: str, metrics: list[str] | None = None
+) -> dict[str, list[float]] | None:
     """Load inner CV fold metrics for a CDF model."""
+    metrics = metrics or CDF_METRICS
     path = RESULTS_DIR / model / "cdf.json"
     if not path.exists():
         return None
@@ -615,28 +640,37 @@ def _load_cdf_folds(model: str) -> dict[str, list[float]] | None:
         return None
     return {
         metric: [fr["metrics"][metric] for fr in folds]
-        for metric in CDF_METRICS
+        for metric in metrics
         if all(metric in fr.get("metrics", {}) for fr in folds)
     }
 
 
-def _run_cdf_tests() -> dict:
-    """Run statistical tests on CDF anomaly detection results."""
-    logger.info("═══ CDF Anomaly Detection Statistical Tests ═══")
-
+def _run_cdf_group_tests(
+    models: list[str], metrics: list[str], *, label: str
+) -> dict:
+    """Run CDF tests for models that share metric semantics."""
     all_folds = {}
-    for model in CDF_MODELS:
-        folds = _load_cdf_folds(model)
+    for model in models:
+        folds = _load_cdf_folds(model, metrics)
         if folds:
             all_folds[model] = folds
-            logger.info("  %s: %d folds loaded", model, len(next(iter(folds.values()))))
+            logger.info(
+                "  %s/%s: %d folds loaded",
+                label,
+                model,
+                len(next(iter(folds.values()))),
+            )
 
     if len(all_folds) < 2:
-        return {"status": "insufficient_models", "n_models": len(all_folds)}
+        return {
+            "status": "insufficient_models",
+            "group": label,
+            "n_models": len(all_folds),
+        }
 
-    results = {"n_models": len(all_folds), "metrics": {}}
+    results = {"group": label, "n_models": len(all_folds), "metrics": {}}
 
-    for metric in CDF_METRICS:
+    for metric in metrics:
         scores = {m: all_folds[m][metric] for m in all_folds if metric in all_folds[m]}
         if len(scores) < 2:
             continue
@@ -676,6 +710,34 @@ def _run_cdf_tests() -> dict:
                      {k: f"{v:.2f}" for k, v in ranks.items()})
 
     return results
+
+
+def _run_cdf_tests() -> dict:
+    """Run CDF tests without pooling different anomaly semantics."""
+    logger.info("═══ CDF Anomaly Detection Statistical Tests ═══")
+
+    trained = _run_cdf_group_tests(
+        CDF_TRAINED,
+        CDF_METRICS,
+        label="trained_reconstruction",
+    )
+    foundation = _run_cdf_group_tests(
+        CDF_FMS,
+        CDF_FM_METRICS,
+        label="foundation_forecast",
+    )
+
+    return {
+        "status": "metric_semantics_separated",
+        "pooled_status": "not_run_metric_semantics_differ",
+        "trained": trained,
+        "foundation": foundation,
+        # Backward-compatible top-level fields preserve the trained CDF section
+        # used by legacy report checks, while the explicit group fields prevent
+        # accidental trained-vs-FM pooling.
+        "n_models": trained.get("n_models", 0),
+        "metrics": trained.get("metrics", {}),
+    }
 
 
 def main():

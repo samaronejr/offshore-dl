@@ -3,7 +3,7 @@
 Usage::
 
     python scripts/run_production_cdf.py --device cuda
-    python scripts/run_production_cdf.py --max-epochs 5 --device cpu  # smoke
+    python scripts/run_production_cdf.py --max-epochs 5 --device cpu --no-mlflow  # smoke
 """
 
 from __future__ import annotations
@@ -122,11 +122,20 @@ def _cdf_split_metadata(data_cfg, *, n_train: int, n_test: int, n_cv_folds: int)
     }
 
 
+def _rename_fm_metrics(metrics: dict) -> dict:
+    """Namespace FM forecast-error metrics away from trained reconstruction errors."""
+    return {
+        (f"forecast_{key}" if key.startswith("error_") else key): value
+        for key, value in metrics.items()
+    }
+
+
 def run_trained_model(
     model_name: str,
     dataset: CDFDataset,
     max_epochs: int,
     device: str,
+    use_mlflow: bool = True,
 ) -> dict:
     """Train one model on CDF with nested CV (holdout + inner SlidingWindowCV)."""
     set_global_seed(42)
@@ -161,7 +170,7 @@ def run_trained_model(
     result = runner.run_nested(
         train_pool=train_pool,
         test_indices=test_indices,
-        use_mlflow=True,
+        use_mlflow=use_mlflow,
     )
     result["split_metadata"] = _cdf_split_metadata(
         cfg.data,
@@ -195,12 +204,6 @@ def run_fm_cdf(model_name: str, dataset: CDFDataset, device: str) -> dict:
         windows: np.ndarray, mean: torch.Tensor, std: torch.Tensor
     ) -> np.ndarray:
         return ((windows - mean.cpu().numpy()) / std.cpu().numpy()).astype(np.float32)
-
-    def _rename_fm_metrics(metrics: dict) -> dict:
-        renamed = dict(metrics)
-        if "error_mean" in renamed:
-            renamed["forecast_error_mean"] = renamed.pop("error_mean")
-        return renamed
 
     def _predict_fm(model_name, inputs):
         """Generate FM predictions for a batch of windows. inputs: np.ndarray (N, 48, 11)."""
@@ -330,6 +333,11 @@ def main():
         default=str(RESULTS_DIR),
         help="Output root for repaired result JSONs (default: results/post_fix)",
     )
+    parser.add_argument(
+        "--no-mlflow",
+        action="store_true",
+        help="Disable MLflow tracking",
+    )
     args = parser.parse_args()
     RESULTS_DIR = resolve_results_dir(args.results_dir, for_write=True)
 
@@ -355,7 +363,11 @@ def main():
         try:
             if model_name in TRAINED_MODELS:
                 result = run_trained_model(
-                    model_name, dataset, args.max_epochs, args.device
+                    model_name,
+                    dataset,
+                    args.max_epochs,
+                    args.device,
+                    use_mlflow=not args.no_mlflow,
                 )
             else:
                 result = run_fm_cdf(model_name, dataset, args.device)

@@ -11,55 +11,55 @@
 
 | model    | scenario_count | mean_mase | median_mase | mean_rank |
 | -------- | -------------- | --------- | ----------- | --------- |
-| tirex    | 8              | 1.08      | 1.009       | 1         |
-| chronos  | 16             | 1.498     | 1.234       | 1.688     |
-| timesfm  | 8              | 1.232     | 1.177       | 2.875     |
-| lstm     | 16             | 1557      | 2.08        | 3.438     |
-| tcn      | 9              | 3.603     | 2.761       | 4.444     |
-| deeponet | 16             | 1078      | 2.899       | 4.688     |
-| patchtst | 12             | 6.902e+04 | 3.259       | 4.917     |
+| lstm     | 8              | 0.108     | 0.1041      | 1.875     |
+| patchtst | 8              | 0.1198    | 0.1071      | 3         |
+| tcn      | 8              | 0.1498    | 0.1357      | 3.75      |
+| tirex    | 8              | 0.2075    | 0.2104      | 3.75      |
+| deeponet | 8              | 0.1723    | 0.1622      | 4.75      |
+| chronos  | 8              | 0.3369    | 0.2191      | 5.25      |
+| timesfm  | 8              | 0.2302    | 0.228       | 5.625     |
 
 ## Cross-scenario summary using audited/effective MASE
 
 | model    | scenario_count | mean_mase | median_mase | mean_rank |
 | -------- | -------------- | --------- | ----------- | --------- |
-| tirex    | 8              | 0.5315    | 0.4418      | 1.75      |
-| lstm     | 16             | 1.487     | 1.201       | 1.875     |
-| chronos  | 16             | 1.347     | 0.9511      | 2.188     |
-| timesfm  | 8              | 0.5829    | 0.486       | 3.625     |
-| deeponet | 16             | 2.388     | 1.651       | 4.5       |
-| tcn      | 9              | 2.555     | 2.238       | 5         |
-| patchtst | 12             | 2.478     | 2.079       | 5.167     |
+| tirex    | 8              | 0.1996    | 0.1936      | 1         |
+| timesfm  | 8              | 0.2216    | 0.2167      | 2.75      |
+| chronos  | 8              | 0.3052    | 0.2117      | 2.75      |
+| lstm     | 8              | 0.5221    | 0.4601      | 3.875     |
+| tcn      | 8              | 0.7363    | 0.6144      | 4.875     |
+| deeponet | 8              | 0.8783    | 0.7489      | 5.75      |
+| patchtst | 8              | 1.075     | 1.033       | 7         |
 
 ## Largest audited MASE changes
 
-    | model    | dataset  | horizon | mode     | well_or_group | fold_or_split | stored_mase | recomputed_mase | delta      | denominator_source    | classification              |
-| -------- | -------- | ------- | -------- | ------------- | ------------- | ----------- | --------------- | ---------- | --------------------- | --------------------------- |
-| patchtst | ganymede | 7       | per_well | 49_22-Z06     | test          | 2.906e+06   | 7.333           | -2.906e+06 | double_denorm_suspect | suspect_stored_recomputable |
-| patchtst | ganymede | 14      | per_well | 49_22-Z06     | test          | 2.891e+06   | 4.437           | -2.891e+06 | double_denorm_suspect | suspect_stored_recomputable |
-| patchtst | ganymede | 7       | per_well | 49_22-Z08     | cv_fold_1     | 8.781e+04   | 13.36           | -8.78e+04  | double_denorm_suspect | suspect_stored_recomputable |
-| patchtst | ganymede | 14      | per_well | 49_22-Z08     | cv_fold_1     | 8.737e+04   | 5.599           | -8.736e+04 | double_denorm_suspect | suspect_stored_recomputable |
-| lstm     | ganymede | 90      | per_well | 49_22-Z06     | test          | 5.806e+04   | 0.08889         | -5.806e+04 | double_denorm_suspect | suspect_stored_recomputable |
-| lstm     | ganymede | 30      | per_well | 49_22-Z06     | test          | 4.263e+04   | 0.06296         | -4.263e+04 | double_denorm_suspect | suspect_stored_recomputable |
-| lstm     | ganymede | 14      | per_well | 49_22-Z06     | test          | 3.963e+04   | 0.06083         | -3.963e+04 | double_denorm_suspect | suspect_stored_recomputable |
-| deeponet | ganymede | 14      | per_well | 49_22-Z06     | test          | 3.816e+04   | 0.05856         | -3.816e+04 | double_denorm_suspect | suspect_stored_recomputable |
-| lstm     | ganymede | 7       | per_well | 49_22-Z06     | test          | 3.383e+04   | 0.08537         | -3.383e+04 | double_denorm_suspect | suspect_stored_recomputable |
-| deeponet | ganymede | 90      | per_well | 49_22-Z06     | test          | 3.297e+04   | 0.05047         | -3.297e+04 | double_denorm_suspect | suspect_stored_recomputable |
-| patchtst | ganymede | 7       | per_well | 49_22-Z05Z    | cv_fold_0     | 2.821e+04   | 1.799           | -2.821e+04 | double_denorm_suspect | suspect_stored_recomputable |
-| patchtst | ganymede | 14      | per_well | 49_22-Z05Z    | cv_fold_0     | 2.807e+04   | 1.122           | -2.807e+04 | double_denorm_suspect | suspect_stored_recomputable |
-| deeponet | ganymede | 30      | per_well | 49_22-Z06     | test          | 2.58e+04    | 0.03811         | -2.58e+04  | double_denorm_suspect | suspect_stored_recomputable |
-| deeponet | ganymede | 7       | per_well | 49_22-Z06     | test          | 2.342e+04   | 0.0591          | -2.342e+04 | double_denorm_suspect | suspect_stored_recomputable |
-| patchtst | ganymede | 7       | per_well | 49_22-Z06     | cv_fold_0     | 9080        | 2.288           | -9078      | double_denorm_suspect | suspect_stored_recomputable |
-| patchtst | ganymede | 14      | per_well | 49_22-Z06     | cv_fold_0     | 8497        | 1.383           | -8495      | double_denorm_suspect | suspect_stored_recomputable |
-| deeponet | ganymede | 90      | per_well | 49_22-Z05Z    | cv_fold_0     | 6282        | 0.2492          | -6281      | double_denorm_suspect | suspect_stored_recomputable |
-| deeponet | ganymede | 14      | per_well | 49_22-Z06     | cv_fold_0     | 5308        | 0.8639          | -5307      | double_denorm_suspect | suspect_stored_recomputable |
-| deeponet | ganymede | 14      | per_well | 49_22-Z05Z    | cv_fold_0     | 5070        | 0.2027          | -5070      | double_denorm_suspect | suspect_stored_recomputable |
-| deeponet | ganymede | 30      | per_well | 49_22-Z05Z    | cv_fold_0     | 4556        | 0.1757          | -4556      | double_denorm_suspect | suspect_stored_recomputable |
-| deeponet | ganymede | 7       | per_well | 49_22-Z06     | cv_fold_0     | 3592        | 0.905           | -3591      | double_denorm_suspect | suspect_stored_recomputable |
-| deeponet | ganymede | 7       | per_well | 49_22-Z05Z    | cv_fold_0     | 3469        | 0.2212          | -3469      | double_denorm_suspect | suspect_stored_recomputable |
-| deeponet | ganymede | 90      | per_well | 49_22-Z06     | cv_fold_0     | 3144        | 0.51            | -3143      | double_denorm_suspect | suspect_stored_recomputable |
-| deeponet | ganymede | 30      | per_well | 49_22-Z06     | cv_fold_0     | 2394        | 0.3713          | -2393      | double_denorm_suspect | suspect_stored_recomputable |
-| lstm     | ganymede | 30      | per_well | 49_22-Z05Z    | cv_fold_0     | 2090        | 0.08061         | -2090      | double_denorm_suspect | suspect_stored_recomputable |
+    | model    | dataset  | horizon | mode     | well_or_group | fold_or_split | stored_mase | recomputed_mase | delta | denominator_source | classification |
+| -------- | -------- | ------- | -------- | ------------- | ------------- | ----------- | --------------- | ----- | ------------------ | -------------- |
+| patchtst | ganymede | 7       | per_well | 49_22-Z06     | cv_fold_2     | 0.1487      | 5.86            | 5.711 | raw_train          | valid_stored   |
+| tcn      | ganymede | 7       | per_well | 49_22-Z04     | test          | 1.036       | 6.569           | 5.533 | raw_train          | valid_stored   |
+| deeponet | ganymede | 7       | per_well | 49_22-Z07     | test          | 0.9953      | 5.861           | 4.865 | raw_train          | valid_stored   |
+| deeponet | ganymede | 7       | per_well | 49_22-Z04     | test          | 0.8654      | 5.486           | 4.621 | raw_train          | valid_stored   |
+| tcn      | ganymede | 7       | per_well | 49_22-Z04     | cv_fold_0     | 0.8632      | 5.386           | 4.523 | raw_train          | valid_stored   |
+| deeponet | ganymede | 7       | per_well | 49_22-Z07     | cv_fold_2     | 0.8516      | 5.099           | 4.247 | raw_train          | valid_stored   |
+| patchtst | ganymede | 7       | per_well | 49_22-Z06     | cv_fold_1     | 0.1029      | 4.056           | 3.953 | raw_train          | valid_stored   |
+| patchtst | ganymede | 14      | per_well | 49_22-Z06     | cv_fold_2     | 0.1482      | 3.538           | 3.39  | raw_train          | valid_stored   |
+| patchtst | ganymede | 30      | per_well | 49_22-Z06     | cv_fold_2     | 0.1469      | 3.348           | 3.202 | raw_train          | valid_stored   |
+| patchtst | ganymede | 90      | per_well | 49_22-Z06     | cv_fold_2     | 0.1446      | 3.258           | 3.114 | raw_train          | valid_stored   |
+| deeponet | ganymede | 14      | per_well | 49_22-Z07     | test          | 1.229       | 3.732           | 2.503 | raw_train          | valid_stored   |
+| deeponet | ganymede | 90      | per_well | 49_22-Z04     | cv_fold_0     | 1.158       | 3.641           | 2.483 | raw_train          | valid_stored   |
+| deeponet | ganymede | 90      | per_well | 49_22-Z04     | cv_fold_2     | 1.151       | 3.552           | 2.401 | raw_train          | valid_stored   |
+| patchtst | ganymede | 14      | per_well | 49_22-Z06     | cv_fold_1     | 0.1025      | 2.448           | 2.346 | raw_train          | valid_stored   |
+| patchtst | ganymede | 7       | per_well | 49_22-Z06     | cv_fold_0     | 0.05783     | 2.281           | 2.223 | raw_train          | valid_stored   |
+| patchtst | ganymede | 30      | per_well | 49_22-Z06     | cv_fold_1     | 0.1014      | 2.313           | 2.212 | raw_train          | valid_stored   |
+| tcn      | ganymede | 90      | per_well | 49_22-Z04     | test          | 1.081       | 3.292           | 2.211 | raw_train          | valid_stored   |
+| tcn      | ganymede | 14      | per_well | 49_22-Z04     | test          | 0.935       | 3.12            | 2.185 | raw_train          | valid_stored   |
+| tcn      | ganymede | 30      | per_well | 49_22-Z04     | test          | 1.102       | 3.267           | 2.165 | raw_train          | valid_stored   |
+| patchtst | ganymede | 90      | per_well | 49_22-Z06     | cv_fold_1     | 0.09963     | 2.246           | 2.147 | raw_train          | valid_stored   |
+| deeponet | ganymede | 7       | per_well | 49_22-Z04     | cv_fold_0     | 0.402       | 2.508           | 2.106 | raw_train          | valid_stored   |
+| deeponet | ganymede | 90      | per_well | 49_22-Z04     | test          | 0.987       | 3.007           | 2.02  | raw_train          | valid_stored   |
+| tcn      | ganymede | 14      | per_well | 49_22-Z04     | cv_fold_0     | 0.8076      | 2.74            | 1.932 | raw_train          | valid_stored   |
+| deeponet | ganymede | 30      | per_well | 49_22-Z07     | test          | 1.138       | 2.977           | 1.839 | raw_train          | valid_stored   |
+| deeponet | ganymede | 14      | per_well | 49_22-Z07     | cv_fold_2     | 0.8472      | 2.627           | 1.78  | raw_train          | valid_stored   |
 
 ## Draft table outputs
 

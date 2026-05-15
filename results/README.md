@@ -74,11 +74,33 @@ Current Ganymede values are fixed-code multi-well aggregates across horizons fro
 
 Use MAE/RMSE for absolute production-scale error, MASE for scaled within-well error, and R²/R²_prod only as diagnostics.
 
+## CDF post-fix summary
+
+Current CDF outputs are available on the HPC result root and summarized in `reports/cdf_post_fix_summary_2026-05.json`. Per-model JSONs were generated under `results/post_fix/<model>/cdf.json` on `LPS_loginServer:/home/samarone.lima/offshore-dl` and validated for strict raw-row gap metadata and non-empty fold results.
+
+### Trained reconstruction metrics
+
+| Model | error_mean | error_p50 | error_p95 | error_p99 |
+|---|---:|---:|---:|---:|
+| `lstm` | 0.005878 | 0.005289 | 0.007909 | 0.015403 |
+| `patchtst` | 0.081621 | 0.071603 | 0.150840 | 0.271780 |
+| `deeponet` | 0.230735 | 0.223694 | 0.414683 | 0.425859 |
+
+### Foundation forecast metrics
+
+| Model | forecast_error_mean | forecast_error_p50 | forecast_error_p95 | forecast_error_p99 |
+|---|---:|---:|---:|---:|
+| `chronos` | 0.243968 | 0.226866 | 0.457304 | 0.565650 |
+| `tirex` | 0.268548 | 0.246441 | 0.501056 | 0.695557 |
+| `timesfm` | 0.295999 | 0.283747 | 0.496752 | 0.589213 |
+
+CDF trained and foundation rows are reported separately because they encode different anomaly semantics.
+
 ## Historical/pre-fix caveats
 
 - `pre_fix/` results are preserved for audit/history.
 - Old forecasting `mase` / grouped MASE values are non-authoritative unless rerun with repaired chronological MASE plumbing.
-- Old CDF production CV results are non-authoritative because those runs used zero CV gap before the strict raw-row gap repair.
-- Classification metrics are not directly invalidated by MASE/CDF fixes, but historical classification outputs remain under `pre_fix/` until rerun.
+- Old CDF production CV results under `pre_fix/` are non-authoritative because those runs used zero CV gap before the strict raw-row gap repair; use the post-fix CDF summary above for current anomaly-detection evidence.
+- Classification metrics are not directly invalidated by the MASE or CDF repairs. Older classification outputs remain under `pre_fix/` until rerun and should be treated as audit lineage.
 - New production CLIs default writers to `results/post_fix/`; override with `--results-dir` or `OFFSHORE_DL_RESULTS_DIR` only for deliberate runs.
 - HPO artifacts remain under `results/hpo/` unless `--output-dir` is provided, and are not final benchmark outputs unless final evaluation is present.

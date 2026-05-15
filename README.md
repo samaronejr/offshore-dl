@@ -95,9 +95,27 @@ Multi-well aggregate across horizons (`h7`, `h14`, `h30`, `h90`) from `results/p
 
 Metric interpretation matters: zero-shot foundation models lead by absolute MAE/RMSE, while trained LSTM/TCN are strongest by grouped MASE. R²-style metrics remain unstable across wells and are diagnostics, not the headline score.
 
-### CDF — Anomaly detection status
+### CDF — Post-fix anomaly detection
 
-Current CDF values in this repository are historical `pre_fix/` artifacts. They are preserved for audit, but they are **not** a current headline leaderboard until rerun after the strict raw-row CV-gap repair. Use `scripts/run_production_cdf.py` to regenerate post-fix CDF outputs before reporting final anomaly-detection claims.
+Post-fix CDF rerun completed on HPC job `28934` using strict raw-row gap metadata (`cv_gap=47`, `inner_gap=47`, `outer_gap=47`). Metrics are separated by semantics: trained models report reconstruction `error_*`, while foundation models report one-step forecast `forecast_error_*`; lower is better within each group.
+
+**Trained reconstruction models**
+
+| Model | error_mean | error_p50 | error_p95 | error_p99 | Elapsed |
+|---|---:|---:|---:|---:|---:|
+| `lstm` | 0.005878 | 0.005289 | 0.007909 | 0.015403 | 65.5s |
+| `patchtst` | 0.081621 | 0.071603 | 0.150840 | 0.271780 | 116.7s |
+| `deeponet` | 0.230735 | 0.223694 | 0.414683 | 0.425859 | 44.6s |
+
+**Foundation forecast models**
+
+| Model | forecast_error_mean | forecast_error_p50 | forecast_error_p95 | forecast_error_p99 | Elapsed |
+|---|---:|---:|---:|---:|---:|
+| `chronos` | 0.243968 | 0.226866 | 0.457304 | 0.565650 | 1243.4s |
+| `tirex` | 0.268548 | 0.246441 | 0.501056 | 0.695557 | 220.7s |
+| `timesfm` | 0.295999 | 0.283747 | 0.496752 | 0.589213 | 21.8s |
+
+Do not pool the trained and foundation CDF rows into one universal anomaly-detection ranking unless a later methodology decision establishes comparable reconstruction-vs-forecast error semantics.
 
 ---
 

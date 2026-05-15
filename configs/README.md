@@ -63,7 +63,7 @@ python -m offshore_dl.run_experiment --model lstm --dataset ganymede training.ba
 - **3W Stage 1 HPO** uses the standard `3w.yaml` setup and macro-F1 as the primary objective. Promote only HPO outputs that pass `scripts/validate_hpo_3w_results.py`.
 - **3W Stage 2** configs (`3w_window_*`, `3w_multiscale`, `3w_physics`, `3w_wavelet`) are campaign variants. Report them separately from the standard 720-window leaderboard.
 - **Ganymede** forecasting configs define four horizons (`h7`, `h14`, `h30`, `h90`) and support multi-well/per-well evaluation. MAE/RMSE and MASE can rank models differently, so reports should name the metric.
-- **CDF** needs post-fix reruns before current anomaly-detection claims because historical runs predate the strict raw-row CV-gap repair.
+- **CDF** current anomaly-detection claims use the post-fix strict raw-row CV-gap rerun; trained reconstruction metrics and foundation forecast metrics are reported separately.
 
 ## Adding configs
 

@@ -1,6 +1,9 @@
-# Baseline Results Report — Deep Learning Architectures for Offshore Production Monitoring
+# Historical Baseline Results Report — Deep Learning Architectures for Offshore Production Monitoring
 
-> **Status**: Complete nested evaluation (pre-Optuna HPO). All results use manually-tuned hyperparameters.
+> **Status**: Historical March 2026 snapshot. This report is superseded by
+> `reports/dissertation_results_2026-05.{tex,pdf}` and
+> `reports/dissertation_result_manifest_2026-05.md`; do not cite it for current
+> dissertation rankings.
 >
 > **Date**: March 2026 (updated)
 
@@ -69,16 +72,10 @@ Class 2 (incipient BSW increase, 1.0% of data) is hardest for all models. TiRex 
 
 ### 3.1 Held-out Test Set (multi-well)
 
-| Model | h=7 R²_prod | h=14 | h=30 | h=90 | h=7 MAE |
-|-------|:-----------:|:----:|:----:|:----:|:-------:|
-| **TimesFM** | **0.826** | 0.763 | 0.656 | 0.413 | 0.740 |
-| **TiRex** | 0.822 | **0.775** | **0.699** | **0.565** | **0.658** |
-| **Chronos** | 0.734 | 0.655 | 0.576 | 0.372 | 0.741 |
-| PatchTST | 0.590 | 0.403 | 0.233 | −0.417 | 1.776 |
-| LSTM | −0.032 | −0.061 | 0.487 | 0.066 | 2.052 |
-| DeepONet | −5.56 | −5.39 | −23.2 | −14.7 | 4.950 |
-
-**Key finding**: All three foundation models massively outperform all trained models at every forecast horizon. TiRex degrades most gracefully with increasing horizon.
+The March 2026 Ganymede table used pre-fix forecasting semantics and is no
+longer repeated here to prevent stale citation. Use the May 2026 dissertation
+manifest for current Ganymede rows. Safe current wording is metric-specific:
+zero-shot FMs lead by MAE/RMSE, while trained LSTM/TCN lead by grouped MASE.
 
 ### 3.2 Statistical Significance
 
@@ -90,14 +87,10 @@ Friedman test on MAE: significant at h=7 (p=0.014), h=14 (p=0.035), h=30 (p=0.01
 
 ### 4.1 Held-out Test Set (864 samples, temporal 20%)
 
-| Model | Error Mean | Error P50 | Error P95 |
-|-------|:----------:|:---------:|:---------:|
-| **LSTM** | **0.0041** | **0.0038** | 0.0057 |
-| **PatchTST** | 0.069 | 0.053 | — |
-| **DeepONet** | 0.217 | 0.185 | — |
-| TiRex (train mean) | 130.9 | 40.7 | 802.7 |
-
-> **Note**: CDF FM results (Chronos, TimesFM) pending Docker run. TiRex uses naive train-mean baseline.
+The March 2026 CDF table is superseded by the strict-gap post-fix rerun in
+`reports/cdf_post_fix_summary_2026-05.json`. Current CDF reporting separates
+trained reconstruction metrics (`error_*`) from foundation forecast metrics
+(`forecast_error_*`).
 
 ---
 
@@ -107,11 +100,11 @@ Friedman test on MAE: significant at h=7 (p=0.014), h=14 (p=0.035), h=30 (p=0.01
 
 2. **DeepONet leads classification with fewest parameters**: The operator-learning framework achieves the best accuracy (96.81%) with only 209K parameters — 11× fewer than LSTM.
 
-3. **Foundation models dominate forecasting**: TimesFM, TiRex, and Chronos all achieve R²_prod > 0.7 at h=7 without any task-specific training, exceeding the best trained model (PatchTST: 0.59) by 24-40%.
+3. **Forecasting conclusions are superseded by May 2026 post-fix results**: Current wording must name the metric family instead of stating a universal winner.
 
-4. **TiRex is the most versatile FM**: Achieves 91.1% classification (highest AUC-PR at 0.936) and the best long-horizon forecasting (R²_prod = 0.57 at h=90).
+4. **TiRex March snapshot claims are historical**: Use the current manifest before citing any cross-task versatility claim.
 
-5. **Normalization is critical for CDF**: A bug in anomaly target normalization caused trained model errors of ~3,300. With proper per-sensor normalization, LSTM achieves error_mean = 0.004.
+5. **CDF conclusions are superseded by the strict-gap rerun**: Use the May 2026 CDF summary and keep trained-vs-FM anomaly semantics separate.
 
 6. **DeepONet fails at forecasting**: Despite strong classification performance, DeepONet produces R² < -5 at all horizons — operator learning is not suited for autoregressive production forecasting.
 
@@ -120,5 +113,5 @@ Friedman test on MAE: significant at h=7 (p=0.014), h=14 (p=0.035), h=30 (p=0.01
 ## 6. Next Steps
 
 - **Optuna HPO**: Search spaces defined in YAML configs; production script ready. Could shift trained model rankings.
-- **CDF FM completion**: Chronos and TimesFM on CDF with nested protocol.
+- **CDF FM completion**: superseded by the May 2026 post-fix CDF rerun.
 - **Model interpretability**: Attention visualization, SHAP values for feature importance.

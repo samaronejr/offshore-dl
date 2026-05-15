@@ -1,6 +1,6 @@
 #!/bin/bash
 #SBATCH --job-name=forecast-mase-post
-#SBATCH --partition=gpu
+#SBATCH --partition=cpu
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=4
@@ -25,7 +25,7 @@ mkdir -p logs reports "${RESULTS_ROOT}"
 echo "=== Forecasting MASE postprocess ==="
 echo "Node: $(hostname), Date: $(date)"
 
-singularity exec --nv \
+singularity exec \
     --no-home \
     --bind "${PROJECT}/data:/app/data" \
     --bind "${RESULTS_ROOT}:/app/results" \
@@ -35,6 +35,6 @@ singularity exec --nv \
     --bind "${PROJECT}/configs:/app/configs" \
     --pwd /app \
     "${SIF}" \
-    bash -lc 'python scripts/aggregate_forecasting_results.py && python -m offshore_dl.analysis.forecasting_audit --results-dir /app/results'
+    bash -lc 'OFFSHORE_DL_RESULTS_DIR=/app/results python scripts/aggregate_forecasting_results.py && python -m offshore_dl.analysis.forecasting_audit --results-dir /app/results'
 
 echo "=== Forecasting MASE postprocess DONE: $(date) ==="

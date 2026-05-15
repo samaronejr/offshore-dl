@@ -6,23 +6,23 @@ Proceed next with **metric repair + MASE-first table regeneration before model/o
 
 ## Evidence
 
-- Coverage status counts: `{'missing': 2161, 'unavailable': 352, 'ok': 259}`.
-- Denominator source counts in the Gate 2 audit: `{'unavailable': 352, 'double_denorm_suspect': 240, 'validation_target_fallback': 64, 'ad_hoc_validation_fallback': 2}`.
-- Audit classification counts: `{'unavailable': 352, 'suspect_stored_recomputable': 201, 'invalid_stored_recomputable': 103, 'path_audited_no_current_artifact': 2}`.
-- Zero-MASE/nonzero-MAE audited records: `103`.
-- Audited records with absolute recomputed-vs-stored MASE delta > 0.25: `237`.
+- Coverage status counts: `{'missing': 2548, 'ok': 224}`.
+- Denominator source counts in the Gate 2 audit: `{'raw_train': 224, 'ad_hoc_validation_fallback': 2}`.
+- Audit classification counts: `{'valid_stored': 224, 'path_audited_no_current_artifact': 2}`.
+- Zero-MASE/nonzero-MAE audited records: `0`.
+- Audited records with absolute recomputed-vs-stored MASE delta > 0.25: `106`.
 
 ## Rank sensitivity snapshot
 
 | model    | stored_mean_rank | effective_mean_rank | rank_delta |
 | -------- | ---------------- | ------------------- | ---------- |
-| lstm     | 3.438            | 1.875               | -1.562     |
-| timesfm  | 2.875            | 3.625               | 0.75       |
-| tirex    | 1                | 1.75                | 0.75       |
-| tcn      | 4.444            | 5                   | 0.5556     |
-| chronos  | 1.688            | 2.188               | 0.5        |
-| patchtst | 4.917            | 5.167               | 0.25       |
-| deeponet | 4.688            | 4.5                 | -0.1875    |
+| patchtst | 3                | 7                   | 4          |
+| timesfm  | 5.625            | 2.75                | -2.875     |
+| tirex    | 3.75             | 1                   | -2.75      |
+| chronos  | 5.25             | 2.75                | -2.5       |
+| lstm     | 1.875            | 3.875               | 2          |
+| tcn      | 3.75             | 4.875               | 1.125      |
+| deeponet | 4.75             | 5.75                | 1          |
 
 ## Ranked next steps
 

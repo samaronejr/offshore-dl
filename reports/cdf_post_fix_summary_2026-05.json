@@ -1,0 +1,116 @@
+{
+  "metric_semantics": {
+    "foundation_forecast": [
+      "chronos",
+      "timesfm",
+      "tirex"
+    ],
+    "pooled_status": "not_run_metric_semantics_differ",
+    "trained_reconstruction": [
+      "lstm",
+      "deeponet",
+      "patchtst"
+    ]
+  },
+  "models": {
+    "chronos": {
+      "elapsed": 1243.4,
+      "status": "ok",
+      "test_metrics": {
+        "forecast_error_mean": 0.24396775407940083,
+        "forecast_error_p50": 0.22686598428129315,
+        "forecast_error_p95": 0.45730388497225644,
+        "forecast_error_p99": 0.5656501422534246,
+        "forecast_error_std": 0.11115111156861204,
+        "timestep_error_mean": 0.21572434922967362,
+        "timestep_error_p50": 0.1726955583043837,
+        "timestep_error_p95": 0.528872896288373,
+        "timestep_error_p99": 0.6685040315193748,
+        "timestep_error_std": 0.15917864110149588
+      }
+    },
+    "deeponet": {
+      "elapsed": 44.6,
+      "status": "ok",
+      "test_metrics": {
+        "error_mean": 0.23073500282167908,
+        "error_p50": 0.22369432659580746,
+        "error_p95": 0.41468331631041166,
+        "error_p99": 0.4258585771542659,
+        "error_std": 0.0837072817437924,
+        "timestep_error_mean": 0.2149949031063427,
+        "timestep_error_p50": 0.18486492099905927,
+        "timestep_error_p95": 0.4361642819872507,
+        "timestep_error_p99": 0.48927308666637837,
+        "timestep_error_std": 0.11841765992599755
+      }
+    },
+    "lstm": {
+      "elapsed": 65.5,
+      "status": "ok",
+      "test_metrics": {
+        "error_mean": 0.005878068399638007,
+        "error_p50": 0.005289050573741857,
+        "error_p95": 0.007909277378754374,
+        "error_p99": 0.015403134113510917,
+        "error_std": 0.0019929867009787806,
+        "timestep_error_mean": 0.005220507945432715,
+        "timestep_error_p50": 0.004512850473007174,
+        "timestep_error_p95": 0.01003586751579512,
+        "timestep_error_p99": 0.016685355740828592,
+        "timestep_error_std": 0.003357079220509265
+      }
+    },
+    "patchtst": {
+      "elapsed": 116.7,
+      "status": "ok",
+      "test_metrics": {
+        "error_mean": 0.08162125341810898,
+        "error_p50": 0.0716026686658606,
+        "error_p95": 0.15084045870192142,
+        "error_p99": 0.2717802594992702,
+        "error_std": 0.041723229203525586,
+        "timestep_error_mean": 0.06573886436416057,
+        "timestep_error_p50": 0.050587753952829745,
+        "timestep_error_p95": 0.15747414566591655,
+        "timestep_error_p99": 0.2568018471941865,
+        "timestep_error_std": 0.06388472882327667
+      }
+    },
+    "timesfm": {
+      "elapsed": 21.8,
+      "status": "ok",
+      "test_metrics": {
+        "forecast_error_mean": 0.29599894350130423,
+        "forecast_error_p50": 0.2837472229765771,
+        "forecast_error_p95": 0.4967519273905302,
+        "forecast_error_p99": 0.5892126282315234,
+        "forecast_error_std": 0.11396114457232646,
+        "timestep_error_mean": 0.2619536797463712,
+        "timestep_error_p50": 0.22407130630189742,
+        "timestep_error_p95": 0.6042205899472319,
+        "timestep_error_p99": 0.7311206312691019,
+        "timestep_error_std": 0.17883731907367267
+      }
+    },
+    "tirex": {
+      "elapsed": 220.7,
+      "status": "ok",
+      "test_metrics": {
+        "forecast_error_mean": 0.26854834467023214,
+        "forecast_error_p50": 0.24644063369351984,
+        "forecast_error_p95": 0.5010562764831635,
+        "forecast_error_p99": 0.6955569494143772,
+        "forecast_error_std": 0.1250985998893982,
+        "timestep_error_mean": 0.2339056666578095,
+        "timestep_error_p50": 0.181046053360529,
+        "timestep_error_p95": 0.5882010190683953,
+        "timestep_error_p99": 0.7895984826557018,
+        "timestep_error_std": 0.1818131244568864
+      }
+    }
+  },
+  "slurm_job_id": 28934,
+  "source": "LPS_loginServer:/home/samarone.lima/offshore-dl/results/post_fix/summary_production_cdf.json",
+  "status": "cdf_gate_passed"
+}

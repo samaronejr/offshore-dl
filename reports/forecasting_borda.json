@@ -2,170 +2,105 @@
   "per_dataset": {
     "mae": {
       "ganymede": {
-        "chronos": 3.031,
-        "deeponet": 4.281,
-        "lstm": 2.625,
-        "patchtst": 5.562,
-        "tcn": 6.455,
-        "timesfm": 3.688,
-        "tirex": 2.0
-      },
-      "inner_mongolia": {
-        "chronos": 1.5,
-        "deeponet": 5.0,
-        "lstm": 1.75,
-        "patchtst": 3.75,
-        "tcn": 3.0
-      },
-      "spe_berg": {
-        "chronos": 1.0,
-        "deeponet": 2.75,
-        "lstm": 2.25
-      },
-      "volve": {}
+        "chronos": 2.875,
+        "deeponet": 5.781,
+        "lstm": 4.281,
+        "patchtst": 5.812,
+        "tcn": 5.594,
+        "timesfm": 2.594,
+        "tirex": 1.062
+      }
     },
     "rmse": {
       "ganymede": {
-        "chronos": 4.469,
-        "deeponet": 3.438,
-        "lstm": 1.719,
-        "patchtst": 5.594,
-        "tcn": 6.545,
-        "timesfm": 3.219,
-        "tirex": 2.719
-      },
-      "inner_mongolia": {
-        "chronos": 3.5,
-        "deeponet": 4.75,
-        "lstm": 1.25,
-        "patchtst": 3.25,
-        "tcn": 2.25
-      },
-      "spe_berg": {
-        "chronos": 1.75,
-        "deeponet": 1.75,
-        "lstm": 2.5
-      },
-      "volve": {}
+        "chronos": 3.531,
+        "deeponet": 5.719,
+        "lstm": 4.188,
+        "patchtst": 5.75,
+        "tcn": 5.5,
+        "timesfm": 2.062,
+        "tirex": 1.25
+      }
     },
     "r2": {
       "ganymede": {
-        "chronos": 4.031,
-        "deeponet": 4.359,
-        "lstm": 3.078,
-        "patchtst": 4.844,
-        "tcn": 6.273,
-        "timesfm": 2.656,
-        "tirex": 2.281
-      },
-      "inner_mongolia": {
-        "chronos": 3.5,
-        "deeponet": 4.75,
-        "lstm": 1.25,
-        "patchtst": 3.25,
-        "tcn": 2.25
-      },
-      "spe_berg": {
-        "chronos": 1.75,
-        "deeponet": 1.75,
-        "lstm": 2.5
-      },
-      "volve": {}
+        "chronos": 3.688,
+        "deeponet": 5.188,
+        "lstm": 4.312,
+        "patchtst": 4.969,
+        "tcn": 4.844,
+        "timesfm": 2.625,
+        "tirex": 2.375
+      }
     },
     "r2_prod": {
       "ganymede": {
-        "chronos": 4.375,
-        "deeponet": 3.859,
-        "lstm": 3.266,
-        "patchtst": 3.938,
-        "tcn": 5.818,
-        "timesfm": 2.969,
-        "tirex": 3.0
-      },
-      "inner_mongolia": {
-        "chronos": 3.25,
-        "deeponet": 4.75,
-        "lstm": 1.25,
-        "patchtst": 3.25,
-        "tcn": 2.5
-      },
-      "spe_berg": {
-        "chronos": 1.75,
-        "deeponet": 1.75,
-        "lstm": 2.5
-      },
-      "volve": {}
+        "chronos": 3.906,
+        "deeponet": 5.031,
+        "lstm": 4.344,
+        "patchtst": 4.406,
+        "tcn": 4.844,
+        "timesfm": 2.719,
+        "tirex": 2.75
+      }
     },
     "mase": {
       "ganymede": {
-        "chronos": 3.031,
-        "deeponet": 4.328,
-        "lstm": 3.516,
-        "patchtst": 4.656,
-        "tcn": 5.818,
-        "timesfm": 3.688,
-        "tirex": 2.188
-      },
-      "inner_mongolia": {
-        "chronos": 1.5,
-        "deeponet": 5.0,
-        "lstm": 1.75,
-        "patchtst": 3.75,
-        "tcn": 3.0
-      },
-      "spe_berg": {
-        "chronos": 1.0,
-        "deeponet": 2.75,
-        "lstm": 2.25
-      },
-      "volve": {}
+        "chronos": 4.562,
+        "deeponet": 4.906,
+        "lstm": 2.844,
+        "patchtst": 4.531,
+        "tcn": 4.469,
+        "timesfm": 4.281,
+        "tirex": 2.406
+      }
     }
   },
   "cross_dataset": {
     "mae": {
-      "chronos": 2.675,
-      "deeponet": 4.2,
-      "lstm": 2.5,
-      "patchtst": 5.361,
-      "tcn": 5.533,
-      "timesfm": 3.688,
-      "tirex": 2.0
+      "chronos": 2.875,
+      "deeponet": 5.781,
+      "lstm": 4.281,
+      "patchtst": 5.812,
+      "tcn": 5.594,
+      "timesfm": 2.594,
+      "tirex": 1.062
     },
     "rmse": {
-      "chronos": 4.1,
-      "deeponet": 3.4,
-      "lstm": 1.75,
-      "patchtst": 5.333,
-      "tcn": 5.4,
-      "timesfm": 3.219,
-      "tirex": 2.719
+      "chronos": 3.531,
+      "deeponet": 5.719,
+      "lstm": 4.188,
+      "patchtst": 5.75,
+      "tcn": 5.5,
+      "timesfm": 2.062,
+      "tirex": 1.25
     },
     "r2": {
-      "chronos": 3.75,
-      "deeponet": 4.138,
-      "lstm": 2.837,
-      "patchtst": 4.667,
-      "tcn": 5.2,
-      "timesfm": 2.656,
-      "tirex": 2.281
+      "chronos": 3.688,
+      "deeponet": 5.188,
+      "lstm": 4.312,
+      "patchtst": 4.969,
+      "tcn": 4.844,
+      "timesfm": 2.625,
+      "tirex": 2.375
     },
     "r2_prod": {
-      "chronos": 4.0,
-      "deeponet": 3.737,
-      "lstm": 2.987,
-      "patchtst": 3.861,
-      "tcn": 4.933,
-      "timesfm": 2.969,
-      "tirex": 3.0
+      "chronos": 3.906,
+      "deeponet": 5.031,
+      "lstm": 4.344,
+      "patchtst": 4.406,
+      "tcn": 4.844,
+      "timesfm": 2.719,
+      "tirex": 2.75
     },
     "mase": {
-      "chronos": 2.675,
-      "deeponet": 4.237,
-      "lstm": 3.212,
-      "patchtst": 4.556,
-      "tcn": 5.067,
-      "timesfm": 3.688,
-      "tirex": 2.188
+      "chronos": 4.562,
+      "deeponet": 4.906,
+      "lstm": 2.844,
+      "patchtst": 4.531,
+      "tcn": 4.469,
+      "timesfm": 4.281,
+      "tirex": 2.406
     }
   }
 }

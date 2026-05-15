@@ -18,12 +18,15 @@ SIF=$PROJECT/offshore-dl-train.sif
 
 singularity exec --nv \
     --no-home \
+    --bind $PROJECT/src:/app/src:ro \
+    --bind $PROJECT/scripts:/app/scripts:ro \
+    --bind $PROJECT/configs:/app/configs:ro \
     --bind $PROJECT/data:/app/data:ro \
     --bind $PROJECT/results:/app/results \
     --bind $PROJECT/reports:/app/reports \
     --bind ${HOME}/.cache/huggingface:/app/.cache/huggingface \
     --pwd /app \
     $SIF \
-    python scripts/run_production_cdf.py --device cuda
+    python scripts/run_production_cdf.py --device cuda --no-mlflow
 
 echo "=== CDF DONE: $(date) ==="
