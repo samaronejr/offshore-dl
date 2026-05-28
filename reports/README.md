@@ -8,6 +8,10 @@ Result tables, statistical tests, and analysis reports. Current dissertation-fac
 |------|--------|-------|
 | `dissertation_results_2026-05.tex` / `dissertation_results_2026-05.pdf` | Current dissertation snapshot | CDF-gated aggregate snapshot generated from manifest and post-fix summaries. |
 | `dissertation_result_manifest_2026-05.md` | Current claim manifest | Maps headline rows to source revision, result path, status, and caveat. |
+| `dissertation_claim_ledger_2026-05.md` | Current claim-control ledger | Maps dissertation-facing claims to metric, source artifact, commit, caveat, and status. |
+| `dissertation_final_tables_2026-05.md` | Current final table pack | Source-backed T1-T7 markdown tables for classification, forecasting, sparse exclusions, and CDF. |
+| `dissertation_results_narrative_2026-05.md` | Current narrative guide | Metric-specific prose guidance, conclusion wording, do-not-write list, and threats to validity. |
+| `dissertation_evidence_bundle_manifest_2026-05.md` | Current evidence bundle manifest | SHA256 and contents policy for the compact dissertation evidence bundle under `dist/`. |
 | `cdf_post_fix_summary_2026-05.json` | Current CDF summary | Compact post-fix CDF summary from HPC job `28934`. |
 | `statistical_tests_nested.json` | Current for Ganymede and CDF post-fix roots | CDF uses separated trained reconstruction and foundation forecast groups; 3W Stage 2 is not pooled. |
 | `forecasting_borda.json` | Current full post-fix forecasting diagnostic | Regenerated from `results/post_fix` on HPC across Ganymede, SPE Berg, Volve, and Inner Mongolia; lower Borda score is better. |

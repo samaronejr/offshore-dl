@@ -1,0 +1,4 @@
+dataset,horizon,mode,missing_scenarios,missing_model_rows,reason
+inner_mongolia,90,per_well,"57-14X, 57-15X",14,Too sparse for valid h90 per-well temporal split
+spe_berg,90,per_well,"well_11, well_2",14,Too sparse for valid h90 per-well temporal split
+volve,90,per_well,NO_15_9-F-5_AH,7,Too sparse for valid h90 per-well temporal split

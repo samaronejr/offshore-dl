@@ -85,13 +85,13 @@ Multi-well aggregate across horizons (`h7`, `h14`, `h30`, `h90`) from `results/p
 
 | Model | MAE | RMSE | MASE | R² | R²_prod |
 |---|---:|---:|---:|---:|---:|
-| **TiRex** | **0.3617** | **1.2476** | 0.2071 | **0.3541** | -0.1490 |
-| TimesFM | 0.3965 | 1.2634 | 0.2295 | 0.3362 | **-0.1283** |
-| Chronos-2 | 0.5357 | 1.4412 | 0.3205 | 0.1111 | -0.3431 |
-| LSTM | 0.5457 | 1.3517 | **0.0228** | 0.2455 | -0.6481 |
-| TCN | 0.5677 | 1.3136 | 0.0234 | 0.2864 | -0.4099 |
-| DeepONet | 0.6795 | 1.3746 | 0.0301 | 0.2221 | -0.4021 |
-| PatchTST | 1.0771 | 2.1164 | 0.0474 | -0.8640 | -1.1972 |
+| **TiRex** | **0.3620** | **1.2481** | 0.2072 | **0.3537** | -0.1499 |
+| TimesFM | 0.3967 | 1.2640 | 0.2297 | 0.3356 | **-0.1293** |
+| Chronos-2 | 0.5373 | 1.4426 | 0.3215 | 0.1094 | -0.3438 |
+| LSTM | 0.5457 | 1.3519 | **0.0228** | 0.2453 | -0.6491 |
+| TCN | 0.5680 | 1.3140 | 0.0234 | 0.2860 | -0.4109 |
+| DeepONet | 0.6794 | 1.3748 | 0.0301 | 0.2219 | -0.4026 |
+| PatchTST | 1.0774 | 2.1175 | 0.0474 | -0.8660 | -1.2016 |
 
 Metric interpretation matters: zero-shot foundation models lead by absolute MAE/RMSE, while trained LSTM/TCN are strongest by grouped MASE. R²-style metrics remain unstable across wells and are diagnostics, not the headline score.
 
