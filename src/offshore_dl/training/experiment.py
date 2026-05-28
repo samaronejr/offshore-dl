@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 import numbers
+import os
 from typing import Any
 
 import numpy as np
@@ -654,15 +655,24 @@ class ExperimentRunner:
             pin_memory=True,
         )
 
+        eval_device = trainer.device
+        final_eval_device = os.environ.get("OFFSHORE_DL_FINAL_EVAL_DEVICE")
+        if final_eval_device:
+            eval_device = torch.device(final_eval_device)
+            logger.info("Final held-out evaluation device override: %s", eval_device)
+            model.to(eval_device)
+
+        eval_progress_every = int(os.environ.get("OFFSHORE_DL_EVAL_PROGRESS_EVERY", "0") or 0)
+
         model.eval()
         all_preds, all_targets = [], []
         all_scores = []
         all_instance_ids = []
         all_groups = []
         all_orders = []
-        for batch in test_loader:
+        for batch_idx, batch in enumerate(test_loader, start=1):
             batch = tuple(
-                t.to(trainer.device) if isinstance(t, torch.Tensor) else t
+                t.to(eval_device) if isinstance(t, torch.Tensor) else t
                 for t in batch
             )
             features, targets, metadata = batch
@@ -686,9 +696,19 @@ class ExperimentRunner:
                 all_targets.append(targets.cpu())
             else:
                 all_targets.append(torch.tensor(targets))
+            if eval_progress_every and (
+                batch_idx % eval_progress_every == 0
+                or batch_idx == len(test_loader)
+            ):
+                logger.info(
+                    "Held-out evaluation progress: %d/%d batches",
+                    batch_idx,
+                    len(test_loader),
+                )
 
         predictions = torch.cat(all_preds).numpy()
         targets = torch.cat(all_targets).numpy()
+        logger.info("Held-out prediction loop complete: %d samples", len(predictions))
         prediction_scores = torch.cat(all_scores).numpy() if all_scores else None
         instance_ids = (
             np.concatenate(all_instance_ids)
@@ -727,6 +747,10 @@ class ExperimentRunner:
         y_train_order_for_mase = None
         if task == "forecasting":
             try:
+                logger.info(
+                    "Collecting forecasting MASE context from %d training samples",
+                    len(train_pool),
+                )
                 (
                     y_train_for_mase,
                     y_train_groups_for_mase,
@@ -741,6 +765,8 @@ class ExperimentRunner:
                     "Could not collect deterministic y_train for MASE denominator: %s; MASE will be marked unavailable if metadata is insufficient.",
                     exc,
                 )
+            else:
+                logger.info("Forecasting MASE context collection complete")
 
         test_metrics = MetricRegistry.compute(
             task,

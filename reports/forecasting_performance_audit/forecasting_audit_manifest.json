@@ -15,9 +15,9 @@
   },
   "branch": "",
   "coverage_rows": 2772,
-  "mase_audit_rows": 226,
+  "mase_audit_rows": 222,
   "output_dir": "reports/forecasting_performance_audit",
   "raw_recompute_errors": 0,
-  "result_rows": 224,
+  "result_rows": 2737,
   "results_dir": "/app/results"
 }

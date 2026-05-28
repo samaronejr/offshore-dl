@@ -7,7 +7,7 @@ Generated experiment outputs are organized by validity epoch and campaign. The r
 ```text
 results/
 ├── pre_fix/        # Historical outputs produced before benchmark-validity repairs
-├── post_fix/       # Fixed-code production reruns, including current Ganymede outputs
+├── post_fix/       # Fixed-code production reruns and lightweight forecasting aggregate CSVs
 ├── hpo/            # Optuna campaign outputs, e.g. 3W Stage 1 HPO summaries
 ├── stage2_3w/      # 3W follow-up variants and window-length experiments
 ├── .omx/           # Local OMX/runtime logs and state, not benchmark outputs
@@ -20,7 +20,7 @@ results/
 |---|---|---|
 | `results/hpo/3w/3w-hpo-latest-20260510T180941Z/summary.json` | Current validated 3W Stage 1 HPO | Headline apples-to-apples 720-window classification leaderboard. |
 | `results/stage2_3w/3w-stage2-20260513T192623Z/` | Current 3W follow-up campaign | Report separately as feature/window variants; do not pool with Stage 1. |
-| `results/post_fix/<model>/ganymede*.json` | Current post-fix Ganymede reruns | Current forecasting evidence for Ganymede. |
+| `results/post_fix/<model>/{ganymede,spe_berg,volve,inner_mongolia}*.json` | Current post-fix forecasting reruns | Current forecasting evidence. The full JSON tree is large; use aggregate CSVs plus report manifests in Git. |
 | `results/pre_fix/` | Historical | Audit/history only unless explicitly revalidated. |
 
 ## 3W Stage 1 HPO summary
@@ -73,6 +73,31 @@ Current Ganymede values are fixed-code multi-well aggregates across horizons fro
 | PatchTST | 1.0771 | 2.1164 | 0.0474 | -0.8640 | -1.1972 |
 
 Use MAE/RMSE for absolute production-scale error, MASE for scaled within-well error, and R²/R²_prod only as diagnostics.
+
+## Full post-fix forecasting campaign
+
+The full synced forecasting root contains current fixed-code evidence for Ganymede, SPE Berg, Volve, and Inner Mongolia. The aggregate CSVs are small enough to track, while the full per-model JSON tree is about 9.1 GiB locally and should be archived outside Git.
+
+| Artifact | Use |
+|---|---|
+| `results/post_fix/forecasting_summary.csv` | Long-form 2,737-row aggregate over model, dataset, horizon, mode, and well/scenario. |
+| `results/post_fix/forecasting_summary_wide_mae.csv` | Wide MAE table for report/table drafting. |
+| `results/post_fix/forecasting_summary_wide_r2_prod.csv` | Wide productive-period R² diagnostic table. |
+| `reports/forecasting_borda.json` | Cross-dataset Borda diagnostics by metric. |
+| `reports/forecasting_performance_audit/forecasting_hpc_sync_summary.md` | Sync provenance, coverage, sparse exclusions, and key hashes. |
+| `reports/forecasting_performance_audit/forecasting_post_fix_sha256_manifest.txt` | SHA256 manifest for the full synced result tree. |
+
+Multi-well coverage is complete for all four forecasting datasets: Ganymede 28/28, SPE Berg 28/28, Volve 28/28, and Inner Mongolia 28/28 model × horizon artifacts.
+
+Cross-dataset Borda diagnostics, lower is better:
+
+| Metric | Leading models |
+|---|---|
+| MAE | TiRex 1.660 · Chronos-2 2.212 · TimesFM 3.230 |
+| R²_prod | TiRex 2.588 · Chronos-2 3.077 · TimesFM 3.442 |
+| MASE | PatchTST 2.619 · LSTM 3.171 · TCN 3.427 |
+
+Remaining expected-but-missing rows are sparse h90 per-well exclusions: Inner Mongolia (`57-14X`, `57-15X`), SPE Berg (`well_11`, `well_2`), and Volve (`NO_15_9-F-5_AH`). Do not relaunch these as ordinary failed jobs unless the dataset/split policy changes.
 
 ## CDF post-fix summary
 

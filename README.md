@@ -95,6 +95,29 @@ Multi-well aggregate across horizons (`h7`, `h14`, `h30`, `h90`) from `results/p
 
 Metric interpretation matters: zero-shot foundation models lead by absolute MAE/RMSE, while trained LSTM/TCN are strongest by grouped MASE. R²-style metrics remain unstable across wells and are diagnostics, not the headline score.
 
+### Forecasting — full post-fix multi-dataset status
+
+The post-fix forecasting campaign now includes Ganymede, SPE Berg, Volve, and Inner Mongolia under `results/post_fix/`. The synced aggregate summary has 2,737 valid rows across seven models, four horizons (`h7`, `h14`, `h30`, `h90`), and both multi-well and per-well modes. The full JSON result tree is large and should be archived externally; lightweight provenance is tracked in `reports/forecasting_performance_audit/forecasting_hpc_sync_summary.md` and `forecasting_post_fix_sha256_manifest.txt`.
+
+All multi-well forecasting cells are complete:
+
+| Dataset | Multi-well artifacts | Expected model × horizon artifacts |
+|---|---:|---:|
+| Ganymede | 28 | 28 |
+| SPE Berg | 28 | 28 |
+| Volve | 28 | 28 |
+| Inner Mongolia | 28 | 28 |
+
+Cross-dataset Borda diagnostics from `reports/forecasting_borda.json` are metric-specific; lower Borda score is better and should not be read as a raw error average.
+
+| Metric | Best three models |
+|---|---|
+| MAE | TiRex 1.660 · Chronos-2 2.212 · TimesFM 3.230 |
+| R²_prod | TiRex 2.588 · Chronos-2 3.077 · TimesFM 3.442 |
+| MASE | PatchTST 2.619 · LSTM 3.171 · TCN 3.427 |
+
+Remaining missing expected rows are sparse h90 per-well exclusions, not active HPC failures: Inner Mongolia (`57-14X`, `57-15X`), SPE Berg (`well_11`, `well_2`), and Volve (`NO_15_9-F-5_AH`). Report these as data-coverage exclusions whenever using per-well h90 tables.
+
 ### CDF — Post-fix anomaly detection
 
 Post-fix CDF rerun completed on HPC job `28934` using strict raw-row gap metadata (`cv_gap=47`, `inner_gap=47`, `outer_gap=47`). Metrics are separated by semantics: trained models report reconstruction `error_*`, while foundation models report one-step forecast `forecast_error_*`; lower is better within each group.

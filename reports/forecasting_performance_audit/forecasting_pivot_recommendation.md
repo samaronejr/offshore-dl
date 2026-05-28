@@ -6,23 +6,23 @@ Proceed next with **metric repair + MASE-first table regeneration before model/o
 
 ## Evidence
 
-- Coverage status counts: `{'missing': 2548, 'ok': 224}`.
-- Denominator source counts in the Gate 2 audit: `{'raw_train': 224, 'ad_hoc_validation_fallback': 2}`.
-- Audit classification counts: `{'valid_stored': 224, 'path_audited_no_current_artifact': 2}`.
+- Coverage status counts: `{'ok': 2737, 'missing': 35}`.
+- Denominator source counts in the Gate 2 audit: `{'raw_train': 220, 'ad_hoc_validation_fallback': 2}`.
+- Audit classification counts: `{'valid_stored': 220, 'path_audited_no_current_artifact': 2}`.
 - Zero-MASE/nonzero-MAE audited records: `0`.
-- Audited records with absolute recomputed-vs-stored MASE delta > 0.25: `106`.
+- Audited records with absolute recomputed-vs-stored MASE delta > 0.25: `135`.
 
 ## Rank sensitivity snapshot
 
 | model    | stored_mean_rank | effective_mean_rank | rank_delta |
 | -------- | ---------------- | ------------------- | ---------- |
-| patchtst | 3                | 7                   | 4          |
-| timesfm  | 5.625            | 2.75                | -2.875     |
-| tirex    | 3.75             | 1                   | -2.75      |
-| chronos  | 5.25             | 2.75                | -2.5       |
-| lstm     | 1.875            | 3.875               | 2          |
-| tcn      | 3.75             | 4.875               | 1.125      |
-| deeponet | 4.75             | 5.75                | 1          |
+| tirex    | 4.032            | 1.188               | -2.845     |
+| timesfm  | 5.935            | 3.188               | -2.748     |
+| chronos  | 4.71             | 2.031               | -2.678     |
+| patchtst | 2.839            | 5.094               | 2.255      |
+| lstm     | 2.516            | 4.75                | 2.234      |
+| tcn      | 3.29             | 5.219               | 1.928      |
+| deeponet | 4.677            | 6.531               | 1.854      |
 
 ## Ranked next steps
 

@@ -4,17 +4,20 @@
 
 | status  | count |
 | ------- | ----- |
-| missing | 2548  |
-| ok      | 224   |
+| ok      | 2737  |
+| missing | 35    |
 
 ## Status by dataset
 
 | dataset        | status  | count |
 | -------------- | ------- | ----- |
 | ganymede       | ok      | 224   |
-| inner_mongolia | missing | 840   |
-| spe_berg       | missing | 1512  |
-| volve          | missing | 196   |
+| inner_mongolia | missing | 14    |
+| inner_mongolia | ok      | 826   |
+| spe_berg       | missing | 14    |
+| spe_berg       | ok      | 1498  |
+| volve          | missing | 7     |
+| volve          | ok      | 189   |
 
 ## Unavailable reasons (sample)
 
