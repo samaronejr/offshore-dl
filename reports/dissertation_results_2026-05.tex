@@ -2,55 +2,123 @@
 \usepackage[margin=1in]{geometry}
 \usepackage{booktabs}
 \usepackage{array}
+\usepackage{longtable}
 \begin{document}
 \title{Offshore DL Dissertation Results Snapshot -- May 2026}
-\author{Generated from CDF-gated readiness artifacts}
-\date{2026-05-15}
+\author{Generated from the May 2026 claim ledger and final table pack}
+\date{2026-05-28}
 \maketitle
-\section*{Scope}
-This snapshot summarizes current dissertation-facing benchmark evidence at source revision \texttt{62780b2dd5aa}.
-Stage 1 3W, Stage 2 3W, Ganymede, and CDF results are reported with family-specific caveats. CDF trained reconstruction and foundation forecast metrics are not pooled.
-\section*{3W Stage 1: standard 720-window HPO}
-\begin{tabular}{lrr}\toprule Model & Macro-F1 & Accuracy \\ \midrule
-Random Forest & 0.968972 & 0.970228 \\
-DeepONet & 0.962579 & 0.968734 \\
-MambaSL & 0.962185 & 0.967313 \\
-LSTM & 0.960046 & 0.965314 \\
-FKMAD & 0.956388 & 0.964061 \\
-ConvTimeNet & 0.954953 & 0.959894 \\
-PatchTST & 0.953556 & 0.958738 \\
-\bottomrule\end{tabular}
-\section*{3W Stage 2: separate follow-ups}
-\begin{tabular}{lrr}\toprule Variant & Macro-F1 & Accuracy \\ \midrule
-window360\_rf & 0.987797 & 0.991537 \\
-window1440\_rf & 0.977011 & 0.989084 \\
-wavelet\_rf & 0.964309 & 0.966301 \\
-physics\_rf & 0.964070 & 0.966060 \\
-\bottomrule\end{tabular}
-\par\smallskip Window variants use different window lengths/sample counts and are not Stage 1 replacements.
-\section*{Ganymede post-fix forecasting}
-\begin{tabular}{lrrr}\toprule Model & MAE & RMSE & MASE \\ \midrule
-TiRex & 0.3617 & 1.2476 & 0.2071 \\
-TimesFM & 0.3965 & 1.2634 & 0.2295 \\
-Chronos-2 & 0.5357 & 1.4412 & 0.3205 \\
-LSTM & 0.5457 & 1.3517 & 0.0228 \\
-TCN & 0.5677 & 1.3136 & 0.0234 \\
-DeepONet & 0.6795 & 1.3746 & 0.0301 \\
-PatchTST & 1.0771 & 2.1164 & 0.0474 \\
-\bottomrule\end{tabular}
-\par\smallskip Foundation models lead by MAE/RMSE; trained LSTM/TCN lead by grouped MASE.
-\section*{CDF post-fix anomaly detection}
-\subsection*{Trained reconstruction metrics}
-\begin{tabular}{lrr}\toprule Model & error\_mean & error\_p50 \\ \midrule
-lstm & 0.005878 & 0.005289 \\
-patchtst & 0.081621 & 0.071603 \\
-deeponet & 0.230735 & 0.223694 \\
-\bottomrule\end{tabular}
-\subsection*{Foundation forecast metrics}
-\begin{tabular}{lrr}\toprule Model & forecast\_error\_mean & forecast\_error\_p50 \\ \midrule
-chronos & 0.243968 & 0.226866 \\
-tirex & 0.268548 & 0.246441 \\
-timesfm & 0.295999 & 0.283747 \\
-\bottomrule\end{tabular}
-\par\smallskip These CDF groups use different anomaly semantics and must not be pooled into one ranking.
+
+\section*{Scope and claim controls}
+This snapshot summarizes current dissertation-facing benchmark evidence from the final table pack sourced at revision \texttt{44402db9fc6e} and refreshed on repository base \texttt{ca6a042cfd82}. Claims are controlled by \texttt{reports/dissertation\_claim\_ledger\_2026-05.md}; tables are transcribed from \texttt{reports/dissertation\_final\_tables\_2026-05.md}. Stage~1 3W and Stage~2 3W are separate benchmark families. CDF trained reconstruction and foundation forecast metrics are not pooled. Forecasting conclusions are metric-specific.
+
+\section*{T1 --- 3W Stage 1 validated HPO, standard 720-window classification}
+Primary metric: held-out macro-F1. This is the standard apples-to-apples 720-window classification benchmark.
+
+\begin{tabular}{rlrrr}
+\toprule
+Rank & Model & Macro-F1 & Accuracy & Trials \\
+\midrule
+1 & Random Forest & 0.968972 & 0.970228 & 30 \\
+2 & DeepONet & 0.962579 & 0.968734 & 30 \\
+3 & MambaSL & 0.962185 & 0.967313 & 30 \\
+4 & LSTM & 0.960046 & 0.965314 & 30 \\
+5 & FKMAD & 0.956388 & 0.964061 & 30 \\
+6 & ConvTimeNet & 0.954953 & 0.959894 & 30 \\
+7 & PatchTST & 0.953556 & 0.958738 & 30 \\
+\bottomrule
+\end{tabular}
+
+\section*{T2 --- 3W Stage 2 separate follow-up variants}
+Stage~2 changes feature/window assumptions; report it separately from Stage~1.
+
+\begin{tabular}{lrrp{2.6in}}
+\toprule
+Variant & Macro-F1 & Accuracy & Validity note \\
+\midrule
+\texttt{window360\_rf} & 0.987797 & 0.991537 & Valid follow-up; different window length from Stage~1. \\
+\texttt{window1440\_rf} & 0.977011 & 0.989084 & Valid follow-up; different window length from Stage~1. \\
+\texttt{wavelet\_rf} & 0.964309 & 0.966301 & Valid feature variant. \\
+\texttt{multiscale\_rf} & 0.964184 & 0.966205 & Valid feature variant. \\
+\texttt{physics\_rf} & 0.964070 & 0.966060 & Valid feature variant. \\
+\texttt{wavelet\_deeponet} & 0.961252 & 0.967867 & Valid DeepONet variant. \\
+\texttt{convtran} & 0.955762 & 0.964398 & Valid completed baseline. \\
+\texttt{multiscale\_deeponet} & 0.954235 & 0.964880 & Valid DeepONet variant. \\
+\texttt{physics\_deeponet} & 0.952286 & 0.961652 & Valid DeepONet variant. \\
+\bottomrule
+\end{tabular}
+
+\section*{T3 --- Ganymede post-fix multi-well forecasting}
+Arithmetic means across h7/h14/h30/h90 multi-well rows. Lower is better for MAE/RMSE/MASE; higher is better for R$^2$ diagnostics.
+
+\begin{tabular}{lrrrrr}
+\toprule
+Model & MAE & RMSE & MASE & R$^2$ & R$^2_{prod}$ \\
+\midrule
+TiRex & 0.3620 & 1.2481 & 0.2072 & 0.3537 & -0.1499 \\
+TimesFM & 0.3967 & 1.2640 & 0.2297 & 0.3356 & -0.1293 \\
+Chronos-2 & 0.5373 & 1.4426 & 0.3215 & 0.1094 & -0.3438 \\
+LSTM & 0.5457 & 1.3519 & 0.0228 & 0.2453 & -0.6491 \\
+TCN & 0.5680 & 1.3140 & 0.0234 & 0.2860 & -0.4109 \\
+DeepONet & 0.6794 & 1.3748 & 0.0301 & 0.2219 & -0.4026 \\
+PatchTST & 1.0774 & 2.1175 & 0.0474 & -0.8660 & -1.2016 \\
+\bottomrule
+\end{tabular}
+
+\paragraph{Metric-specific interpretation.} TiRex leads Ganymede by MAE/RMSE and R$^2$ diagnostics, while LSTM/TCN lead grouped MASE-style scaled diagnostics. Do not collapse these into one universal forecasting winner.
+
+\section*{T4 --- Cross-dataset forecasting Borda diagnostics}
+Lower Borda score is better. These are ranking diagnostics, not raw-scale metric averages.
+
+\begin{tabular}{llll}
+\toprule
+Metric & Rank 1 & Rank 2 & Rank 3 \\
+\midrule
+MAE & TiRex 1.660 & Chronos-2 2.212 & TimesFM 3.230 \\
+R$^2_{prod}$ & TiRex 2.588 & Chronos-2 3.077 & TimesFM 3.442 \\
+MASE & PatchTST 2.619 & LSTM 3.171 & TCN 3.427 \\
+\bottomrule
+\end{tabular}
+
+\section*{T5 --- Forecasting sparse h90 per-well exclusions}
+These missing h90 per-well rows are data-coverage exclusions, not active HPC failures.
+
+\begin{tabular}{llllr}
+\toprule
+Dataset & Horizon & Mode & Missing scenarios & Missing rows \\
+\midrule
+inner\_mongolia & 90 & per\_well & 57-14X, 57-15X & 14 \\
+spe\_berg & 90 & per\_well & well\_11, well\_2 & 14 \\
+volve & 90 & per\_well & NO\_15\_9-F-5\_AH & 7 \\
+\bottomrule
+\end{tabular}
+
+\section*{T6 --- CDF trained reconstruction metrics}
+Lower is better. Compare only within trained reconstruction semantics.
+
+\begin{tabular}{lrrrr}
+\toprule
+Model & error\_mean & error\_p50 & error\_p95 & error\_p99 \\
+\midrule
+LSTM & 0.005878 & 0.005289 & 0.007909 & 0.015403 \\
+PatchTST & 0.081621 & 0.071603 & 0.150840 & 0.271780 \\
+DeepONet & 0.230735 & 0.223694 & 0.414683 & 0.425859 \\
+\bottomrule
+\end{tabular}
+
+\section*{T7 --- CDF foundation forecast metrics}
+Lower is better. Compare only within one-step foundation forecast semantics.
+
+\begin{tabular}{lrrrr}
+\toprule
+Model & forecast\_error\_mean & forecast\_error\_p50 & forecast\_error\_p95 & forecast\_error\_p99 \\
+\midrule
+Chronos-2 & 0.243968 & 0.226866 & 0.457304 & 0.565650 \\
+TiRex & 0.268548 & 0.246441 & 0.501056 & 0.695557 \\
+TimesFM & 0.295999 & 0.283747 & 0.496752 & 0.589213 \\
+\bottomrule
+\end{tabular}
+
+\section*{Usage notes}
+T1 and T2 answer different classification questions. T4 is diagnostic and metric-specific. T6 and T7 use different anomaly semantics and must never be pooled into one CDF ranking. Historical \texttt{results/pre\_fix/} outputs remain audit lineage only.
 \end{document}

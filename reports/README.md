@@ -6,12 +6,14 @@ Result tables, statistical tests, and analysis reports. Current dissertation-fac
 
 | File | Status | Notes |
 |------|--------|-------|
-| `dissertation_results_2026-05.tex` / `dissertation_results_2026-05.pdf` | Current dissertation snapshot | CDF-gated aggregate snapshot generated from manifest and post-fix summaries. |
-| `dissertation_result_manifest_2026-05.md` | Current claim manifest | Maps headline rows to source revision, result path, status, and caveat. |
+| `dissertation_results_2026-05.tex` / `dissertation_results_2026-05.pdf` | Current compiled snapshot | Regenerated from `dissertation_final_tables_2026-05.md` for the final dissertation evidence freeze; compiled with Tectonic on 2026-05-28. |
+| `dissertation_result_manifest_2026-05.md` | Historical May-15 manifest | Superseded by `dissertation_claim_ledger_2026-05.md` and `dissertation_final_tables_2026-05.md`; retained for audit lineage. |
 | `dissertation_claim_ledger_2026-05.md` | Current claim-control ledger | Maps dissertation-facing claims to metric, source artifact, commit, caveat, and status. |
 | `dissertation_final_tables_2026-05.md` | Current final table pack | Source-backed T1-T7 markdown tables for classification, forecasting, sparse exclusions, and CDF. |
 | `dissertation_results_narrative_2026-05.md` | Current narrative guide | Metric-specific prose guidance, conclusion wording, do-not-write list, and threats to validity. |
+| `dissertation_prose_audit_2026-05.md` | Current prose-audit ledger | Disposes stale/ambiguous manuscript text against the current claim ledger. |
 | `dissertation_evidence_bundle_manifest_2026-05.md` | Current evidence bundle manifest | SHA256 and contents policy for the compact dissertation evidence bundle under `dist/`. |
+| `dissertation_external_archive_manifest_2026-05.md` | Current external archive manifest | Destination, sizes, and checksums for the compact bundle and full forecasting archive copied outside the working tree. |
 | `cdf_post_fix_summary_2026-05.json` | Current CDF summary | Compact post-fix CDF summary from HPC job `28934`. |
 | `statistical_tests_nested.json` | Current for Ganymede and CDF post-fix roots | CDF uses separated trained reconstruction and foundation forecast groups; 3W Stage 2 is not pooled. |
 | `forecasting_borda.json` | Current full post-fix forecasting diagnostic | Regenerated from `results/post_fix` on HPC across Ganymede, SPE Berg, Volve, and Inner Mongolia; lower Borda score is better. |

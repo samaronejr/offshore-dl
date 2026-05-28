@@ -1,5 +1,7 @@
 # Dissertation narrative checklist — May 2026
 
+> **Supersession notice (2026-05-28):** This checklist is retained for audit lineage. Current prose should use `reports/dissertation_results_narrative_2026-05.md` plus claim IDs from `reports/dissertation_claim_ledger_2026-05.md`.
+
 Generated: 2026-05-15T03:20:16Z
 Source revision: `62780b2dd5aa42a01b0cdb1ce07a7cf6416cea5b`
 

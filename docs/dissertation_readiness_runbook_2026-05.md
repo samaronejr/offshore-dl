@@ -1,5 +1,7 @@
 # Dissertation readiness runbook — May 2026
 
+> **Supersession notice (2026-05-28):** This runbook records the CDF-gated readiness pass from May 15. Current dissertation-facing claims, tables, and archive evidence are controlled by `reports/dissertation_claim_ledger_2026-05.md`, `reports/dissertation_final_tables_2026-05.md`, and `reports/dissertation_evidence_bundle_manifest_2026-05.md`.
+
 Generated: 2026-05-15T03:20:16Z
 Local branch: `main`
 Local source revision: `62780b2dd5aa42a01b0cdb1ce07a7cf6416cea5b`
