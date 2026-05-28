@@ -5,11 +5,11 @@ Checksum path: `dist/offshore_dl_dissertation_evidence_20260527.tar.gz.sha256`
 
 ## SHA256
 
-`3175f8059d987f960a16f1395f7872480c70f57f81e0586b6791ed3c1d466be6`
+`5f634baf4d82c2fc674f0366ab61a73fd55adfcd62d18ea0b73d1f7426ee46ac`
 
 ## Contents policy
 
-The bundle includes lightweight dissertation-facing evidence: README guidance, claim ledger, final tables, narrative guide, forecasting aggregate CSVs, CDF compact summary, Borda diagnostics, and forecasting audit/manifests. It intentionally excludes raw data, the large per-model forecasting JSON tree, and this manifest file itself to avoid checksum self-reference; use `~/offshore_dl_archives/forecasting_post_fix_20260527.tar.gz` and its `.sha256` for the external full forecasting JSON archive.
+The bundle includes lightweight dissertation-facing evidence: README guidance, claim ledger, final tables, narrative guide, prose-audit ledger, forecasting aggregate CSVs, regenerated dissertation and IEEE paper LaTeX/PDF snapshots, CDF compact summary, Borda diagnostics, and forecasting audit/manifests. It intentionally excludes raw data, the large per-model forecasting JSON tree, this manifest file, and the external archive manifest to avoid checksum self-reference; use `~/offshore_dl_archives/forecasting_post_fix_20260527.tar.gz` and its `.sha256` for the external full forecasting JSON archive.
 
 ## Verification
 

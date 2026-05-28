@@ -1,5 +1,7 @@
 # Dissertation result manifest — May 2026
 
+> **Supersession notice (2026-05-28):** This May-15 manifest is retained for audit lineage. For current dissertation claims and current Ganymede aggregate values, use `reports/dissertation_claim_ledger_2026-05.md` and `reports/dissertation_final_tables_2026-05.md` instead. Do not cite this file as the current source of truth.
+
 Generated: 2026-05-15T03:20:16Z
 Source revision: `62780b2dd5aa42a01b0cdb1ce07a7cf6416cea5b`
 Local branch: `main`
